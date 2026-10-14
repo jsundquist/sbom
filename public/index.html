@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SBOM Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a5bd7'/><path d='M9 10h14M9 16h14M9 22h9' stroke='white' stroke-width='3' stroke-linecap='round'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/">SBOM Dashboard</a>
+    <nav>
+      <a href="#/" data-nav="overview">Overview</a>
+      <a href="#/projects" data-nav="projects">Applications</a>
+      <a href="#/packages" data-nav="packages">Packages</a>
+      <a href="#/vulnerabilities" data-nav="vulnerabilities">Vulnerabilities</a>
+    </nav>
+  </header>
+  <main id="app" aria-live="polite"></main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
