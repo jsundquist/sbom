@@ -26,3 +26,11 @@ minimumReleaseAgeExclude:
   - 'react-dom@19.3.1'
   - 'react-is@19.3.1'
   - 'react@19.3.1'
+
+# Accepted audit findings. Keep each entry narrow and say why.
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3 stack exhaustion on deeply nested patterns. No patched release exists yet (3.0.3 is the latest).
+    # Dev-only: reached through eslint-config-next > @next/eslint-plugin-next > fast-glob > micromatch, where braces
+    # only expands the fixed glob patterns of our own ESLint config, never untrusted input. Remove once braces >= 3.0.4 ships.
+    - GHSA-vfj7-8cjw-p6xm

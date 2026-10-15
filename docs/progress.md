@@ -14,6 +14,9 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
   codebase formatted, braces enforced. Two real findings fixed (async callbacks in the worker, setState in an effect).
 - Decision: TypeScript is pinned to 6.x. typescript-eslint hard-fails on TS 7 and supports TS <6.1 only; Dependabot ignores TS
   majors. Revisit when typescript-eslint adds TS 7 support (typescript-eslint#10940).
+- Accepted audit finding: `braces` GHSA-vfj7-8cjw-p6xm (dev-only, via eslint-config-next > fast-glob > micromatch; no patched release
+  exists) is ignored in `pnpm-workspace.yaml` `auditConfig`. Remove the entry once braces >= 3.0.4 ships. The `esbuild` moderate finding via
+  drizzle-kit is pre-existing and below the `high` gate.
 - Gotchas: pnpm 11 errors on unreviewed install scripts, so `unrs-resolver` is set to `false` in `pnpm-workspace.yaml`. Markdown and
   `docs/features.json` are excluded from Prettier. The two mechanical commits are listed in `.git-blame-ignore-revs` (GitHub
   squash-merge drops those SHAs; use a merge or rebase merge to keep them).
