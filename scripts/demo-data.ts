@@ -136,9 +136,19 @@ const DEMO_KEV = [
   },
 ];
 
+/** EPSS values copied from the FIRST API (2026-10-14). CVEs not listed come back unscored. */
+const DEMO_EPSS: Record<string, { epss: string; percentile: string }> = {
+  'CVE-2021-44228': { epss: '0.999990000', percentile: '1.000000000' },
+  'CVE-2020-8203': { epss: '0.052130000', percentile: '0.923730000' },
+};
+
 export const demoFetch: typeof fetch = async (input, init) => {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
   const url = new URL(input.toString());
+  if (url.hostname === 'epss.demo') {
+    const wanted = (url.searchParams.get('cve') ?? '').split(',');
+    return json({ status: 'OK', data: wanted.filter((c) => DEMO_EPSS[c]).map((cve) => ({ cve, ...DEMO_EPSS[cve], date: '2026-10-14' })) });
+  }
   if (url.hostname === 'kev.demo') return json({ catalogVersion: 'demo', count: DEMO_KEV.length, vulnerabilities: DEMO_KEV });
   if (url.pathname === '/v1/querybatch') {
     const { queries } = JSON.parse(String(init?.body)) as { queries: { package: { purl: string }; version: string }[] };

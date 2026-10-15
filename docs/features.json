@@ -129,7 +129,7 @@
       "epic": "A",
       "size": "S",
       "priority": 11,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "Scores stored per CVE with model date",
@@ -137,8 +137,8 @@
         "Job is idempotent and TTL driven",
         "Tests use fakeFetch"
       ],
-      "evidence": "",
-      "notes": "Choose bulk file vs per-CVE API when picked up; sequence after A-001."
+      "evidence": "2026-10-15: pnpm run lint ok; pnpm test 47 passed (8 new in tests/unit/epss.test.ts); build ok; test:e2e 5 passed; live stack: 75 CVEs scored, 87/87 vulns have EPSS",
+      "notes": "Uses the per-CVE FIRST API (cve=a,b,c; 50 per request), not the bulk CSV. Unscored CVEs are stored with a null score so they are not re-queried until the TTL. Stacked on A-001 (reuses feed_syncs via src/worker/feeds.ts)."
     },
     {
       "id": "A-003",

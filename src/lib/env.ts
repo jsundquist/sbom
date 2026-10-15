@@ -27,6 +27,8 @@ const schema = z.object({
   LATEST_TTL_HOURS: z.coerce.number().positive().default(24),
   KEV_TTL_HOURS: z.coerce.number().positive().default(24),
   KEV_URL: z.string().url().default('https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json'),
+  EPSS_TTL_HOURS: z.coerce.number().positive().default(24),
+  EPSS_API_URL: z.string().url().default('https://api.first.org/data/v1/epss'),
   OSV_API_URL: z.string().url().default('https://api.osv.dev'),
   DEPS_DEV_API_URL: z.string().url().default('https://api.deps.dev'),
 });

@@ -49,7 +49,8 @@ src/lib/        pure helpers: env, purl, version, severity, params, routes      
 | `vulnerabilities` | OSV record (GHSA/CVE/...) | `severity` enum, CVSS `score`/`vector` |
 | `version_vulnerabilities` | Which version is hit, plus `fixed_versions` | FK to `package_versions` and `vulnerabilities` |
 | `kev_entries` | CISA Known Exploited Vulnerabilities catalog, keyed by CVE id | Replaced wholesale on each sync; matched to vulns by id or CVE alias |
-| `feed_syncs` | One row per downloaded feed: `synced_at`, `attempted_at`, `error` | Drives TTL and retry backoff for whole-feed jobs (KEV; reuse for EPSS) |
+| `epss_scores` | FIRST EPSS score and percentile per CVE | Only CVEs we track; null score = looked up, none yet; fresh per CVE via `fetched_at` |
+| `feed_syncs` | One row per feed: `synced_at`, `attempted_at`, `error` | TTL and retry backoff via `src/worker/feeds.ts` (KEV uses both; EPSS only the backoff) |
 
 Invariants:
 
@@ -72,6 +73,8 @@ dashboard URL. Parse/ingest errors are 400.
 2. Latest-version check: due packages -> deps.dev -> `latest_version` (or `latest_error`).
 3. KEV sync (`src/worker/kev.ts`): when `feed_syncs.kev` is older than `KEV_TTL_HOURS`, download the CISA catalog and replace
    `kev_entries`. Skipped when `kevUrl` is not passed to `enrich()` (tests opt in). Failures keep old data and retry after 15 min.
+4. EPSS sync (`src/worker/epss.ts`): CVEs of stored vulnerabilities with no score or one older than `EPSS_TTL_HOURS` are looked up
+   in batches of 50. Runs after the vulnerability scan so new CVEs are scored in the same run. Same opt-in rule (`epssUrl`).
 
 **Read**: pages and `GET /api/v1/*` both call `src/server/inventory.ts` (`listProjects`, `getProject`, `listPackages`,
 `getPackage`, `listVulnerabilities`, `getVulnerability`, `getOverview`, `getSbomDocument`). `loadComponents()` is the core

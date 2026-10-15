@@ -5,6 +5,7 @@ import type { Db } from '@/db';
 import { packages, packageVersions, versionVulnerabilities, vulnerabilities } from '@/db/schema';
 import { depsDevSystem, latestVersion } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
+import { syncEpss } from './epss';
 import { syncKev } from './kev';
 import { fetchVuln, fixedVersions, OSV_TYPES, queryBatch, vulnRecord, type OsvVuln, type VersionQuery } from './osv';
 
@@ -17,6 +18,9 @@ export interface EnrichOptions {
   /** CISA KEV catalog; the job is skipped when `kevUrl` is not set. */
   kevUrl?: string;
   kevTtlHours?: number;
+  /** FIRST EPSS API; the job is skipped when `epssUrl` is not set. */
+  epssUrl?: string;
+  epssTtlHours?: number;
   force?: boolean;
   logger?: Pick<Console, 'info' | 'warn' | 'error'>;
 }
@@ -39,6 +43,7 @@ export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> 
     ['vulnerability scan', scanVulnerabilities],
     ['latest-version check', checkLatestVersions],
     ['KEV sync', syncKevFeed],
+    ['EPSS sync', syncEpssScores],
   ] as const) {
     try {
       await job(db, opts, stats);
@@ -60,6 +65,17 @@ async function syncKevFeed(db: Db, opts: EnrichOptions, stats: EnrichStats) {
     force: opts.force,
   });
   if (synced) stats.feedsSynced++;
+}
+
+async function syncEpssScores(db: Db, opts: EnrichOptions, stats: EnrichStats) {
+  if (!opts.epssUrl) return;
+  const refreshed = await syncEpss(db, {
+    fetchImpl: opts.fetchImpl ?? fetch,
+    url: opts.epssUrl,
+    ttlHours: opts.epssTtlHours ?? 24,
+    force: opts.force,
+  });
+  if (refreshed) stats.feedsSynced++;
 }
 
 const cutoff = (hours: number, force?: boolean) => new Date(force ? Date.now() + 1000 : Date.now() - hours * 3600e3);

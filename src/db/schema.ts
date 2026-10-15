@@ -154,3 +154,12 @@ export const feedSyncs = pgTable('feed_syncs', {
   attemptedAt: timestamp('attempted_at', { withTimezone: true }).notNull().defaultNow(),
   error: text('error'),
 });
+
+/** FIRST EPSS score for a CVE. A null score means the CVE was looked up but has none yet. */
+export const epssScores = pgTable('epss_scores', {
+  cveId: text('cve_id').primaryKey(),
+  score: real('score'),
+  percentile: real('percentile'),
+  modelDate: date('model_date', { mode: 'string' }),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
+});
