@@ -28,9 +28,11 @@ async function run() {
         depsDevApiUrl: config.DEPS_DEV_API_URL,
         vulnTtlHours: config.VULN_TTL_HOURS,
         latestTtlHours: config.LATEST_TTL_HOURS,
+        kevUrl: config.KEV_URL,
+        kevTtlHours: config.KEV_TTL_HOURS,
         logger: console,
       });
-      if (stats.versionsScanned || stats.packagesChecked || stats.errors) {
+      if (stats.versionsScanned || stats.packagesChecked || stats.feedsSynced || stats.errors) {
         console.info(`[worker] ${JSON.stringify({ ...stats, ms: Date.now() - started })}`);
       }
     } while (rerun && !stopping);

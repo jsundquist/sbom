@@ -47,6 +47,7 @@ test('vulnerability detail links affected packages and applications', async ({ p
   await expect(page.getByRole('heading', { name: 'CVE-2021-44228' })).toBeVisible();
   await expect(page.getByText('Critical 10.0')).toBeVisible();
   await expect(page.getByText('Upgrade to 2.15.0 or later')).toBeVisible();
+  await expect(page.getByText('Exploited', { exact: true }).first()).toBeVisible();
   await page.getByRole('link', { name: 'payments-api' }).click();
   await expect(page.getByRole('heading', { name: 'payments-api' })).toBeVisible();
 });

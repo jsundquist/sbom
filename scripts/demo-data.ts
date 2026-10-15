@@ -123,9 +123,23 @@ export const DEMO_LATEST: Record<string, string> = {
 };
 
 /** Fake fetch serving the canned data above in the OSV.dev / deps.dev wire formats. */
+/** Real KEV entry for Log4Shell, so the demo shows an exploited vulnerability. */
+const DEMO_KEV = [
+  {
+    cveID: 'CVE-2021-44228',
+    vendorProject: 'Apache',
+    product: 'Log4j2',
+    vulnerabilityName: 'Apache Log4j2 Remote Code Execution Vulnerability',
+    dateAdded: '2021-12-10',
+    dueDate: '2021-12-24',
+    knownRansomwareCampaignUse: 'Known',
+  },
+];
+
 export const demoFetch: typeof fetch = async (input, init) => {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
   const url = new URL(input.toString());
+  if (url.hostname === 'kev.demo') return json({ catalogVersion: 'demo', count: DEMO_KEV.length, vulnerabilities: DEMO_KEV });
   if (url.pathname === '/v1/querybatch') {
     const { queries } = JSON.parse(String(init?.body)) as { queries: { package: { purl: string }; version: string }[] };
     return json({ results: queries.map((q) => ({ vulns: (DEMO_AFFECTED[`${q.package.purl}@${q.version}`] ?? []).map((id) => ({ id })) })) });

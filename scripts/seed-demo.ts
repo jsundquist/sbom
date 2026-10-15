@@ -18,6 +18,8 @@ if (process.argv.includes('--offline')) {
     depsDevApiUrl: 'https://depsdev.demo',
     vulnTtlHours: 12,
     latestTtlHours: 24,
+    kevUrl: 'https://kev.demo/feed.json',
+    kevTtlHours: 24,
     force: true,
   });
   console.log('Enriched from demo data:', stats);

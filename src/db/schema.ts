@@ -1,5 +1,7 @@
 import {
   type AnyPgColumn,
+  boolean,
+  date,
   foreignKey,
   index,
   integer,
@@ -131,3 +133,24 @@ export const versionVulnerabilities = pgTable(
 );
 
 export type Severity = (typeof severityEnum.enumValues)[number];
+
+/** An entry of the CISA Known Exploited Vulnerabilities catalog, keyed by CVE id. */
+export const kevEntries = pgTable('kev_entries', {
+  cveId: text('cve_id').primaryKey(),
+  vendor: text('vendor'),
+  product: text('product'),
+  name: text('name'),
+  dateAdded: date('date_added', { mode: 'string' }).notNull(),
+  dueDate: date('due_date', { mode: 'string' }),
+  knownRansomwareUse: boolean('known_ransomware_use').notNull().default(false),
+});
+
+/** Bookkeeping for worker jobs that download whole feeds (one row per feed). */
+export const feedSyncs = pgTable('feed_syncs', {
+  name: text('name').primaryKey(),
+  /** Last successful sync; null until the first one succeeds. */
+  syncedAt: timestamp('synced_at', { withTimezone: true }),
+  /** Last attempt, successful or not; used to back off after failures. */
+  attemptedAt: timestamp('attempted_at', { withTimezone: true }).notNull().defaultNow(),
+  error: text('error'),
+});

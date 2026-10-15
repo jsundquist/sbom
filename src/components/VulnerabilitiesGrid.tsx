@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import type { GridColDef } from '@mui/x-data-grid';
 import type { VulnerabilitySummary } from '@/server/inventory';
 import { SEVERITY_RANK } from '@/lib/severity';
-import { SeverityChip } from './chips';
+import { KevChip, SeverityChip } from './chips';
 import { DateTime } from './DateTime';
 import { Grid } from './grid';
 import { AppLink } from './Links';
@@ -34,6 +34,14 @@ const columns: GridColDef<VulnerabilitySummary>[] = [
     width: 150,
     valueGetter: (_v, row) => SEVERITY_RANK[row.severity] * 100 + (row.score ?? 0),
     renderCell: ({ row }) => <SeverityChip severity={row.severity} score={row.score} />,
+  },
+  {
+    field: 'exploited',
+    headerName: 'Exploited',
+    type: 'boolean',
+    width: 120,
+    valueGetter: (_v, row) => !!row.kev,
+    renderCell: ({ row }) => (row.kev ? <KevChip kev={row.kev} /> : null),
   },
   { field: 'summary', headerName: 'Summary', flex: 2, minWidth: 240, valueGetter: (v) => v ?? '' },
   {

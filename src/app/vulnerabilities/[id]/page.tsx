@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { getDb } from '@/db';
 import { getVulnerability } from '@/server/inventory';
-import { SeverityChip } from '@/components/chips';
+import { KevChip, SeverityChip } from '@/components/chips';
 import { DateTime } from '@/components/DateTime';
 import { AppLink } from '@/components/Links';
 import { packageHref, projectHref } from '@/lib/routes';
@@ -29,7 +29,12 @@ export default async function VulnerabilityPage({ params }: { params: Promise<{ 
         title={vuln.cve ?? vuln.id}
         crumbs={[{ href: '/vulnerabilities', label: 'Vulnerabilities' }]}
         subtitle={vuln.summary}
-        actions={<SeverityChip severity={vuln.severity} score={vuln.score} size="medium" />}
+        actions={
+          <Stack direction="row" spacing={1}>
+            {vuln.kev && <KevChip kev={vuln.kev} size="medium" />}
+            <SeverityChip severity={vuln.severity} score={vuln.score} size="medium" />
+          </Stack>
+        }
       />
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 8 }}>
@@ -100,6 +105,16 @@ export default async function VulnerabilityPage({ params }: { params: Promise<{ 
                 <>
                   <Box component="dt" sx={{ color: 'text.secondary' }}>Vector</Box>
                   <Box component="dd" sx={{ m: 0, wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12 }}>{vuln.vector}</Box>
+                </>
+              )}
+              {vuln.kev && (
+                <>
+                  <Box component="dt" sx={{ color: 'text.secondary' }}>Exploited</Box>
+                  <Box component="dd" sx={{ m: 0 }}>
+                    CISA KEV, added {vuln.kev.dateAdded}
+                    {vuln.kev.dueDate ? `, remediation due ${vuln.kev.dueDate}` : ''}
+                    {vuln.kev.ransomware ? ', used in ransomware campaigns' : ''}
+                  </Box>
                 </>
               )}
               <Box component="dt" sx={{ color: 'text.secondary' }}>Published</Box>
