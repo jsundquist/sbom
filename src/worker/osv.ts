@@ -54,7 +54,7 @@ const toQuery = ({ pkg, version }: VersionQuery) => ({ package: { purl: basePurl
 
 /** Looks up vulnerability ids for many package versions; results align with `items`. */
 export async function queryBatch(fetchImpl: FetchFn, baseUrl: string, items: VersionQuery[]): Promise<QueryResult[]> {
-  if (!items.length) return [];
+  if (!items.length) {return [];}
   try {
     const data = await fetchJson(fetchImpl, `${baseUrl}/v1/querybatch`, batchResponse, {
       method: 'POST',
@@ -64,7 +64,7 @@ export async function queryBatch(fetchImpl: FetchFn, baseUrl: string, items: Ver
       items.map(async (item, i) => {
         const r = data?.results[i];
         const ids = (r?.vulns ?? []).map((v) => v.id);
-        if (r?.next_page_token) ids.push(...(await queryAllPages(fetchImpl, baseUrl, item, r.next_page_token)));
+        if (r?.next_page_token) {ids.push(...(await queryAllPages(fetchImpl, baseUrl, item, r.next_page_token)));}
         return { vulnIds: [...new Set(ids)] };
       }),
     );
@@ -109,7 +109,7 @@ export function osvSeverity(vuln: OsvVuln): { severity: Severity; score: number 
   for (const e of entries) {
     if (e.type === 'CVSS_V3') {
       const score = cvss3Score(e.score);
-      if (score !== null) return { severity: ratingFromScore(score), score, vector: e.score };
+      if (score !== null) {return { severity: ratingFromScore(score), score, vector: e.score };}
     }
   }
   const label =
@@ -145,14 +145,14 @@ export function fixedVersions(vuln: OsvVuln, pkg: PackageRef): string[] {
   const affected = vuln.affected ?? [];
   const matching = affected.filter((a) => {
     const p = a.package;
-    if (p?.purl && p.purl.split('@')[0].toLowerCase() === purl) return true;
+    if (p?.purl && p.purl.split('@')[0].toLowerCase() === purl) {return true;}
     return !!p?.name && normalizeName(pkg.type, p.name) === want;
   });
   const fixed = new Set<string>();
   for (const a of matching.length ? matching : affected) {
     for (const range of a.ranges ?? []) {
-      if (range.type === 'GIT') continue;
-      for (const e of range.events ?? []) if (e.fixed) fixed.add(e.fixed);
+      if (range.type === 'GIT') {continue;}
+      for (const e of range.events ?? []) {if (e.fixed) {fixed.add(e.fixed);}}
     }
   }
   return [...fixed].sort(compareVersions);

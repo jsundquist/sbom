@@ -57,25 +57,25 @@ export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> 
 }
 
 async function syncKevFeed(db: Db, opts: EnrichOptions, stats: EnrichStats) {
-  if (!opts.kevUrl) return;
+  if (!opts.kevUrl) {return;}
   const synced = await syncKev(db, {
     fetchImpl: opts.fetchImpl ?? fetch,
     url: opts.kevUrl,
     ttlHours: opts.kevTtlHours ?? 24,
     force: opts.force,
   });
-  if (synced) stats.feedsSynced++;
+  if (synced) {stats.feedsSynced++;}
 }
 
 async function syncEpssScores(db: Db, opts: EnrichOptions, stats: EnrichStats) {
-  if (!opts.epssUrl) return;
+  if (!opts.epssUrl) {return;}
   const refreshed = await syncEpss(db, {
     fetchImpl: opts.fetchImpl ?? fetch,
     url: opts.epssUrl,
     ttlHours: opts.epssTtlHours ?? 24,
     force: opts.force,
   });
-  if (refreshed) stats.feedsSynced++;
+  if (refreshed) {stats.feedsSynced++;}
 }
 
 const cutoff = (hours: number, force?: boolean) => new Date(force ? Date.now() + 1000 : Date.now() - hours * 3600e3);
@@ -125,7 +125,7 @@ async function scanVulnerabilities(db: Db, opts: EnrichOptions, stats: EnrichSta
       async (id) => {
         try {
           const v = await fetchVuln(fetchImpl, opts.osvApiUrl, id);
-          if (v) details.set(id, v);
+          if (v) {details.set(id, v);}
         } catch (err) {
           stats.errors++;
           opts.logger?.warn(`[worker] vulnerability ${id}: ${(err as Error).message}`);
@@ -203,7 +203,7 @@ async function checkLatestVersions(db: Db, opts: EnrichOptions, stats: EnrichSta
     let error: string | null = null;
     try {
       latest = await latestVersion(fetchImpl, opts.depsDevApiUrl, p);
-      if (!latest) error = 'not found';
+      if (!latest) {error = 'not found';}
     } catch (err) {
       stats.errors++;
       error = (err as Error).message.slice(0, 500);

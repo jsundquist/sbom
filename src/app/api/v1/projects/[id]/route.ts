@@ -12,14 +12,14 @@ export async function GET(req: Request, { params }: Ctx) {
   const sbomParam = new URL(req.url).searchParams.get('sbom');
   const sbomId = sbomParam ? parseId(sbomParam) : undefined;
   const project = id && sbomId !== null ? await getProject(getDb(), id, sbomId) : null;
-  if (!project) return jsonError(404, 'Project not found');
+  if (!project) {return jsonError(404, 'Project not found');}
   return NextResponse.json(project);
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {
   const denied = checkUploadToken(req);
-  if (denied) return denied;
+  if (denied) {return denied;}
   const id = parseId((await params).id);
-  if (!id || !(await deleteProject(getDb(), id))) return jsonError(404, 'Project not found');
+  if (!id || !(await deleteProject(getDb(), id))) {return jsonError(404, 'Project not found');}
   return new Response(null, { status: 204 });
 }

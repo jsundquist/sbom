@@ -35,7 +35,7 @@ export async function syncKev(db: Db, { fetchImpl, url, ttlHours, force }: KevSy
 
   try {
     const feed = await fetchJson(fetchImpl, url, kevFeedSchema, { timeoutMs: 60_000 });
-    if (!feed) throw new Error(`KEV feed not found at ${url}`);
+    if (!feed) {throw new Error(`KEV feed not found at ${url}`);}
     const rows = feed.vulnerabilities.map((v) => ({
       cveId: v.cveID.toUpperCase(),
       vendor: v.vendorProject ?? null,

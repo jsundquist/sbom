@@ -88,10 +88,10 @@ const spdx = z.looseObject({
 export function parseSbom(input: unknown): ParsedSbom {
   let doc = input;
   // GitHub's dependency graph export wraps the SPDX document in { "sbom": ... }.
-  if (doc && typeof doc === 'object' && 'sbom' in doc && doc.sbom && typeof doc.sbom === 'object') doc = doc.sbom;
-  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new SbomParseError('SBOM must be a JSON object');
-  if ('bomFormat' in doc) return parseCycloneDx(validate(cycloneDx, doc, 'CycloneDX'));
-  if ('spdxVersion' in doc) return parseSpdx(validate(spdx, doc, 'SPDX'));
+  if (doc && typeof doc === 'object' && 'sbom' in doc && doc.sbom && typeof doc.sbom === 'object') {doc = doc.sbom;}
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {throw new SbomParseError('SBOM must be a JSON object');}
+  if ('bomFormat' in doc) {return parseCycloneDx(validate(cycloneDx, doc, 'CycloneDX'));}
+  if ('spdxVersion' in doc) {return parseSpdx(validate(spdx, doc, 'SPDX'));}
   throw new SbomParseError('Unsupported SBOM format: expected CycloneDX JSON or SPDX JSON');
 }
 
@@ -128,9 +128,9 @@ function normalize(c: {
 function dedupe(components: ParsedComponent[]): ParsedComponent[] {
   const seen = new Map<string, ParsedComponent>();
   for (const c of components) {
-    if (!c.name) continue;
+    if (!c.name) {continue;}
     const key = `${c.packageKey ?? c.name}@${c.version}`;
-    if (!seen.has(key)) seen.set(key, c);
+    if (!seen.has(key)) {seen.set(key, c);}
   }
   return [...seen.values()];
 }

@@ -36,7 +36,7 @@ export async function fetchJson<T>(
       }
       throw err;
     }
-    if (res.status === 404) return null;
+    if (res.status === 404) {return null;}
     if ((res.status === 429 || res.status >= 500) && attempt < retries) {
       await sleep(1000 * 2 ** attempt);
       continue;

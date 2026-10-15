@@ -27,7 +27,7 @@ export default async function ProjectPage({
   const sbomParam = (await searchParams).sbom;
   const sbomId = sbomParam ? parseIdOrNull(sbomParam) : undefined;
   const project = id && sbomId !== null ? await getProject(getDb(), id, sbomId) : null;
-  if (!project) notFound();
+  if (!project) {notFound();}
 
   const sbom = project.history.find((h) => h.id === project.sbomId);
   const { stats } = project;

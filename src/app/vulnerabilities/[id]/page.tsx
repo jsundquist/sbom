@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function VulnerabilityPage({ params }: { params: Promise<{ id: string }> }) {
   const vuln = await getVulnerability(getDb(), decodeURIComponent((await params).id));
-  if (!vuln) notFound();
+  if (!vuln) {notFound();}
 
   return (
     <>

@@ -149,7 +149,7 @@ export const demoFetch: typeof fetch = async (input, init) => {
     const wanted = (url.searchParams.get('cve') ?? '').split(',');
     return json({ status: 'OK', data: wanted.filter((c) => DEMO_EPSS[c]).map((cve) => ({ cve, ...DEMO_EPSS[cve], date: '2026-10-14' })) });
   }
-  if (url.hostname === 'kev.demo') return json({ catalogVersion: 'demo', count: DEMO_KEV.length, vulnerabilities: DEMO_KEV });
+  if (url.hostname === 'kev.demo') {return json({ catalogVersion: 'demo', count: DEMO_KEV.length, vulnerabilities: DEMO_KEV });}
   if (url.pathname === '/v1/querybatch') {
     const { queries } = JSON.parse(String(init?.body)) as { queries: { package: { purl: string }; version: string }[] };
     return json({ results: queries.map((q) => ({ vulns: (DEMO_AFFECTED[`${q.package.purl}@${q.version}`] ?? []).map((id) => ({ id })) })) });

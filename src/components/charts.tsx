@@ -60,7 +60,7 @@ export function SeverityBarChart({ counts }: { counts: SeverityCounts }) {
 }
 
 function roundedTop(x: number, y: number, w: number, h: number, r = 4) {
-  if (h <= 0) return '';
+  if (h <= 0) {return '';}
   const rr = Math.min(r, h, w / 2);
   return `M${x},${y + h}V${y + rr}Q${x},${y} ${x + rr},${y}H${x + w - rr}Q${x + w},${y} ${x + w},${y + rr}V${y + h}Z`;
 }
