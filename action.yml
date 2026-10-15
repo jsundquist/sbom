@@ -1,0 +1,112 @@
+name: Upload SBOM to SBOM Dashboard
+description: Generate a software bill of materials for the repository and upload it to an SBOM Dashboard instance.
+branding:
+  icon: package
+  color: blue
+
+inputs:
+  dashboard-url:
+    description: Base URL of the dashboard, e.g. https://sbom.example.com
+    required: true
+  api-token:
+    description: Upload token (one of the server's UPLOAD_TOKENS). Optional when the server accepts open uploads.
+    required: false
+    default: ''
+  project-name:
+    description: Application or library name shown in the dashboard.
+    required: false
+    default: ${{ github.event.repository.name }}
+  project-version:
+    description: Version label for this SBOM (defaults to the tag or branch name).
+    required: false
+    default: ${{ github.ref_name }}
+  sbom-file:
+    description: Path to an existing CycloneDX or SPDX JSON file. When empty, an SBOM is generated.
+    required: false
+    default: ''
+  generator:
+    description: How to generate the SBOM when sbom-file is empty. "syft" (scans the checkout) or "dependency-graph" (GitHub's dependency graph export; needs contents:read).
+    required: false
+    default: syft
+  path:
+    description: Directory scanned by Syft.
+    required: false
+    default: .
+  github-token:
+    description: Token used for the dependency-graph generator.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  project-id:
+    description: Dashboard project id.
+    value: ${{ steps.upload.outputs.project-id }}
+  sbom-id:
+    description: Id of the uploaded SBOM.
+    value: ${{ steps.upload.outputs.sbom-id }}
+  url:
+    description: Dashboard page for the project.
+    value: ${{ steps.upload.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Generate SBOM with Syft
+      if: inputs.sbom-file == '' && inputs.generator == 'syft'
+      uses: anchore/sbom-action@v0
+      with:
+        path: ${{ inputs.path }}
+        format: cyclonedx-json
+        output-file: ${{ runner.temp }}/sbom-dashboard.cdx.json
+        upload-artifact: false
+        upload-release-assets: false
+
+    - name: Export GitHub dependency graph SBOM
+      if: inputs.sbom-file == '' && inputs.generator == 'dependency-graph'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: gh api "repos/${GITHUB_REPOSITORY}/dependency-graph/sbom" > "${RUNNER_TEMP}/sbom-dashboard.spdx.json"
+
+    - name: Upload SBOM
+      id: upload
+      shell: bash
+      env:
+        DASHBOARD_URL: ${{ inputs.dashboard-url }}
+        API_TOKEN: ${{ inputs.api-token }}
+        PROJECT_NAME: ${{ inputs.project-name }}
+        PROJECT_VERSION: ${{ inputs.project-version }}
+        SBOM_FILE: ${{ inputs.sbom-file }}
+        GENERATOR: ${{ inputs.generator }}
+      run: |
+        set -euo pipefail
+        file="$SBOM_FILE"
+        if [ -z "$file" ]; then
+          if [ "$GENERATOR" = "dependency-graph" ]; then file="$RUNNER_TEMP/sbom-dashboard.spdx.json"; else file="$RUNNER_TEMP/sbom-dashboard.cdx.json"; fi
+        fi
+        [ -f "$file" ] || { echo "::error::SBOM file not found: $file"; exit 1; }
+
+        headers=(-H "Content-Type: application/json"
+          -H "X-Sbom-Project: $PROJECT_NAME"
+          -H "X-Sbom-Version: $PROJECT_VERSION"
+          -H "X-Sbom-Ref: $GITHUB_REF"
+          -H "X-Sbom-Commit: $GITHUB_SHA"
+          -H "X-Sbom-Repository: $GITHUB_REPOSITORY")
+        [ -n "$API_TOKEN" ] && headers+=(-H "Authorization: Bearer $API_TOKEN")
+
+        status=$(curl -sS -o "$RUNNER_TEMP/sbom-dashboard-response.json" -w '%{http_code}' --retry 3 --retry-all-errors \
+          -X POST "${DASHBOARD_URL%/}/api/v1/sboms" "${headers[@]}" --data-binary "@$file")
+        body=$(cat "$RUNNER_TEMP/sbom-dashboard-response.json")
+        if [ "$status" != "201" ]; then
+          echo "::error::SBOM upload failed with HTTP $status: $body"
+          exit 1
+        fi
+        python3 - "$RUNNER_TEMP/sbom-dashboard-response.json" <<'PY'
+        import json, os, sys
+        r = json.load(open(sys.argv[1]))
+        with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+            out.write(f"project-id={r['projectId']}\nsbom-id={r['sbomId']}\nurl={r['url']}\n")
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+            summary.write(f"Uploaded SBOM for **{r['projectName']}** ({r['componentCount']} packages): {r['url']}\n")
+        print(f"Uploaded {r['componentCount']} packages: {r['url']}")
+        PY

@@ -1,0 +1,22 @@
+# Copy to .github/workflows/sbom.yml in each application or library repository.
+name: SBOM
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      # For lockfile-less projects, build or install dependencies first so Syft can see them.
+      - uses: jsundquist/sbom@main
+        with:
+          dashboard-url: ${{ vars.SBOM_DASHBOARD_URL }}
+          api-token: ${{ secrets.SBOM_DASHBOARD_TOKEN }}
+          # generator: dependency-graph   # use GitHub's dependency graph instead of Syft
+          # sbom-file: build/sbom.json    # or upload an SBOM produced by your build
