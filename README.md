@@ -109,7 +109,8 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | Variable | Default | Description |
 |---|---|---|
 | `DATABASE_URL` | `postgres://sbom:sbom@localhost:5432/sbom` | Postgres connection string |
-| `UPLOAD_TOKENS` | empty | Comma-separated bearer tokens required for uploads and deletes. Empty = open uploads |
+| `UPLOAD_TOKENS` | empty | Comma-separated bearer tokens required for uploads and deletes. Empty = open uploads outside production; in production uploads are rejected (503) |
+| `ALLOW_OPEN_UPLOADS` | `false` | Set `true` to allow open uploads in production (e.g. `docker compose` on localhost) |
 | `MAX_UPLOAD_BYTES` | 52428800 | Maximum SBOM size |
 | `SBOM_HISTORY_LIMIT` | 20 | Uploads kept per application (older ones are pruned) |
 | `WORKER_POLL_SECONDS` | 30 | How often the worker checks for due work (uploads also wake it immediately) |
@@ -123,7 +124,7 @@ The dashboard itself has no login yet; put it behind your network or a reverse p
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/v1/sboms` | Upload an SBOM (token required when `UPLOAD_TOKENS` is set) |
+| `POST` | `/api/v1/sboms` | Upload an SBOM (token required when `UPLOAD_TOKENS` is set; disabled in production without one) |
 | `GET` | `/api/v1/sboms/:id` | Download the original SBOM document |
 | `GET` | `/api/v1/summary` | Totals, severity counts and recent uploads |
 | `GET` | `/api/v1/projects` | Applications with their latest SBOM stats |
@@ -175,4 +176,13 @@ src/sbom/               CycloneDX / SPDX parsing
 src/server/             ingestion and read model (queries + aggregation)
 src/worker/             enrichment worker (OSV.dev, deps.dev)
 tests/unit, tests/e2e   Vitest and Playwright suites
+```
+
+## Secret scanning
+
+CI runs [gitleaks](https://github.com/gitleaks/gitleaks) on every push and PR. To catch secrets before they are committed, install it locally and add a pre-commit hook:
+
+```bash
+brew install gitleaks
+printf '#!/bin/sh\nexec gitleaks protect --staged --redact\n' > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 ```

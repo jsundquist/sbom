@@ -20,6 +20,7 @@ services:
     environment: &env
       DATABASE_URL: postgres://sbom:sbom@db:5432/sbom
       UPLOAD_TOKENS: ${UPLOAD_TOKENS:-}
+      ALLOW_OPEN_UPLOADS: ${ALLOW_OPEN_UPLOADS:-false}
     depends_on:
       db: { condition: service_healthy }
 

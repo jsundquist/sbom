@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { setDb, type Db } from '@/db';
 import { resetEnv } from '@/lib/env';
 import { POST as upload } from '@/app/api/v1/sboms/route';
@@ -25,6 +25,7 @@ beforeEach(async () => {
   resetEnv();
 });
 afterEach(async () => {
+  vi.unstubAllEnvs();
   delete process.env.UPLOAD_TOKENS;
   resetEnv();
   await close();
@@ -63,6 +64,17 @@ describe('upload API', () => {
     delete process.env.UPLOAD_TOKENS;
     resetEnv();
     expect((await post(fixture('cyclonedx.json'), '', {})).status).toBe(201);
+  });
+
+  test('fails closed in production when no tokens are configured', async () => {
+    delete process.env.UPLOAD_TOKENS;
+    vi.stubEnv('NODE_ENV', 'production');
+    resetEnv();
+    expect((await post(fixture('cyclonedx.json'), '', {})).status).toBe(503);
+    vi.stubEnv('ALLOW_OPEN_UPLOADS', 'true');
+    resetEnv();
+    expect((await post(fixture('cyclonedx.json'), '', {})).status).toBe(201);
+    vi.unstubAllEnvs();
   });
 
   test('rejects bodies that are not a supported SBOM', async () => {
