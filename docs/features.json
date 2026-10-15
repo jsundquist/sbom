@@ -1,0 +1,548 @@
+{
+  "_readme": "Scope boundary for agents. Work on one feature at a time. status: todo | in_progress | done | superseded. Lower priority number first; skip items whose depends_on are not done. Optional fields: epic (A prioritization/freshness, B dependency health, C reports and repo health, D tools that act, E foundations), size (S/M/L), depends_on, notes. Set done only after the Definition of Done in docs/WORKFLOW.md passes and put the commands/results in evidence.",
+  "features": [
+    {
+      "id": "F-000",
+      "title": "Core dashboard: upload, projects, packages, vulnerabilities, worker enrichment",
+      "priority": 0,
+      "status": "done",
+      "acceptance": [
+        "CycloneDX and SPDX upload",
+        "OSV vulnerability scan",
+        "deps.dev latest-version check",
+        "Overview, applications, packages, vulnerabilities pages"
+      ],
+      "evidence": "Merged to main (#1); pnpm test: 32 passing"
+    },
+    {
+      "id": "H-001",
+      "title": "Agent harness: AGENTS.md/CLAUDE.md, architecture, workflow, progress, feature list, init.sh",
+      "priority": 0,
+      "status": "done",
+      "acceptance": [
+        "Session start/end protocol documented",
+        "Layering rules written down",
+        "init.sh runs baseline verification"
+      ],
+      "evidence": "scripts/init.sh run on 2026-10-15"
+    },
+    {
+      "id": "S-001",
+      "title": "Security headers in next.config.ts (CSP, X-Frame-Options, Referrer-Policy, nosniff)",
+      "priority": 1,
+      "status": "todo",
+      "acceptance": [
+        "Headers set for all routes",
+        "App and MUI still render under the CSP (e2e passes)",
+        "Test asserts headers"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "S-002",
+      "title": "Upload rate limiting and request-size hardening",
+      "priority": 2,
+      "status": "todo",
+      "acceptance": [
+        "Per-token or per-IP limit with 429",
+        "Oversized body rejected before full buffering",
+        "Tests for 429 and 413"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "S-003",
+      "title": "Compose hardening: no default DB creds, bind 5432 to localhost, no-new-privileges, cap_drop, read-only rootfs, HEALTHCHECK",
+      "priority": 3,
+      "status": "todo",
+      "acceptance": [
+        "docker compose up still works from README steps",
+        "README documents required env"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "S-004",
+      "title": "Optional authentication for read access (dashboard and GET API)",
+      "priority": 4,
+      "status": "superseded",
+      "acceptance": [
+        "Design decision recorded in ARCHITECTURE.md before implementation",
+        "Off by default so local use is unchanged"
+      ],
+      "evidence": "",
+      "superseded_by": "E-002"
+    },
+    {
+      "id": "S-005",
+      "title": "CI supply-chain additions: actionlint, zizmor, dependency-review, Trivy image scan",
+      "priority": 5,
+      "status": "todo",
+      "acceptance": [
+        "Actions SHA-pinned",
+        "Workflows keep least-privilege permissions"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "Q-001",
+      "title": "Move shared OSV/deps.dev ecosystem constants from src/worker to src/lib",
+      "priority": 6,
+      "status": "todo",
+      "acceptance": [
+        "server/inventory.ts no longer imports from worker/",
+        "Update the tolerated cross-edge note in ARCHITECTURE.md"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "Q-002",
+      "title": "Add an automated layering check (import-direction rules) to lint",
+      "priority": 7,
+      "status": "todo",
+      "acceptance": [
+        "CI fails when lib/ or sbom/ imports server/worker/app, or components import db/ or server/ (other than types)",
+        "Documented in AGENTS.md"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "A-001",
+      "title": "CISA KEV ingestion: kev_entries table, daily worker job (KEV_TTL_HOURS), exploited flag on vulns, chip + filter + overview tile",
+      "epic": "A",
+      "size": "S",
+      "priority": 10,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "KEV feed fetched through FetchFn and validated with Zod",
+        "exploited flag exposed by inventory.ts and GET /api/v1/vulnerabilities",
+        "UI chip, filter and overview tile",
+        "Tests use fakeFetch; migration committed"
+      ],
+      "evidence": "",
+      "notes": "Verify the current KEV feed URL and schema against CISA docs."
+    },
+    {
+      "id": "A-002",
+      "title": "EPSS scores: epss_scores table, daily worker job, score/percentile column and sort",
+      "epic": "A",
+      "size": "S",
+      "priority": 11,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Scores stored per CVE with model date",
+        "Vulnerability grid shows and sorts by EPSS",
+        "Job is idempotent and TTL driven",
+        "Tests use fakeFetch"
+      ],
+      "evidence": "",
+      "notes": "Choose bulk file vs per-CVE API when picked up; sequence after A-001."
+    },
+    {
+      "id": "A-003",
+      "title": "Priority ordering: combined rank (KEV > EPSS > CVSS) as default vulnerability sort and a fix-first list on the overview",
+      "epic": "A",
+      "size": "S",
+      "priority": 12,
+      "status": "todo",
+      "depends_on": [
+        "A-001",
+        "A-002"
+      ],
+      "acceptance": [
+        "Ranking is a pure function in src/lib with unit tests",
+        "Default sort uses it",
+        "Overview lists top N to fix"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "A-004",
+      "title": "Release dates and libyears: released_at per package version and latest from deps.dev, libyears per component and per app",
+      "epic": "A",
+      "size": "S-M",
+      "priority": 13,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Migration adds release timestamps",
+        "Libyears computed in a pure helper with tests",
+        "Shown on app page and projects grid"
+      ],
+      "evidence": "",
+      "notes": "Check the deps.dev response field names."
+    },
+    {
+      "id": "A-005",
+      "title": "Daily snapshots: project_snapshots (severity counts, outdated counts, libyears, component count) written by worker job and on upload",
+      "epic": "A",
+      "size": "S-M",
+      "priority": 14,
+      "status": "todo",
+      "depends_on": [
+        "A-004"
+      ],
+      "acceptance": [
+        "One row per project per day, upsert",
+        "Survives SBOM history pruning",
+        "Backfill is not required"
+      ],
+      "evidence": "",
+      "notes": "History is pruned to SBOM_HISTORY_LIMIT, so trends cannot be rebuilt from old SBOMs."
+    },
+    {
+      "id": "A-006",
+      "title": "Trend charts: GET /api/v1/projects/[id]/trends and /summary/trends, Recharts on app page and overview",
+      "epic": "A",
+      "size": "S-M",
+      "priority": 15,
+      "status": "todo",
+      "depends_on": [
+        "A-005"
+      ],
+      "acceptance": [
+        "API tests for both endpoints",
+        "Charts render with empty and populated data (e2e)",
+        "Reuse src/components/charts.tsx and severity colors"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "A-007",
+      "title": "Time to fix: persisted vulnerability_findings (first seen, resolved) from diffing consecutive SBOMs, SLA targets from policy, breach list",
+      "epic": "A",
+      "size": "M",
+      "priority": 20,
+      "status": "todo",
+      "depends_on": [
+        "E-001"
+      ],
+      "acceptance": [
+        "Findings persist independently of pruned SBOMs",
+        "Time open and SLA breach computed per finding",
+        "UI lists breaches per app"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "A-008",
+      "title": "License policy: parse SPDX expressions in components.licenses, flag denied/copyleft/missing per policy, chips + filter",
+      "epic": "A",
+      "size": "S",
+      "priority": 21,
+      "status": "todo",
+      "depends_on": [
+        "E-001"
+      ],
+      "acceptance": [
+        "Expression parser with unit tests",
+        "Policy decides allow/deny lists",
+        "UI chips and filter on app and package pages"
+      ],
+      "evidence": "",
+      "notes": "components.licenses is plain text today."
+    },
+    {
+      "id": "B-001",
+      "title": "End-of-life runtimes/frameworks: endoflife.date client, product mapping, eol_products cache, worker job, EOL / EOL-soon flag",
+      "epic": "B",
+      "size": "M",
+      "priority": 16,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Mapping table covers node, python, spring-boot, angular at minimum",
+        "Worker job refreshes by TTL",
+        "Flag visible on component and app views"
+      ],
+      "evidence": "",
+      "notes": "Source SBOMs rarely list the runtime; may need an explicit runtimes input or image scans (B-004). Verify endoflife.date product names."
+    },
+    {
+      "id": "B-002",
+      "title": "Deprecated/abandoned packages: deprecation flag from deps.dev plus no-release-in-N-years from release dates",
+      "epic": "B",
+      "size": "S-M",
+      "priority": 27,
+      "status": "todo",
+      "depends_on": [
+        "A-004"
+      ],
+      "acceptance": [
+        "Both signals stored and shown",
+        "Threshold N from policy or env",
+        "Tests cover each signal"
+      ],
+      "evidence": "",
+      "notes": "Verify deps.dev exposes a deprecation field."
+    },
+    {
+      "id": "B-003",
+      "title": "OpenSSF Scorecard of each package's source repo via deps.dev project data",
+      "epic": "B",
+      "size": "S-M",
+      "priority": 28,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Score and weakest checks stored per package",
+        "Shown on package page",
+        "Missing repo handled as unsupported"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "B-004",
+      "title": "Container image scans: Action input for Syft image scan; image recorded as a project kind",
+      "epic": "B",
+      "size": "S",
+      "priority": 29,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "action.yml input documented in README",
+        "Image SBOM ingests like any other",
+        "Example workflow updated"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "B-005",
+      "title": "Base-image age and signature/provenance status (cosign verify) for scanned images",
+      "epic": "B",
+      "size": "M",
+      "priority": 30,
+      "status": "todo",
+      "depends_on": [
+        "B-004",
+        "C-001"
+      ],
+      "acceptance": [
+        "Report type carries base image and signature status",
+        "UI shows age and signed/provenance flags"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "C-001",
+      "title": "Generic report upload: reports table, POST /api/v1/reports?type= with parser registry (src/reports/<type>.ts), Action report-type input; keep /sboms as alias",
+      "epic": "C",
+      "size": "M",
+      "priority": 17,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Existing SBOM upload behavior and tests unchanged",
+        "New type = parser + tests only",
+        "AGENTS.md layering rules and ARCHITECTURE.md updated",
+        "Same auth, size limit and Zod validation as /sboms"
+      ],
+      "evidence": "",
+      "notes": "Do S-001 and S-002 first or alongside; this widens the upload surface."
+    },
+    {
+      "id": "C-002",
+      "title": "Repo Scorecard report: Action step runs OpenSSF Scorecard and uploads JSON; parse and show checks per app",
+      "epic": "C",
+      "size": "M",
+      "priority": 18,
+      "status": "todo",
+      "depends_on": [
+        "C-001"
+      ],
+      "acceptance": [
+        "Parser with fixture",
+        "Per-app view of checks",
+        "Action example documented"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "C-003",
+      "title": "GitHub alerts report: open Dependabot, code scanning and secret scanning counts, plus whether Dependabot/Renovate is configured",
+      "epic": "C",
+      "size": "M",
+      "priority": 31,
+      "status": "todo",
+      "depends_on": [
+        "C-001"
+      ],
+      "acceptance": [
+        "Parser and per-app view",
+        "Token strategy decided and documented"
+      ],
+      "evidence": "",
+      "notes": "Needs decision: GITHUB_TOKEN cannot read Dependabot alerts; needs a PAT or GitHub App."
+    },
+    {
+      "id": "C-004",
+      "title": "CI health report: pass rate, duration, flaky jobs from workflow runs, uploaded by the Action",
+      "epic": "C",
+      "size": "M",
+      "priority": 32,
+      "status": "todo",
+      "depends_on": [
+        "C-001"
+      ],
+      "acceptance": [
+        "Parser and per-app view",
+        "Flaky definition documented"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "C-005",
+      "title": "Test coverage report: lcov/Cobertura/json-summary parsers, coverage per app, trend via snapshots",
+      "epic": "C",
+      "size": "M",
+      "priority": 33,
+      "status": "todo",
+      "depends_on": [
+        "C-001",
+        "A-005"
+      ],
+      "acceptance": [
+        "At least two formats parsed with fixtures",
+        "Coverage in snapshots and trend chart"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "C-006",
+      "title": "DORA metrics: deployment events endpoint from the Action, lead time commit-to-deploy, deployment frequency; change-failure and recovery need incident/rollback events",
+      "epic": "C",
+      "size": "L",
+      "priority": 34,
+      "status": "todo",
+      "depends_on": [
+        "C-001",
+        "E-002"
+      ],
+      "acceptance": [
+        "Deployment events stored and authenticated",
+        "Lead time and frequency per app",
+        "Split change-failure/recovery into a follow-up if events are unavailable"
+      ],
+      "evidence": "",
+      "notes": "Needs decision: source of deployment and incident events."
+    },
+    {
+      "id": "D-001",
+      "title": "PR gate: diff-only endpoint comparing a PR's SBOM to the app's latest (never replaces latest_sbom_id), Action PR comment, optional fail on policy",
+      "epic": "D",
+      "size": "M-L",
+      "priority": 22,
+      "status": "todo",
+      "depends_on": [
+        "E-001",
+        "A-001"
+      ],
+      "acceptance": [
+        "Diff endpoint stores nothing and does not consume history",
+        "Comment lists added/removed vulnerable dependencies",
+        "Fail threshold from policy (KEV, severity, denied license)"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "D-002",
+      "title": "Notifications: Slack webhook and email for new critical or KEV CVEs, weekly digest, notification_log for dedupe",
+      "epic": "D",
+      "size": "M",
+      "priority": 26,
+      "status": "todo",
+      "depends_on": [
+        "A-001"
+      ],
+      "acceptance": [
+        "No duplicate alerts for the same finding",
+        "Webhook calls go through FetchFn and are faked in tests",
+        "Config via env/policy"
+      ],
+      "evidence": "",
+      "notes": "Outbound webhooks: consider SSRF allowlisting."
+    },
+    {
+      "id": "D-003",
+      "title": "Ownership: read CODEOWNERS or Backstage catalog-info.yaml in the Action, send owner as upload metadata, projects.owner, show and filter by owner",
+      "epic": "D",
+      "size": "S",
+      "priority": 23,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "owner accepted as upload metadata and validated",
+        "Shown and filterable in projects grid"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "D-004",
+      "title": "Accepted risks (VEX): vex_statements, import OpenVEX and CycloneDX VEX, mark in UI, excluded from counts but listed, expiry re-surfaces the CVE",
+      "epic": "D",
+      "size": "M-L",
+      "priority": 25,
+      "status": "todo",
+      "depends_on": [
+        "E-002"
+      ],
+      "acceptance": [
+        "Statement has reason, author, expiry",
+        "Counts exclude accepted risks; they remain listed",
+        "Expiry job re-opens findings"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "D-005",
+      "title": "App health score with visible breakdown (security, freshness, license, process), weights in policy",
+      "epic": "D",
+      "size": "M",
+      "priority": 35,
+      "status": "todo",
+      "depends_on": [
+        "A-003",
+        "A-004",
+        "A-008"
+      ],
+      "acceptance": [
+        "Breakdown always shown beside the score",
+        "Missing signals excluded, not scored as zero"
+      ],
+      "evidence": "",
+      "notes": "Include process signals from C-002..C-005 as they exist."
+    },
+    {
+      "id": "E-001",
+      "title": "Policy file: policy.yaml (path in env), Zod-validated, policy() helper next to env(), sections for license rules, SLA targets, gate thresholds, score weights",
+      "epic": "E",
+      "size": "S",
+      "priority": 19,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Invalid policy fails fast at startup with a clear error",
+        "Example policy committed",
+        "Documented in README"
+      ],
+      "evidence": ""
+    },
+    {
+      "id": "E-002",
+      "title": "Authentication and roles: Auth.js with GitHub sign-in, viewer/maintainer/admin, protect write actions. Supersedes S-004",
+      "epic": "E",
+      "size": "M-L",
+      "priority": 24,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Design recorded in ARCHITECTURE.md before code",
+        "Off by default so local use is unchanged",
+        "Tests for each role on a protected action"
+      ],
+      "evidence": ""
+    }
+  ]
+}
