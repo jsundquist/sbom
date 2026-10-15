@@ -27,7 +27,9 @@ export default async function ProjectPage({
   const sbomParam = (await searchParams).sbom;
   const sbomId = sbomParam ? parseIdOrNull(sbomParam) : undefined;
   const project = id && sbomId !== null ? await getProject(getDb(), id, sbomId) : null;
-  if (!project) notFound();
+  if (!project) {
+    notFound();
+  }
 
   const sbom = project.history.find((h) => h.id === project.sbomId);
   const { stats } = project;
@@ -58,7 +60,9 @@ export default async function ProjectPage({
         actions={
           sbom && (
             <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-              {project.history.length > 1 && <SbomHistorySelect history={project.history} selected={sbom.id} latestId={project.latest?.id ?? null} />}
+              {project.history.length > 1 && (
+                <SbomHistorySelect history={project.history} selected={sbom.id} latestId={project.latest?.id ?? null} />
+              )}
               <Button variant="outlined" startIcon={<DownloadIcon />} href={`/api/v1/sboms/${sbom.id}`}>
                 Download SBOM
               </Button>
@@ -68,7 +72,11 @@ export default async function ProjectPage({
       />
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatTile label="Packages" value={stats.components} hint={`${project.uploadCount} ${project.uploadCount === 1 ? 'upload' : 'uploads'} stored`} />
+          <StatTile
+            label="Packages"
+            value={stats.components}
+            hint={`${project.uploadCount} ${project.uploadCount === 1 ? 'upload' : 'uploads'} stored`}
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 5 }}>
           <StatTile label="Vulnerabilities" value={stats.vulnerabilities} hint={`in ${stats.vulnerableComponents} packages`}>

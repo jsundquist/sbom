@@ -27,7 +27,17 @@ const LABEL: Record<Severity, string> = { CRITICAL: 'Critical', HIGH: 'High', ME
 export const severityLabel = (s: Severity) => LABEL[s];
 
 /** Severity shown as icon + label; color is never the only signal. */
-export function SeverityChip({ severity, count, score, size = 'small' }: { severity: Severity; count?: number; score?: number | null; size?: ChipProps['size'] }) {
+export function SeverityChip({
+  severity,
+  count,
+  score,
+  size = 'small',
+}: {
+  severity: Severity;
+  count?: number;
+  score?: number | null;
+  size?: ChipProps['size'];
+}) {
   const label = `${LABEL[severity]}${count !== undefined ? ` ${count}` : ''}${score ? ` ${score.toFixed(1)}` : ''}`;
   return (
     <Chip
@@ -42,7 +52,9 @@ export function SeverityChip({ severity, count, score, size = 'small' }: { sever
 
 export function SeverityCounts({ counts, emptyLabel = 'No known CVEs' }: { counts: Record<Severity, number>; emptyLabel?: string }) {
   const entries = (Object.entries(counts) as [Severity, number][]).filter(([, n]) => n > 0);
-  if (!entries.length) return <OkChip label={emptyLabel} />;
+  if (!entries.length) {
+    return <OkChip label={emptyLabel} />;
+  }
   return (
     <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
       {entries.map(([s, n]) => (
@@ -59,7 +71,9 @@ export function OkChip({ label }: { label: string }) {
 const UPDATE_COLOR: Record<UpdateType, ChipProps['color']> = { major: 'error', minor: 'warning', patch: 'info' };
 
 export function OutdatedChip({ outdated, latest }: { outdated: UpdateType | null; latest?: string | null }) {
-  if (!outdated) return latest ? <OkChip label="Up to date" /> : null;
+  if (!outdated) {
+    return latest ? <OkChip label="Up to date" /> : null;
+  }
   const chip = <Chip size="small" variant="outlined" color={UPDATE_COLOR[outdated]} icon={<UpgradeIcon />} label={`${outdated} update`} />;
   return latest ? <Tooltip title={`Latest: ${latest}`}>{chip}</Tooltip> : chip;
 }
@@ -72,7 +86,9 @@ export function PendingChip({ label = 'Scanning…' }: { label?: string }) {
 export function KevChip({ kev, count, size = 'small' }: { kev?: KevInfo | null; count?: number; size?: ChipProps['size'] }) {
   const label = count !== undefined ? `${count} known exploited` : 'Exploited';
   const chip = <Chip size={size} color="error" icon={<LocalFireDepartmentIcon />} label={label} />;
-  if (!kev) return chip;
+  if (!kev) {
+    return chip;
+  }
   const parts = [
     'Known exploited (CISA KEV)',
     `Added ${kev.dateAdded}`,

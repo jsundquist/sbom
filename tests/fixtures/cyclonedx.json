@@ -3,10 +3,21 @@
   "specVersion": "1.5",
   "metadata": { "component": { "type": "application", "name": "web-app", "version": "2.3.0" } },
   "components": [
-    { "type": "library", "name": "lodash", "version": "4.17.15", "purl": "pkg:npm/lodash@4.17.15", "licenses": [{ "license": { "id": "MIT" } }] },
+    {
+      "type": "library",
+      "name": "lodash",
+      "version": "4.17.15",
+      "purl": "pkg:npm/lodash@4.17.15",
+      "licenses": [{ "license": { "id": "MIT" } }]
+    },
     { "type": "library", "group": "@babel", "name": "core", "version": "7.24.0", "purl": "pkg:npm/%40babel/core@7.24.0" },
-    { "type": "library", "name": "express", "version": "4.21.2", "purl": "pkg:npm/express@4.21.2",
-      "components": [{ "type": "library", "name": "qs", "version": "6.13.0", "purl": "pkg:npm/qs@6.13.0" }] },
+    {
+      "type": "library",
+      "name": "express",
+      "version": "4.21.2",
+      "purl": "pkg:npm/express@4.21.2",
+      "components": [{ "type": "library", "name": "qs", "version": "6.13.0", "purl": "pkg:npm/qs@6.13.0" }]
+    },
     { "type": "file", "name": "package-lock.json" },
     { "type": "library", "name": "internal-thing", "version": "1.0.0" }
   ]

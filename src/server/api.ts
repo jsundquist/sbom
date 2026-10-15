@@ -24,7 +24,9 @@ export function checkUploadToken(req: Request): NextResponse | null {
     return null;
   }
   const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
-  if (token && tokens.some((t) => safeEqual(t, token))) return null;
+  if (token && tokens.some((t) => safeEqual(t, token))) {
+    return null;
+  }
   return jsonError(401, 'Invalid or missing upload token');
 }
 

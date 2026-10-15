@@ -43,7 +43,10 @@ export async function syncEpss(db: Db, { fetchImpl, url, ttlHours, force }: Epss
   }
   const known = new Map<string, number>();
   for (let i = 0; i < cves.length; i += 1000) {
-    const rows = await db.select().from(epssScores).where(inArray(epssScores.cveId, cves.slice(i, i + 1000)));
+    const rows = await db
+      .select()
+      .from(epssScores)
+      .where(inArray(epssScores.cveId, cves.slice(i, i + 1000)));
     for (const r of rows) {
       known.set(r.cveId, r.fetchedAt.getTime());
     }

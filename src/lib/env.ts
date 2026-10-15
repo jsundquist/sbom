@@ -20,7 +20,11 @@ const schema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
   NODE_ENV: z.string().default('development'),
-  MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
+  MAX_UPLOAD_BYTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(50 * 1024 * 1024),
   SBOM_HISTORY_LIMIT: z.coerce.number().int().positive().default(20),
   WORKER_POLL_SECONDS: z.coerce.number().positive().default(30),
   VULN_TTL_HOURS: z.coerce.number().positive().default(12),

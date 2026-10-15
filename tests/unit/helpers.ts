@@ -53,7 +53,9 @@ export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, kev, epss, c
       return kev ? json({ catalogVersion: 'test', count: kev.length, vulnerabilities: kev }) : json({}, 503);
     }
     if (url.hostname === 'epss.test') {
-      if (!epss) return json({}, 503);
+      if (!epss) {
+        return json({}, 503);
+      }
       const wanted = (url.searchParams.get('cve') ?? '').split(',').filter(Boolean);
       const data = wanted
         .filter((cve) => epss[cve])
@@ -73,8 +75,15 @@ export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, kev, epss, c
     const m = url.pathname.match(/^\/v3\/systems\/([^/]+)\/packages\/(.+)$/);
     if (m) {
       const v = latest[`${m[1]}:${decodeURIComponent(m[2])}`];
-      if (!v) return json({}, 404);
-      return json({ versions: [{ versionKey: { version: '0.0.1' }, isDefault: false }, { versionKey: { version: v }, isDefault: true }] });
+      if (!v) {
+        return json({}, 404);
+      }
+      return json({
+        versions: [
+          { versionKey: { version: '0.0.1' }, isDefault: false },
+          { versionKey: { version: v }, isDefault: true },
+        ],
+      });
     }
     return json({}, 404);
   }) as FetchFn;

@@ -61,7 +61,7 @@ If you discover unrelated problems, add them to `docs/features.json` as `todo`; 
 A feature is `done` only when all are true, with output you actually saw:
 
 ```sh
-pnpm run lint            # tsc --noEmit passes
+pnpm run lint            # tsc, ESLint and Prettier check all pass (pnpm run format fixes formatting)
 pnpm test                # all unit + API tests pass
 pnpm run test:e2e        # required if pages, routes or ingest changed (needs DATABASE_URL + build)
 pnpm run build           # required if app/ or next.config.ts changed

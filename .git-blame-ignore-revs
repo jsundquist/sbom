@@ -1,0 +1,5 @@
+# Mechanical commits (ESLint curly autofix, Prettier format). Use: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# style(lint): require braces on every if
+cf897aafd05440637b68ef38b2804e157e23e0a0
+# style: format the codebase with Prettier
+430aa88d689b88f559e78845802c832fc8a6b0aa

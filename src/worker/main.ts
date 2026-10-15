@@ -49,7 +49,9 @@ async function listen() {
   const client = new Client({ connectionString: config.DATABASE_URL });
   client.on('error', (err) => {
     console.error('[worker] listener connection lost:', err.message);
-    if (!stopping) setTimeout(listen, 5000);
+    if (!stopping) {
+      setTimeout(() => void listen(), 5000);
+    }
   });
   try {
     await client.connect();
@@ -58,7 +60,9 @@ async function listen() {
     console.info(`[worker] listening for uploads on "${SBOM_UPLOADED_CHANNEL}"`);
   } catch (err) {
     console.error('[worker] could not LISTEN, relying on polling:', (err as Error).message);
-    if (!stopping) setTimeout(listen, 5000);
+    if (!stopping) {
+      setTimeout(() => void listen(), 5000);
+    }
   }
 }
 
@@ -66,11 +70,13 @@ await listen();
 void run();
 const timer = setInterval(() => void run(), config.WORKER_POLL_SECONDS * 1000);
 
+async function shutdown() {
+  stopping = true;
+  clearInterval(timer);
+  await closeDb();
+  process.exit(0);
+}
+
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.on(signal, async () => {
-    stopping = true;
-    clearInterval(timer);
-    await closeDb();
-    process.exit(0);
-  });
+  process.on(signal, () => void shutdown());
 }

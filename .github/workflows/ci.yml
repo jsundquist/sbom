@@ -1,15 +1,14 @@
 name: CI
+# Runs on every push to any branch (pull request branches included), so each push is built, linted and tested.
 on:
   push:
-    branches: [main]
-  pull_request:
 
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   test:
@@ -37,7 +36,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level=high
-      - run: pnpm run lint
+      - name: Type-check
+        run: pnpm run typecheck
+      - name: ESLint
+        run: pnpm run lint:eslint
+      - name: Prettier
+        run: pnpm run format:check
       - run: pnpm test
       - name: Check migrations are up to date with the schema
         run: |

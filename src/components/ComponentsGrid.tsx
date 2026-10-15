@@ -42,7 +42,8 @@ const columns: GridColDef<InventoryComponent>[] = [
     headerName: 'Vulnerabilities',
     flex: 1.2,
     minWidth: 170,
-    valueGetter: (_v, row) => (row.maxSeverity ? SEVERITY_RANK[row.maxSeverity] * 1000 + row.vulns.length : row.vulnStatus === 'scanned' ? 0 : -1),
+    valueGetter: (_v, row) =>
+      row.maxSeverity ? SEVERITY_RANK[row.maxSeverity] * 1000 + row.vulns.length : row.vulnStatus === 'scanned' ? 0 : -1,
     renderCell: ({ row }) =>
       row.maxSeverity ? (
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
@@ -69,7 +70,11 @@ const columns: GridColDef<InventoryComponent>[] = [
     width: 150,
     valueGetter: (v: InventoryComponent['outdated']) => (v ? UPDATE_RANK[v] : 0),
     renderCell: ({ row }) =>
-      row.versionStatus === 'pending' ? <PendingChip label="Checking…" /> : <OutdatedChip outdated={row.outdated} latest={row.latestVersion} />,
+      row.versionStatus === 'pending' ? (
+        <PendingChip label="Checking…" />
+      ) : (
+        <OutdatedChip outdated={row.outdated} latest={row.latestVersion} />
+      ),
   },
   { field: 'licenses', headerName: 'License', flex: 1, minWidth: 110, valueGetter: (v) => v ?? '' },
 ];
@@ -98,7 +103,15 @@ export function ComponentsGrid({ components }: { components: InventoryComponent[
           <ToggleButton value="vulnerable">Vulnerable ({vulnerable})</ToggleButton>
           <ToggleButton value="outdated">Outdated ({outdated})</ToggleButton>
         </ToggleButtonGroup>
-        <TextField select size="small" label="Ecosystem" value={ecosystem} onChange={(e) => setEcosystem(e.target.value)} sx={{ minWidth: 160 }} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}>
+        <TextField
+          select
+          size="small"
+          label="Ecosystem"
+          value={ecosystem}
+          onChange={(e) => setEcosystem(e.target.value)}
+          sx={{ minWidth: 160 }}
+          slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
+        >
           <MenuItem value="">All ecosystems</MenuItem>
           {ecosystems.map((e) => (
             <MenuItem key={e} value={e}>
@@ -107,12 +120,7 @@ export function ComponentsGrid({ components }: { components: InventoryComponent[
           ))}
         </TextField>
       </Stack>
-      <Grid
-        label="Packages"
-        rows={rows}
-        columns={columns}
-        initialState={{ sorting: { sortModel: [{ field: 'vulns', sort: 'desc' }] } }}
-      />
+      <Grid label="Packages" rows={rows} columns={columns} initialState={{ sorting: { sortModel: [{ field: 'vulns', sort: 'desc' }] } }} />
     </Box>
   );
 }

@@ -7,8 +7,25 @@ import { fetchJson, HttpError, type FetchFn } from './http';
 
 /** purl types OSV can map to one of its ecosystems. */
 export const OSV_TYPES = new Set([
-  'npm', 'pypi', 'maven', 'golang', 'cargo', 'gem', 'nuget', 'composer', 'hex', 'pub',
-  'deb', 'apk', 'rpm', 'swift', 'cran', 'hackage', 'conan', 'bitnami', 'github',
+  'npm',
+  'pypi',
+  'maven',
+  'golang',
+  'cargo',
+  'gem',
+  'nuget',
+  'composer',
+  'hex',
+  'pub',
+  'deb',
+  'apk',
+  'rpm',
+  'swift',
+  'cran',
+  'hackage',
+  'conan',
+  'bitnami',
+  'github',
 ]);
 
 const severityEntry = z.looseObject({ type: z.string(), score: z.string() });
@@ -27,9 +44,7 @@ export const osvVulnSchema = z.looseObject({
       z.looseObject({
         package: z.looseObject({ ecosystem: z.string().nullish(), name: z.string().nullish(), purl: z.string().nullish() }).nullish(),
         severity: z.array(severityEntry).nullish(),
-        ranges: z
-          .array(z.looseObject({ type: z.string(), events: z.array(z.record(z.string(), z.string())).nullish() }))
-          .nullish(),
+        ranges: z.array(z.looseObject({ type: z.string(), events: z.array(z.record(z.string(), z.string())).nullish() })).nullish(),
         ecosystem_specific: z.looseObject({ severity: z.unknown().optional() }).nullish(),
         database_specific: z.looseObject({ severity: z.unknown().optional() }).nullish(),
       }),
@@ -54,7 +69,9 @@ const toQuery = ({ pkg, version }: VersionQuery) => ({ package: { purl: basePurl
 
 /** Looks up vulnerability ids for many package versions; results align with `items`. */
 export async function queryBatch(fetchImpl: FetchFn, baseUrl: string, items: VersionQuery[]): Promise<QueryResult[]> {
-  if (!items.length) return [];
+  if (!items.length) {
+    return [];
+  }
   try {
     const data = await fetchJson(fetchImpl, `${baseUrl}/v1/querybatch`, batchResponse, {
       method: 'POST',
@@ -64,7 +81,9 @@ export async function queryBatch(fetchImpl: FetchFn, baseUrl: string, items: Ver
       items.map(async (item, i) => {
         const r = data?.results[i];
         const ids = (r?.vulns ?? []).map((v) => v.id);
-        if (r?.next_page_token) ids.push(...(await queryAllPages(fetchImpl, baseUrl, item, r.next_page_token)));
+        if (r?.next_page_token) {
+          ids.push(...(await queryAllPages(fetchImpl, baseUrl, item, r.next_page_token)));
+        }
         return { vulnIds: [...new Set(ids)] };
       }),
     );
@@ -109,7 +128,9 @@ export function osvSeverity(vuln: OsvVuln): { severity: Severity; score: number 
   for (const e of entries) {
     if (e.type === 'CVSS_V3') {
       const score = cvss3Score(e.score);
-      if (score !== null) return { severity: ratingFromScore(score), score, vector: e.score };
+      if (score !== null) {
+        return { severity: ratingFromScore(score), score, vector: e.score };
+      }
     }
   }
   const label =
@@ -135,8 +156,7 @@ export function vulnRecord(vuln: OsvVuln) {
   };
 }
 
-const normalizeName = (type: string, name: string) =>
-  type === 'pypi' ? name.toLowerCase().replace(/[-_.]+/g, '-') : name.toLowerCase();
+const normalizeName = (type: string, name: string) => (type === 'pypi' ? name.toLowerCase().replace(/[-_.]+/g, '-') : name.toLowerCase());
 
 /** Versions that fix `vuln` for the given package, from the matching "affected" entries. */
 export function fixedVersions(vuln: OsvVuln, pkg: PackageRef): string[] {
@@ -145,14 +165,22 @@ export function fixedVersions(vuln: OsvVuln, pkg: PackageRef): string[] {
   const affected = vuln.affected ?? [];
   const matching = affected.filter((a) => {
     const p = a.package;
-    if (p?.purl && p.purl.split('@')[0].toLowerCase() === purl) return true;
+    if (p?.purl && p.purl.split('@')[0].toLowerCase() === purl) {
+      return true;
+    }
     return !!p?.name && normalizeName(pkg.type, p.name) === want;
   });
   const fixed = new Set<string>();
   for (const a of matching.length ? matching : affected) {
     for (const range of a.ranges ?? []) {
-      if (range.type === 'GIT') continue;
-      for (const e of range.events ?? []) if (e.fixed) fixed.add(e.fixed);
+      if (range.type === 'GIT') {
+        continue;
+      }
+      for (const e of range.events ?? []) {
+        if (e.fixed) {
+          fixed.add(e.fixed);
+        }
+      }
     }
   }
   return [...fixed].sort(compareVersions);

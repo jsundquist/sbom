@@ -91,7 +91,9 @@ const cveIds = (id: string, aliases: string[]) => [id, ...aliases].filter((x) =>
 /** KEV entries for the CVE ids of the given vulnerabilities, keyed by CVE id. */
 export async function loadKev(db: Db, vulns: { id: string; aliases: string[] }[]): Promise<Map<string, KevInfo>> {
   const ids = [...new Set(vulns.flatMap((v) => cveIds(v.id, v.aliases)))];
-  if (!ids.length) return new Map();
+  if (!ids.length) {
+    return new Map();
+  }
   const rows = await db.select().from(kevEntries).where(inArray(kevEntries.cveId, ids));
   return new Map(rows.map((r) => [r.cveId, { dateAdded: r.dateAdded, dueDate: r.dueDate, ransomware: r.knownRansomwareUse }]));
 }
@@ -99,7 +101,9 @@ export async function loadKev(db: Db, vulns: { id: string; aliases: string[] }[]
 export function kevFor(kev: Map<string, KevInfo>, id: string, aliases: string[]): KevInfo | null {
   for (const cve of cveIds(id, aliases)) {
     const hit = kev.get(cve);
-    if (hit) return hit;
+    if (hit) {
+      return hit;
+    }
   }
   return null;
 }
@@ -107,18 +111,20 @@ export function kevFor(kev: Map<string, KevInfo>, id: string, aliases: string[])
 /** EPSS scores for the CVE ids of the given vulnerabilities, keyed by CVE id. */
 export async function loadEpss(db: Db, vulns: { id: string; aliases: string[] }[]): Promise<Map<string, EpssInfo>> {
   const ids = [...new Set(vulns.flatMap((v) => cveIds(v.id, v.aliases)))];
-  if (!ids.length) return new Map();
+  if (!ids.length) {
+    return new Map();
+  }
   const rows = await db.select().from(epssScores).where(inArray(epssScores.cveId, ids));
-  return new Map(
-    rows.flatMap((r) => (r.score === null ? [] : [[r.cveId, { score: r.score, percentile: r.percentile ?? 0 }] as const])),
-  );
+  return new Map(rows.flatMap((r) => (r.score === null ? [] : [[r.cveId, { score: r.score, percentile: r.percentile ?? 0 }] as const])));
 }
 
 export function epssFor(epss: Map<string, EpssInfo>, id: string, aliases: string[]): EpssInfo | null {
   let best: EpssInfo | null = null;
   for (const cve of cveIds(id, aliases)) {
     const hit = epss.get(cve);
-    if (hit && (!best || hit.score > best.score)) best = hit;
+    if (hit && (!best || hit.score > best.score)) {
+      best = hit;
+    }
   }
   return best;
 }
@@ -134,7 +140,9 @@ async function latestSbomIds(db: Db): Promise<number[]> {
 /** Enriched components for the given SBOMs (defaults to every project's latest SBOM). */
 export async function loadComponents(db: Db, sbomIds?: number[]): Promise<InventoryComponent[]> {
   const ids = sbomIds ?? (await latestSbomIds(db));
-  if (!ids.length) return [];
+  if (!ids.length) {
+    return [];
+  }
 
   const rows = await db
     .select({
@@ -157,10 +165,7 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
     .innerJoin(sboms, eq(sboms.id, components.sbomId))
     .innerJoin(projects, eq(projects.id, sboms.projectId))
     .leftJoin(packages, eq(packages.key, components.packageKey))
-    .leftJoin(
-      packageVersions,
-      and(eq(packageVersions.packageKey, components.packageKey), eq(packageVersions.version, components.version)),
-    )
+    .leftJoin(packageVersions, and(eq(packageVersions.packageKey, components.packageKey), eq(packageVersions.version, components.version)))
     .where(inArray(components.sbomId, ids));
 
   const vulnRows = await db
@@ -235,11 +240,15 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
 
 /** Smallest version that fixes every known vulnerability, when one can be determined. */
 function recommendedFix(current: string | null, vulns: ComponentVuln[]): string | null {
-  if (!current || !vulns.length) return null;
+  if (!current || !vulns.length) {
+    return null;
+  }
   let target: string | null = null;
   for (const v of vulns) {
     const candidate = v.fixedVersions.find((f) => compareVersions(f, current) > 0);
-    if (candidate && (!target || compareVersions(candidate, target) > 0)) target = candidate;
+    if (candidate && (!target || compareVersions(candidate, target) > 0)) {
+      target = candidate;
+    }
   }
   return target;
 }
@@ -256,14 +265,24 @@ export function summarize(list: InventoryComponent[]): Stats {
   let vulnerableComponents = 0;
   let pending = 0;
   for (const c of list) {
-    if (c.vulns.length) vulnerableComponents++;
-    for (const v of c.vulns) {
-      if (!seen.has(v.id)) severity[v.severity]++;
-      seen.add(v.id);
-      if (v.kev) exploited.add(v.id);
+    if (c.vulns.length) {
+      vulnerableComponents++;
     }
-    if (c.outdated) outdated[c.outdated]++;
-    if (c.vulnStatus === 'pending' || c.versionStatus === 'pending') pending++;
+    for (const v of c.vulns) {
+      if (!seen.has(v.id)) {
+        severity[v.severity]++;
+      }
+      seen.add(v.id);
+      if (v.kev) {
+        exploited.add(v.id);
+      }
+    }
+    if (c.outdated) {
+      outdated[c.outdated]++;
+    }
+    if (c.vulnStatus === 'pending' || c.versionStatus === 'pending') {
+      pending++;
+    }
   }
   return {
     components: list.length,
@@ -371,14 +390,14 @@ export interface ProjectDetail extends ProjectSummary {
 /** A project with the components of its latest SBOM (or of `sbomId` from its history). */
 export async function getProject(db: Db, id: number, sbomId?: number): Promise<ProjectDetail | null> {
   const [row] = await projectRows(db, eq(projects.id, id));
-  if (!row) return null;
-  const history = await db
-    .select(sbomColumns)
-    .from(sboms)
-    .where(eq(sboms.projectId, id))
-    .orderBy(desc(sboms.uploadedAt), desc(sboms.id));
+  if (!row) {
+    return null;
+  }
+  const history = await db.select(sbomColumns).from(sboms).where(eq(sboms.projectId, id)).orderBy(desc(sboms.uploadedAt), desc(sboms.id));
   const selected = sbomId ?? row.sbom?.id ?? null;
-  if (selected && !history.some((h) => h.id === selected)) return null;
+  if (selected && !history.some((h) => h.id === selected)) {
+    return null;
+  }
   const list = selected ? await loadComponents(db, [selected]) : [];
   return {
     ...toProject(row, summarize(list)),
@@ -442,7 +461,9 @@ export function aggregatePackages(list: InventoryComponent[]): PackageSummary[] 
       map.set(key, pkg);
     }
     pkg.projects.add(c.projectId);
-    if (c.licenses) pkg.licenses.add(c.licenses);
+    if (c.licenses) {
+      pkg.licenses.add(c.licenses);
+    }
     const vkey = c.version ?? '';
     let usage = pkg.versions.get(vkey);
     if (!usage) {
@@ -456,10 +477,16 @@ export function aggregatePackages(list: InventoryComponent[]): PackageSummary[] 
       };
       pkg.versions.set(vkey, usage);
     }
-    if (!usage.projects.some((p) => p.id === c.projectId)) usage.projects.push({ id: c.projectId, name: c.projectName });
-    for (const v of c.vulns) pkg.vulnIds.add(v.id);
+    if (!usage.projects.some((p) => p.id === c.projectId)) {
+      usage.projects.push({ id: c.projectId, name: c.projectName });
+    }
+    for (const v of c.vulns) {
+      pkg.vulnIds.add(v.id);
+    }
     pkg.maxSeverity = maxSeverity([pkg.maxSeverity, c.maxSeverity]);
-    if (c.outdated && (!pkg.outdated || UPDATE_RANK[c.outdated] > UPDATE_RANK[pkg.outdated])) pkg.outdated = c.outdated;
+    if (c.outdated && (!pkg.outdated || UPDATE_RANK[c.outdated] > UPDATE_RANK[pkg.outdated])) {
+      pkg.outdated = c.outdated;
+    }
   }
   return [...map.values()]
     .map(({ versions, projects: p, vulnIds, licenses, ...rest }) => ({
@@ -488,10 +515,13 @@ export interface VulnerabilitySummary extends Omit<ComponentVuln, 'fixedVersions
 
 /** One row per vulnerability with the affected packages and projects. */
 export function aggregateVulnerabilities(list: InventoryComponent[]): VulnerabilitySummary[] {
-  const map = new Map<string, Omit<VulnerabilitySummary, 'affected' | 'projects'> & {
-    affected: Map<string, AffectedPackage>;
-    projects: Map<number, { id: number; name: string }>;
-  }>();
+  const map = new Map<
+    string,
+    Omit<VulnerabilitySummary, 'affected' | 'projects'> & {
+      affected: Map<string, AffectedPackage>;
+      projects: Map<number, { id: number; name: string }>;
+    }
+  >();
   for (const c of list) {
     for (const { fixedVersions, ...v } of c.vulns) {
       let row = map.get(v.id);
@@ -515,10 +545,7 @@ export function aggregateVulnerabilities(list: InventoryComponent[]): Vulnerabil
   }
   return [...map.values()]
     .map((v) => ({ ...v, affected: [...v.affected.values()], projects: [...v.projects.values()] }))
-    .sort(
-      (a, b) =>
-        SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || (b.score ?? 0) - (a.score ?? 0) || a.id.localeCompare(b.id),
-    );
+    .sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || (b.score ?? 0) - (a.score ?? 0) || a.id.localeCompare(b.id));
 }
 
 export async function listPackages(db: Db) {
@@ -527,7 +554,9 @@ export async function listPackages(db: Db) {
 
 export async function getPackage(db: Db, key: string) {
   const list = (await loadComponents(db)).filter((c) => groupKey(c) === key);
-  if (!list.length) return null;
+  if (!list.length) {
+    return null;
+  }
   const [pkg] = aggregatePackages(list);
   return { ...pkg, vulnerabilities: aggregateVulnerabilities(list) };
 }
@@ -545,7 +574,9 @@ export interface VulnerabilityDetail extends VulnerabilitySummary {
 
 export async function getVulnerability(db: Db, id: string): Promise<VulnerabilityDetail | null> {
   const [v] = await db.select().from(vulnerabilities).where(eq(vulnerabilities.id, id));
-  if (!v) return null;
+  if (!v) {
+    return null;
+  }
   const kev = kevFor(await loadKev(db, [v]), v.id, v.aliases);
   const epss = epssFor(await loadEpss(db, [v]), v.id, v.aliases);
   const usage = (await listVulnerabilities(db)).find((u) => u.id === v.id);
@@ -605,4 +636,3 @@ export async function getSbomDocument(db: Db, id: number) {
     .where(eq(sboms.id, id));
   return row ?? null;
 }
-

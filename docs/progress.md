@@ -8,6 +8,19 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-15: Q-003 ESLint + Prettier
+- Done: ESLint 9 (eslint-config-next, typescript-eslint with type-aware `no-floating-promises`/`no-misused-promises`, `curly`),
+  Prettier (single quotes, width 140), `pnpm run lint` = typecheck + eslint + prettier check, CI runs all three on every push,
+  codebase formatted, braces enforced. Two real findings fixed (async callbacks in the worker, setState in an effect).
+- Decision: TypeScript is pinned to 6.x. typescript-eslint hard-fails on TS 7 and supports TS <6.1 only; Dependabot ignores TS
+  majors. Revisit when typescript-eslint adds TS 7 support (typescript-eslint#10940).
+- Accepted audit finding: `braces` GHSA-vfj7-8cjw-p6xm (dev-only, via eslint-config-next > fast-glob > micromatch; no patched release
+  exists) is ignored in `pnpm-workspace.yaml` `auditConfig`. Remove the entry once braces >= 3.0.4 ships. The `esbuild` moderate finding via
+  drizzle-kit is pre-existing and below the `high` gate.
+- Gotchas: pnpm 11 errors on unreviewed install scripts, so `unrs-resolver` is set to `false` in `pnpm-workspace.yaml`. Markdown and
+  `docs/features.json` are excluded from Prettier. The two mechanical commits are listed in `.git-blame-ignore-revs` (GitHub
+  squash-merge drops those SHAs; use a merge or rebase merge to keep them).
+
 ## 2026-10-15: A-002 EPSS scores
 - Done: `epss_scores` table (migration `0002_epss_scores`), `src/worker/epss.ts` (per-CVE FIRST API, 50 per request, per-CVE
   TTL `EPSS_TTL_HOURS`), shared `src/worker/feeds.ts` (TTL and retry backoff, now used by KEV too), `epss` on

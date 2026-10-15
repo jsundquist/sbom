@@ -57,25 +57,33 @@ export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> 
 }
 
 async function syncKevFeed(db: Db, opts: EnrichOptions, stats: EnrichStats) {
-  if (!opts.kevUrl) return;
+  if (!opts.kevUrl) {
+    return;
+  }
   const synced = await syncKev(db, {
     fetchImpl: opts.fetchImpl ?? fetch,
     url: opts.kevUrl,
     ttlHours: opts.kevTtlHours ?? 24,
     force: opts.force,
   });
-  if (synced) stats.feedsSynced++;
+  if (synced) {
+    stats.feedsSynced++;
+  }
 }
 
 async function syncEpssScores(db: Db, opts: EnrichOptions, stats: EnrichStats) {
-  if (!opts.epssUrl) return;
+  if (!opts.epssUrl) {
+    return;
+  }
   const refreshed = await syncEpss(db, {
     fetchImpl: opts.fetchImpl ?? fetch,
     url: opts.epssUrl,
     ttlHours: opts.epssTtlHours ?? 24,
     force: opts.force,
   });
-  if (refreshed) stats.feedsSynced++;
+  if (refreshed) {
+    stats.feedsSynced++;
+  }
 }
 
 const cutoff = (hours: number, force?: boolean) => new Date(force ? Date.now() + 1000 : Date.now() - hours * 3600e3);
@@ -125,7 +133,9 @@ async function scanVulnerabilities(db: Db, opts: EnrichOptions, stats: EnrichSta
       async (id) => {
         try {
           const v = await fetchVuln(fetchImpl, opts.osvApiUrl, id);
-          if (v) details.set(id, v);
+          if (v) {
+            details.set(id, v);
+          }
         } catch (err) {
           stats.errors++;
           opts.logger?.warn(`[worker] vulnerability ${id}: ${(err as Error).message}`);
@@ -150,19 +160,22 @@ async function scanVulnerabilities(db: Db, opts: EnrichOptions, stats: EnrichSta
         const res = results[idx];
         const where = and(eq(packageVersions.packageKey, row.packageKey), eq(packageVersions.version, row.version));
         if ('error' in res) {
-          await tx.update(packageVersions).set({ vulnsCheckedAt: now, vulnsError: res.error.slice(0, 500) }).where(where);
+          await tx
+            .update(packageVersions)
+            .set({ vulnsCheckedAt: now, vulnsError: res.error.slice(0, 500) })
+            .where(where);
           continue;
         }
         const missing = res.vulnIds.filter((id) => !stored.has(id));
         if (missing.length) {
           // Leave unchecked so the next run retries the failed detail lookups.
-          await tx.update(packageVersions).set({ vulnsError: `could not fetch ${missing.join(', ')}`.slice(0, 500) }).where(where);
+          await tx
+            .update(packageVersions)
+            .set({ vulnsError: `could not fetch ${missing.join(', ')}`.slice(0, 500) })
+            .where(where);
           continue;
         }
-        const linkWhere = and(
-          eq(versionVulnerabilities.packageKey, row.packageKey),
-          eq(versionVulnerabilities.version, row.version),
-        );
+        const linkWhere = and(eq(versionVulnerabilities.packageKey, row.packageKey), eq(versionVulnerabilities.version, row.version));
         const previous = new Map(
           (await tx.select().from(versionVulnerabilities).where(linkWhere)).map((l) => [l.vulnerabilityId, l.fixedVersions]),
         );
@@ -203,7 +216,9 @@ async function checkLatestVersions(db: Db, opts: EnrichOptions, stats: EnrichSta
     let error: string | null = null;
     try {
       latest = await latestVersion(fetchImpl, opts.depsDevApiUrl, p);
-      if (!latest) error = 'not found';
+      if (!latest) {
+        error = 'not found';
+      }
     } catch (err) {
       stats.errors++;
       error = (err as Error).message.slice(0, 500);
