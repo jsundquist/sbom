@@ -3,7 +3,7 @@ import { basePurl, displayName, packageKey, parsePurl } from '@/lib/purl';
 import { compareVersions, isPrerelease, updateType } from '@/lib/version';
 import { cvss3Score } from '@/lib/severity';
 import { pickLatest } from '@/worker/depsdev';
-import { fixedVersions, osvSeverity } from '@/worker/osv';
+import { fixedVersions, osvSeverity, osvVulnSchema } from '@/worker/osv';
 import { parseSbom, SbomParseError } from '@/sbom/parse';
 import { fixture, LODASH_VULN } from './helpers';
 
@@ -80,6 +80,24 @@ describe('enrichment helpers', () => {
 
   test('fixedVersions extracts fixes for the matching package', () => {
     expect(fixedVersions(LODASH_VULN, parsePurl('pkg:npm/lodash@4.17.15')!)).toEqual(['4.17.19']);
+  });
+});
+
+describe('osvVulnSchema', () => {
+  test('accepts real-world records whose database_specific / ecosystem_specific omit severity', () => {
+    const record = {
+      id: 'GHSA-xxxx-xxxx-xxxx',
+      database_specific: { cwe_ids: ['CWE-79'] },
+      affected: [
+        {
+          package: { ecosystem: 'npm', name: 'lodash' },
+          ecosystem_specific: { affected_functions: ['x'] },
+          database_specific: { source: 'https://example.test' },
+          ranges: [{ type: 'SEMVER', events: [{ introduced: '0' }, { fixed: '4.17.21' }] }],
+        },
+      ],
+    };
+    expect(osvVulnSchema.safeParse(record).success).toBe(true);
   });
 });
 
