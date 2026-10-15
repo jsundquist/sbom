@@ -5,6 +5,7 @@ import type { Db } from '@/db';
 import { packages, packageVersions, versionVulnerabilities, vulnerabilities } from '@/db/schema';
 import { depsDevSystem, latestVersion } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
+import { syncKev } from './kev';
 import { fetchVuln, fixedVersions, OSV_TYPES, queryBatch, vulnRecord, type OsvVuln, type VersionQuery } from './osv';
 
 export interface EnrichOptions {
@@ -13,6 +14,9 @@ export interface EnrichOptions {
   depsDevApiUrl: string;
   vulnTtlHours: number;
   latestTtlHours: number;
+  /** CISA KEV catalog; the job is skipped when `kevUrl` is not set. */
+  kevUrl?: string;
+  kevTtlHours?: number;
   force?: boolean;
   logger?: Pick<Console, 'info' | 'warn' | 'error'>;
 }
@@ -22,16 +26,19 @@ export interface EnrichStats {
   vulnsFetched: number;
   packagesChecked: number;
   errors: number;
+  /** Whole-feed downloads refreshed this run (e.g. the KEV catalog). */
+  feedsSynced: number;
 }
 
 const BATCH_SIZE = 500;
 
 export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> {
-  const stats: EnrichStats = { versionsScanned: 0, vulnsFetched: 0, packagesChecked: 0, errors: 0 };
+  const stats: EnrichStats = { versionsScanned: 0, vulnsFetched: 0, packagesChecked: 0, errors: 0, feedsSynced: 0 };
   // Independent jobs: one upstream API being down must not block the other.
   for (const [name, job] of [
     ['vulnerability scan', scanVulnerabilities],
     ['latest-version check', checkLatestVersions],
+    ['KEV sync', syncKevFeed],
   ] as const) {
     try {
       await job(db, opts, stats);
@@ -42,6 +49,17 @@ export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> 
     }
   }
   return stats;
+}
+
+async function syncKevFeed(db: Db, opts: EnrichOptions, stats: EnrichStats) {
+  if (!opts.kevUrl) return;
+  const synced = await syncKev(db, {
+    fetchImpl: opts.fetchImpl ?? fetch,
+    url: opts.kevUrl,
+    ttlHours: opts.kevTtlHours ?? 24,
+    force: opts.force,
+  });
+  if (synced) stats.feedsSynced++;
 }
 
 const cutoff = (hours: number, force?: boolean) => new Date(force ? Date.now() + 1000 : Date.now() - hours * 3600e3);

@@ -112,7 +112,7 @@
       "epic": "A",
       "size": "S",
       "priority": 10,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "KEV feed fetched through FetchFn and validated with Zod",
@@ -120,8 +120,8 @@
         "UI chip, filter and overview tile",
         "Tests use fakeFetch; migration committed"
       ],
-      "evidence": "",
-      "notes": "Verify the current KEV feed URL and schema against CISA docs."
+      "evidence": "2026-10-15: pnpm run lint ok; pnpm test 39 passed (6 new in tests/unit/kev.test.ts); pnpm run build ok; pnpm run test:e2e 5 passed; live stack: 1745 KEV rows synced, /api/v1/summary stats.exploited=2",
+      "notes": "Feed verified against the live CISA JSON. Reusable for A-002/B-001: feed_syncs table (synced_at, attempted_at, error) + 15 min retry backoff in src/worker/kev.ts."
     },
     {
       "id": "A-002",

@@ -6,6 +6,7 @@ A dashboard for software bills of materials (SBOMs) across many applications and
 - **Applications:** every app or library that has uploaded an SBOM, with its vulnerability and update status.
 - **Packages:** every package used across the latest SBOM of each application, which versions are in use, and by whom.
 - **Vulnerabilities:** known CVEs/advisories for those packages from [OSV.dev](https://osv.dev), with severity, CVSS score and the version that fixes them.
+- **Known exploited:** vulnerabilities in the [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) are flagged so you can fix what attackers actually use first.
 - **Outdated packages:** the latest release of each package from [deps.dev](https://deps.dev), classified as a major, minor or patch update.
 
 ## Stack
@@ -116,6 +117,8 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | `WORKER_POLL_SECONDS` | 30 | How often the worker checks for due work (uploads also wake it immediately) |
 | `VULN_TTL_HOURS` | 12 | Re-scan package versions for new vulnerabilities after this long |
 | `LATEST_TTL_HOURS` | 24 | Re-check latest package versions after this long |
+| `KEV_TTL_HOURS` | 24 | Re-download the [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) catalog (vulnerabilities known to be exploited) after this long |
+| `KEV_URL` | CISA JSON feed | Override for mirrors or testing |
 | `OSV_API_URL` / `DEPS_DEV_API_URL` | public APIs | Override for mirrors or testing |
 
 The dashboard itself has no login yet; put it behind your network or a reverse proxy if needed.

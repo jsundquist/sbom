@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 import { getDb } from '@/db';
 import { getOverview } from '@/server/inventory';
 import { requestOrigin } from '@/server/origin';
-import { PendingChip, SeverityCounts } from '@/components/chips';
+import { KevChip, PendingChip, SeverityCounts } from '@/components/chips';
 import { ProjectRiskChart, SeverityBarChart } from '@/components/charts';
 import { DateTime } from '@/components/DateTime';
 import { GettingStarted } from '@/components/GettingStarted';
@@ -44,6 +44,13 @@ export default async function OverviewPage() {
             <Box sx={{ mt: 1 }}>
               {stats.pending ? <PendingChip label={`${stats.pending} packages pending scan`} /> : <SeverityCounts counts={stats.severity} />}
             </Box>
+            {stats.exploited > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <AppLink href="/vulnerabilities">
+                  <KevChip count={stats.exploited} />
+                </AppLink>
+              </Box>
+            )}
           </StatTile>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>

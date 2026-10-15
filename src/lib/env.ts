@@ -25,6 +25,8 @@ const schema = z.object({
   WORKER_POLL_SECONDS: z.coerce.number().positive().default(30),
   VULN_TTL_HOURS: z.coerce.number().positive().default(12),
   LATEST_TTL_HOURS: z.coerce.number().positive().default(24),
+  KEV_TTL_HOURS: z.coerce.number().positive().default(24),
+  KEV_URL: z.string().url().default('https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json'),
   OSV_API_URL: z.string().url().default('https://api.osv.dev'),
   DEPS_DEV_API_URL: z.string().url().default('https://api.deps.dev'),
 });

@@ -10,8 +10,10 @@ import HelpIcon from '@mui/icons-material/Help';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import UpgradeIcon from '@mui/icons-material/Upgrade';
 import HourglassIcon from '@mui/icons-material/HourglassEmpty';
+import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import type { Severity } from '@/lib/severity';
 import type { UpdateType } from '@/lib/version';
+import type { KevInfo } from '@/server/inventory';
 
 const SEVERITY_ICON: Record<Severity, React.ReactElement> = {
   CRITICAL: <ReportIcon />,
@@ -64,4 +66,18 @@ export function OutdatedChip({ outdated, latest }: { outdated: UpdateType | null
 
 export function PendingChip({ label = 'Scanning…' }: { label?: string }) {
   return <Chip size="small" variant="outlined" icon={<HourglassIcon />} label={label} />;
+}
+
+/** Known to be exploited in the wild (CISA KEV). Details are in the tooltip. */
+export function KevChip({ kev, count, size = 'small' }: { kev?: KevInfo | null; count?: number; size?: ChipProps['size'] }) {
+  const label = count !== undefined ? `${count} known exploited` : 'Exploited';
+  const chip = <Chip size={size} color="error" icon={<LocalFireDepartmentIcon />} label={label} />;
+  if (!kev) return chip;
+  const parts = [
+    'Known exploited (CISA KEV)',
+    `Added ${kev.dateAdded}`,
+    kev.dueDate ? `Remediation due ${kev.dueDate}` : null,
+    kev.ransomware ? 'Used in ransomware campaigns' : null,
+  ].filter(Boolean);
+  return <Tooltip title={parts.join(' · ')}>{chip}</Tooltip>;
 }

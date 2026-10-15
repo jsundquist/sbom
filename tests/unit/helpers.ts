@@ -26,15 +26,30 @@ export interface FakeApis {
   osvVulns?: Record<string, OsvVuln>;
   /** "<deps.dev system>:<name>" -> latest version */
   latest?: Record<string, string>;
+  /** CISA KEV catalog served at https://kev.test/kev.json; `null` makes the feed fail with HTTP 503. */
+  kev?: KevFeedEntry[] | null;
   calls?: string[];
 }
 
+export interface KevFeedEntry {
+  cveID: string;
+  vendorProject?: string;
+  product?: string;
+  vulnerabilityName?: string;
+  dateAdded: string;
+  dueDate?: string;
+  knownRansomwareCampaignUse?: string;
+}
+
 /** Fake OSV.dev + deps.dev backend. */
-export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, calls = [] }: FakeApis = {}): FetchFn {
+export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, kev, calls = [] }: FakeApis = {}): FetchFn {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
   return (async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(input.toString());
     calls.push(url.toString());
+    if (url.hostname === 'kev.test') {
+      return kev ? json({ catalogVersion: 'test', count: kev.length, vulnerabilities: kev }) : json({}, 503);
+    }
     if (url.pathname === '/v1/querybatch') {
       const { queries } = JSON.parse(String(init?.body)) as { queries: { package: { purl: string }; version: string }[] };
       return json({
@@ -75,3 +90,8 @@ export const enrichOptions = (apis: FakeApis = {}) => ({
   vulnTtlHours: 12,
   latestTtlHours: 24,
 });
+
+export const kevOptions = { kevUrl: 'https://kev.test/kev.json', kevTtlHours: 24 };
+
+/** Requests in `calls` that were sent to `hostname` (compares the parsed host, not a URL prefix). */
+export const callsTo = (calls: string[], hostname: string) => calls.filter((c) => new URL(c).hostname === hostname);
