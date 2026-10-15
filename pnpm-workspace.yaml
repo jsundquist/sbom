@@ -1,6 +1,8 @@
 # Dependency lifecycle scripts are blocked unless listed here.
 allowBuilds:
   esbuild: true
+  # Native resolver used by eslint-plugin-import; prebuilt binaries ship as optional deps, so the script is not needed.
+  unrs-resolver: false
 
 # Refuse versions published less than 1 day ago (minutes). Applies to manual
 # `pnpm add` and fresh resolution; dependabot adds its own 7-day cooldown.

@@ -1,0 +1,13 @@
+.next
+out
+node_modules
+pnpm-lock.yaml
+drizzle
+playwright-report
+test-results
+next-env.d.ts
+*.tsbuildinfo
+
+# Prose and agent-maintained data: kept out of the formatter to avoid churn.
+*.md
+docs/features.json
