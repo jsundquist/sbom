@@ -22,7 +22,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function VulnerabilityPage({ params }: { params: Promise<{ id: string }> }) {
   const vuln = await getVulnerability(getDb(), decodeURIComponent((await params).id));
-  if (!vuln) {notFound();}
+  if (!vuln) {
+    notFound();
+  }
 
   return (
     <>
@@ -94,23 +96,37 @@ export default async function VulnerabilityPage({ params }: { params: Promise<{ 
           </Paper>
           <Paper sx={{ p: 2 }}>
             <Box component="dl" sx={{ m: 0, display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 16px', fontSize: 14 }}>
-              <Box component="dt" sx={{ color: 'text.secondary' }}>ID</Box>
-              <Box component="dd" sx={{ m: 0 }}>{vuln.id}</Box>
+              <Box component="dt" sx={{ color: 'text.secondary' }}>
+                ID
+              </Box>
+              <Box component="dd" sx={{ m: 0 }}>
+                {vuln.id}
+              </Box>
               {vuln.aliases.length > 0 && (
                 <>
-                  <Box component="dt" sx={{ color: 'text.secondary' }}>Aliases</Box>
-                  <Box component="dd" sx={{ m: 0 }}>{vuln.aliases.join(', ')}</Box>
+                  <Box component="dt" sx={{ color: 'text.secondary' }}>
+                    Aliases
+                  </Box>
+                  <Box component="dd" sx={{ m: 0 }}>
+                    {vuln.aliases.join(', ')}
+                  </Box>
                 </>
               )}
               {vuln.vector && (
                 <>
-                  <Box component="dt" sx={{ color: 'text.secondary' }}>Vector</Box>
-                  <Box component="dd" sx={{ m: 0, wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12 }}>{vuln.vector}</Box>
+                  <Box component="dt" sx={{ color: 'text.secondary' }}>
+                    Vector
+                  </Box>
+                  <Box component="dd" sx={{ m: 0, wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12 }}>
+                    {vuln.vector}
+                  </Box>
                 </>
               )}
               {vuln.kev && (
                 <>
-                  <Box component="dt" sx={{ color: 'text.secondary' }}>Exploited</Box>
+                  <Box component="dt" sx={{ color: 'text.secondary' }}>
+                    Exploited
+                  </Box>
                   <Box component="dd" sx={{ m: 0 }}>
                     CISA KEV, added {vuln.kev.dateAdded}
                     {vuln.kev.dueDate ? `, remediation due ${vuln.kev.dueDate}` : ''}
@@ -120,27 +136,50 @@ export default async function VulnerabilityPage({ params }: { params: Promise<{ 
               )}
               {vuln.epss && (
                 <>
-                  <Box component="dt" sx={{ color: 'text.secondary' }}>EPSS</Box>
+                  <Box component="dt" sx={{ color: 'text.secondary' }}>
+                    EPSS
+                  </Box>
                   <Box component="dd" sx={{ m: 0 }}>
                     {formatEpss(vuln.epss.score)} chance of exploitation in the next 30 days (higher than{' '}
                     {Math.round(vuln.epss.percentile * 100)}% of scored CVEs)
                   </Box>
                 </>
               )}
-              <Box component="dt" sx={{ color: 'text.secondary' }}>Published</Box>
-              <Box component="dd" sx={{ m: 0 }}><DateTime value={vuln.published} dateOnly /></Box>
-              <Box component="dt" sx={{ color: 'text.secondary' }}>Modified</Box>
-              <Box component="dd" sx={{ m: 0 }}><DateTime value={vuln.modified} dateOnly /></Box>
+              <Box component="dt" sx={{ color: 'text.secondary' }}>
+                Published
+              </Box>
+              <Box component="dd" sx={{ m: 0 }}>
+                <DateTime value={vuln.published} dateOnly />
+              </Box>
+              <Box component="dt" sx={{ color: 'text.secondary' }}>
+                Modified
+              </Box>
+              <Box component="dd" sx={{ m: 0 }}>
+                <DateTime value={vuln.modified} dateOnly />
+              </Box>
             </Box>
             <Typography variant="subtitle2" sx={{ mt: 2 }}>
               References
             </Typography>
             <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-              <Link href={`https://osv.dev/vulnerability/${encodeURIComponent(vuln.id)}`} target="_blank" rel="noreferrer" underline="hover" sx={{ display: 'inline-flex', gap: 0.5, alignItems: 'center' }}>
+              <Link
+                href={`https://osv.dev/vulnerability/${encodeURIComponent(vuln.id)}`}
+                target="_blank"
+                rel="noreferrer"
+                underline="hover"
+                sx={{ display: 'inline-flex', gap: 0.5, alignItems: 'center' }}
+              >
                 osv.dev <OpenInNewIcon sx={{ fontSize: 14 }} />
               </Link>
               {vuln.references.map((r) => (
-                <Link key={r.url} href={r.url} target="_blank" rel="noreferrer" underline="hover" sx={{ wordBreak: 'break-all', fontSize: 13 }}>
+                <Link
+                  key={r.url}
+                  href={r.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  underline="hover"
+                  sx={{ wordBreak: 'break-all', fontSize: 13 }}
+                >
                   {r.url}
                 </Link>
               ))}

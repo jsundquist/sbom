@@ -26,7 +26,9 @@ type DepsDevVersion = z.infer<typeof versionSchema>;
 /** Latest stable version of a package, or null when unknown. */
 export async function latestVersion(fetchImpl: FetchFn, baseUrl: string, pkg: PackageRef): Promise<string | null> {
   const system = depsDevSystem(pkg.type);
-  if (!system) {return null;}
+  if (!system) {
+    return null;
+  }
   const url = `${baseUrl}/v3/systems/${system}/packages/${encodeURIComponent(displayName(pkg))}`;
   const data = await fetchJson(fetchImpl, url, packageSchema);
   return pickLatest(data?.versions ?? []);
@@ -35,7 +37,9 @@ export async function latestVersion(fetchImpl: FetchFn, baseUrl: string, pkg: Pa
 export function pickLatest(versions: DepsDevVersion[]): string | null {
   const def = versions.find((v) => v.isDefault)?.versionKey.version;
   // The registry's default (e.g. npm's "latest" dist-tag) is authoritative when it's a stable release.
-  if (def && !isPrerelease(def)) {return def;}
+  if (def && !isPrerelease(def)) {
+    return def;
+  }
   const stable = versions.map((v) => v.versionKey.version).filter((v) => !isPrerelease(v));
   return maxVersion(stable) ?? def ?? null;
 }

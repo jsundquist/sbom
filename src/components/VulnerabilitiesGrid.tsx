@@ -53,7 +53,9 @@ const columns: GridColDef<VulnerabilitySummary>[] = [
     valueGetter: (_v, row) => row.epss?.score ?? null,
     renderCell: ({ row }) =>
       row.epss ? (
-        <Tooltip title={`Chance of exploitation in the next 30 days. Higher than ${Math.round(row.epss.percentile * 100)}% of scored CVEs.`}>
+        <Tooltip
+          title={`Chance of exploitation in the next 30 days. Higher than ${Math.round(row.epss.percentile * 100)}% of scored CVEs.`}
+        >
           <span>{formatEpss(row.epss.score)}</span>
         </Tooltip>
       ) : null,
@@ -104,7 +106,13 @@ const columns: GridColDef<VulnerabilitySummary>[] = [
   },
 ];
 
-export function VulnerabilitiesGrid({ vulnerabilities, hideProjects = false }: { vulnerabilities: VulnerabilitySummary[]; hideProjects?: boolean }) {
+export function VulnerabilitiesGrid({
+  vulnerabilities,
+  hideProjects = false,
+}: {
+  vulnerabilities: VulnerabilitySummary[];
+  hideProjects?: boolean;
+}) {
   return (
     <Grid
       label="Vulnerabilities"

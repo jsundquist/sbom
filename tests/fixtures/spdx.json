@@ -4,11 +4,27 @@
   "name": "com.github.acme/api-service",
   "documentDescribes": ["SPDXRef-root"],
   "packages": [
-    { "SPDXID": "SPDXRef-root", "name": "com.github.acme/api-service", "versionInfo": "main",
-      "externalRefs": [{ "referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:github/acme/api-service@main" }] },
-    { "SPDXID": "SPDXRef-1", "name": "requests", "versionInfo": "2.31.0", "licenseConcluded": "Apache-2.0",
-      "externalRefs": [{ "referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:pypi/requests@2.31.0" }] },
-    { "SPDXID": "SPDXRef-2", "name": "lodash", "versionInfo": "4.17.15", "licenseConcluded": "NOASSERTION",
-      "externalRefs": [{ "referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:npm/lodash@4.17.15" }] }
+    {
+      "SPDXID": "SPDXRef-root",
+      "name": "com.github.acme/api-service",
+      "versionInfo": "main",
+      "externalRefs": [
+        { "referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:github/acme/api-service@main" }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-1",
+      "name": "requests",
+      "versionInfo": "2.31.0",
+      "licenseConcluded": "Apache-2.0",
+      "externalRefs": [{ "referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:pypi/requests@2.31.0" }]
+    },
+    {
+      "SPDXID": "SPDXRef-2",
+      "name": "lodash",
+      "versionInfo": "4.17.15",
+      "licenseConcluded": "NOASSERTION",
+      "externalRefs": [{ "referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:npm/lodash@4.17.15" }]
+    }
   ]
 }

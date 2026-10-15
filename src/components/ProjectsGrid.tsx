@@ -11,8 +11,7 @@ import { AppLink } from './Links';
 import { projectHref } from '@/lib/routes';
 
 // Sort key: weight critical > high > medium > low > unknown.
-const riskScore = (p: ProjectSummary) =>
-  SEVERITIES.reduce((sum, s) => sum + p.stats.severity[s] * 10 ** (SEVERITY_RANK[s] * 2), 0);
+const riskScore = (p: ProjectSummary) => SEVERITIES.reduce((sum, s) => sum + p.stats.severity[s] * 10 ** (SEVERITY_RANK[s] * 2), 0);
 
 const columns: GridColDef<ProjectSummary>[] = [
   {
@@ -53,5 +52,12 @@ const columns: GridColDef<ProjectSummary>[] = [
 ];
 
 export function ProjectsGrid({ projects }: { projects: ProjectSummary[] }) {
-  return <Grid label="Applications" rows={projects} columns={columns} initialState={{ sorting: { sortModel: [{ field: 'risk', sort: 'desc' }] } }} />;
+  return (
+    <Grid
+      label="Applications"
+      rows={projects}
+      columns={columns}
+      initialState={{ sorting: { sortModel: [{ field: 'risk', sort: 'desc' }] } }}
+    />
+  );
 }

@@ -48,5 +48,7 @@ const columns: GridColDef<PackageVersionUsage>[] = [
 ];
 
 export function PackageVersionsTable({ versions }: { versions: PackageVersionUsage[] }) {
-  return <Grid label="Versions in use" getRowId={(r) => r.version ?? ''} rows={versions} columns={columns} hideFooter={versions.length <= 25} />;
+  return (
+    <Grid label="Versions in use" getRowId={(r) => r.version ?? ''} rows={versions} columns={columns} hideFooter={versions.length <= 25} />
+  );
 }

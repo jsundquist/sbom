@@ -18,7 +18,9 @@ export class IngestError extends Error {}
 
 function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {out.push(items.slice(i, i + size));}
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
   return out;
 }
 
@@ -26,7 +28,9 @@ function chunk<T>(items: T[], size: number): T[][] {
 export async function ingestSbom(db: Db, document: unknown, meta: UploadMeta, { historyLimit = 20 } = {}) {
   const parsed = parseSbom(document);
   const projectName = (meta.project || parsed.subject?.name || '').trim();
-  if (!projectName) {throw new IngestError('Project name is required: pass "project" or include the subject component in the SBOM');}
+  if (!projectName) {
+    throw new IngestError('Project name is required: pass "project" or include the subject component in the SBOM');
+  }
 
   const result = await db.transaction(async (tx) => {
     const now = new Date();
@@ -105,6 +109,8 @@ export async function garbageCollect(db: Db) {
 
 export async function deleteProject(db: Db, id: number) {
   const deleted = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
-  if (deleted.length) {await garbageCollect(db);}
+  if (deleted.length) {
+    await garbageCollect(db);
+  }
   return deleted.length > 0;
 }

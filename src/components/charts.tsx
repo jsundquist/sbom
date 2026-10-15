@@ -34,7 +34,11 @@ export function SeverityBarChart({ counts }: { counts: SeverityCounts }) {
   const c = useChartColors();
   const data = SEVERITIES.map((s) => ({ severity: severityLabel(s), key: s, count: counts[s] }));
   return (
-    <Box sx={{ height: 220 }} role="img" aria-label={`Vulnerabilities by severity: ${data.map((d) => `${d.severity} ${d.count}`).join(', ')}`}>
+    <Box
+      sx={{ height: 220 }}
+      role="img"
+      aria-label={`Vulnerabilities by severity: ${data.map((d) => `${d.severity} ${d.count}`).join(', ')}`}
+    >
       <ResponsiveContainer>
         <BarChart data={data} margin={{ top: 16, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={c.grid} />
@@ -60,7 +64,9 @@ export function SeverityBarChart({ counts }: { counts: SeverityCounts }) {
 }
 
 function roundedTop(x: number, y: number, w: number, h: number, r = 4) {
-  if (h <= 0) {return '';}
+  if (h <= 0) {
+    return '';
+  }
   const rr = Math.min(r, h, w / 2);
   return `M${x},${y + h}V${y + rr}Q${x},${y} ${x + rr},${y}H${x + w - rr}Q${x + w},${y} ${x + w},${y + rr}V${y + h}Z`;
 }

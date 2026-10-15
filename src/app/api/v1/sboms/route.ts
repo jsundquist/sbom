@@ -6,7 +6,12 @@ import { SbomParseError } from '@/sbom/parse';
 import { checkUploadToken, jsonError } from '@/server/api';
 import { IngestError, ingestSbom } from '@/server/ingest';
 
-const field = z.string().trim().max(500).optional().transform((v) => v || undefined);
+const field = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .transform((v) => v || undefined);
 const metaSchema = z.object({ project: field, version: field, ref: field, commit: field, repository: field });
 
 /**
@@ -15,12 +20,18 @@ const metaSchema = z.object({ project: field, version: field, ref: field, commit
  */
 export async function POST(req: Request) {
   const denied = checkUploadToken(req);
-  if (denied) {return denied;}
+  if (denied) {
+    return denied;
+  }
 
   const limit = env().MAX_UPLOAD_BYTES;
-  if (Number(req.headers.get('content-length') ?? 0) > limit) {return jsonError(413, `SBOM exceeds ${limit} bytes`);}
+  if (Number(req.headers.get('content-length') ?? 0) > limit) {
+    return jsonError(413, `SBOM exceeds ${limit} bytes`);
+  }
   const text = await req.text();
-  if (Buffer.byteLength(text) > limit) {return jsonError(413, `SBOM exceeds ${limit} bytes`);}
+  if (Buffer.byteLength(text) > limit) {
+    return jsonError(413, `SBOM exceeds ${limit} bytes`);
+  }
 
   let document: unknown;
   try {
@@ -32,13 +43,17 @@ export async function POST(req: Request) {
   const url = new URL(req.url);
   const pick = (name: string) => url.searchParams.get(name) ?? req.headers.get(`x-sbom-${name}`) ?? undefined;
   const meta = metaSchema.safeParse(Object.fromEntries(['project', 'version', 'ref', 'commit', 'repository'].map((k) => [k, pick(k)])));
-  if (!meta.success) {return jsonError(400, meta.error.issues[0].message);}
+  if (!meta.success) {
+    return jsonError(400, meta.error.issues[0].message);
+  }
 
   try {
     const result = await ingestSbom(getDb(), document, meta.data, { historyLimit: env().SBOM_HISTORY_LIMIT });
     return NextResponse.json({ ...result, url: new URL(`/projects/${result.projectId}`, url.origin).toString() }, { status: 201 });
   } catch (err) {
-    if (err instanceof SbomParseError || err instanceof IngestError) {return jsonError(400, err.message);}
+    if (err instanceof SbomParseError || err instanceof IngestError) {
+      return jsonError(400, err.message);
+    }
     throw err;
   }
 }

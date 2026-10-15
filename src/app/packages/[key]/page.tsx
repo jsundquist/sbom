@@ -15,9 +15,13 @@ export const dynamic = 'force-dynamic';
 
 export default async function PackagePage({ params }: { params: Promise<{ key: string }> }) {
   const pkg = await getPackage(getDb(), decodeURIComponent((await params).key));
-  if (!pkg) {notFound();}
+  if (!pkg) {
+    notFound();
+  }
   const counts = emptySeverityCounts();
-  for (const v of pkg.vulnerabilities) {counts[v.severity]++;}
+  for (const v of pkg.vulnerabilities) {
+    counts[v.severity]++;
+  }
 
   return (
     <>

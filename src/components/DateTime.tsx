@@ -8,7 +8,9 @@ export function DateTime({ value, dateOnly = false }: { value: string | null | u
   const text = useSyncExternalStore(
     subscribe,
     () => {
-      if (!value) {return '—';}
+      if (!value) {
+        return '—';
+      }
       const d = new Date(value);
       return dateOnly ? d.toLocaleDateString() : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
     },

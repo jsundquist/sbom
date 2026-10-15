@@ -71,13 +71,26 @@ export function PackagesGrid({ packages }: { packages: PackageSummary[] }) {
   );
   return (
     <Box>
-      <ToggleButtonGroup size="small" exclusive value={filter} onChange={(_e, v) => v && setFilter(v)} sx={{ mb: 1.5, flexWrap: 'wrap' }} aria-label="Filter packages">
+      <ToggleButtonGroup
+        size="small"
+        exclusive
+        value={filter}
+        onChange={(_e, v) => v && setFilter(v)}
+        sx={{ mb: 1.5, flexWrap: 'wrap' }}
+        aria-label="Filter packages"
+      >
         <ToggleButton value="all">All ({packages.length})</ToggleButton>
         <ToggleButton value="vulnerable">Vulnerable ({packages.filter((p) => p.vulnCount).length})</ToggleButton>
         <ToggleButton value="outdated">Outdated ({packages.filter((p) => p.outdated).length})</ToggleButton>
         <ToggleButton value="shared">Used by 2+ apps ({packages.filter((p) => p.projectCount > 1).length})</ToggleButton>
       </ToggleButtonGroup>
-      <Grid label="Packages" getRowId={(r) => r.key} rows={rows} columns={columns} initialState={{ sorting: { sortModel: [{ field: 'vulnCount', sort: 'desc' }] } }} />
+      <Grid
+        label="Packages"
+        getRowId={(r) => r.key}
+        rows={rows}
+        columns={columns}
+        initialState={{ sorting: { sortModel: [{ field: 'vulnCount', sort: 'desc' }] } }}
+      />
     </Box>
   );
 }

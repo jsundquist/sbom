@@ -56,14 +56,20 @@ describe('CISA KEV sync', () => {
 
   test('re-syncs when stale and drops entries removed from the catalog', async () => {
     await run({ kev: [LODASH_KEV, OTHER_KEV] });
-    await db.update(schema.feedSyncs).set({ syncedAt: new Date(Date.now() - 48 * 3600e3) }).where(eq(schema.feedSyncs.name, 'kev'));
+    await db
+      .update(schema.feedSyncs)
+      .set({ syncedAt: new Date(Date.now() - 48 * 3600e3) })
+      .where(eq(schema.feedSyncs.name, 'kev'));
     await run({ kev: [LODASH_KEV] });
     expect((await db.select().from(schema.kevEntries)).map((r) => r.cveId)).toEqual(['CVE-2020-8203']);
   });
 
   test('a failing feed keeps existing data, records the error and backs off', async () => {
     await run({ kev: [LODASH_KEV] });
-    await db.update(schema.feedSyncs).set({ syncedAt: new Date(Date.now() - 48 * 3600e3) }).where(eq(schema.feedSyncs.name, 'kev'));
+    await db
+      .update(schema.feedSyncs)
+      .set({ syncedAt: new Date(Date.now() - 48 * 3600e3) })
+      .where(eq(schema.feedSyncs.name, 'kev'));
     const calls: string[] = [];
     const stats = await run({ kev: null, calls });
     expect(stats.errors).toBe(1);

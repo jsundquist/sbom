@@ -59,7 +59,10 @@ describe('EPSS sync', () => {
     await run({ epss: {}, calls });
     expect(epssCalls(calls)).toHaveLength(3);
 
-    await db.update(schema.epssScores).set({ fetchedAt: new Date(Date.now() - 48 * 3600e3) }).where(eq(schema.epssScores.cveId, ids[0]));
+    await db
+      .update(schema.epssScores)
+      .set({ fetchedAt: new Date(Date.now() - 48 * 3600e3) })
+      .where(eq(schema.epssScores.cveId, ids[0]));
     await run({ epss: {}, calls });
     expect(epssCalls(calls)).toHaveLength(4);
   });

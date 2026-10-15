@@ -29,13 +29,28 @@ export function NavBar() {
   return (
     <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
       <Toolbar sx={{ columnGap: 2, flexWrap: 'wrap' }}>
-        <Box component={NextLink} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.primary', textDecoration: 'none' }}>
+        <Box
+          component={NextLink}
+          href="/"
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.primary', textDecoration: 'none' }}
+        >
           <Inventory2Icon color="primary" />
           <Typography variant="h6" component="span">
             SBOM Dashboard
           </Typography>
         </Box>
-        <Box component="nav" sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', flexGrow: 1, order: { xs: 3, md: 0 }, flexBasis: { xs: '100%', md: 'auto' }, pb: { xs: 1, md: 0 } }}>
+        <Box
+          component="nav"
+          sx={{
+            display: 'flex',
+            gap: 0.5,
+            flexWrap: 'wrap',
+            flexGrow: 1,
+            order: { xs: 3, md: 0 },
+            flexBasis: { xs: '100%', md: 'auto' },
+            pb: { xs: 1, md: 0 },
+          }}
+        >
           {LINKS.map((l) => (
             <Button
               key={l.href}
