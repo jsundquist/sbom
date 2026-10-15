@@ -25,7 +25,8 @@ This file is the entry point for any coding agent. `CLAUDE.md` imports it. Keep 
 
 | Command | Purpose |
 |---|---|
-| `pnpm run lint` | `tsc --noEmit` (there is no ESLint) |
+| `pnpm run lint` | Type-check (`tsc`, TypeScript 6), ESLint and Prettier check; CI runs the same three on every push |
+| `pnpm run format` | Prettier write; run it before committing (`format:check` is what CI enforces) |
 | `pnpm test` | Vitest unit and API tests on in-process PGlite, no Postgres needed |
 | `pnpm run test:e2e` | Playwright; needs Postgres (`DATABASE_URL`) and a build |
 | `pnpm run db:generate` | Generate a migration after editing `src/db/schema.ts` |
@@ -44,7 +45,8 @@ This file is the entry point for any coding agent. `CLAUDE.md` imports it. Keep 
 
 ## Code style
 
-- TypeScript strict. Always use curly braces on `if`; `return` on its own line.
+- TypeScript strict. ESLint enforces braces on every `if` (so `return` is never inline) and handled promises; Prettier owns formatting.
+- TypeScript stays on 6.x until typescript-eslint supports 7 (tracked in typescript-eslint#10940); Dependabot ignores TS majors.
 - Match the surrounding code: terse comments that explain why, `@/` path alias for `src/`.
 - New dependencies need a reason in the PR/commit; keep the supply-chain posture (pinned actions, `pnpm audit` in CI).
 

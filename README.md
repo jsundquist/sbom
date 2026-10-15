@@ -155,7 +155,8 @@ The dashboard itself has no login yet; put it behind your network or a reverse p
 ## Development
 
 ```sh
-pnpm run lint          # TypeScript type check
+pnpm run lint          # TypeScript, ESLint and Prettier check
+pnpm run format        # apply Prettier
 pnpm test             # Vitest: unit + API tests on in-process Postgres (PGlite), no database needed
 pnpm run build && pnpm run test:e2e   # Playwright, needs Postgres; uses E2E_DATABASE_URL (default .../sbom_e2e), which it wipes
 ```

@@ -543,6 +543,22 @@
         "Tests for each role on a protected action"
       ],
       "evidence": ""
+    },
+    {
+      "id": "Q-003",
+      "title": "ESLint + Prettier in lint and CI on every push",
+      "epic": "E",
+      "size": "M",
+      "priority": 8,
+      "status": "done",
+      "depends_on": [],
+      "acceptance": [
+        "pnpm run lint = tsc + eslint + prettier --check",
+        "CI builds, lints and tests (vitest and Playwright) on every push",
+        "Codebase formatted; braces enforced"
+      ],
+      "evidence": "2026-10-15: lint, 47 unit tests, build and 5 e2e tests pass on build/prettier-eslint; ESLint clean with type-aware rules",
+      "notes": "TypeScript downgraded 7 -> 6 because typescript-eslint supports TS <6.1 only. Revisit when typescript-eslint adds TS 7 (issue 10940)."
     }
   ]
 }

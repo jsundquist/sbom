@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "next start",
     "worker": "tsx src/worker/main.ts",
-    "lint": "tsc --noEmit",
+    "lint": "pnpm run typecheck && pnpm run lint:eslint && pnpm run format:check",
     "typecheck": "tsc --noEmit",
     "lint:eslint": "eslint .",
     "format": "prettier --write .",
