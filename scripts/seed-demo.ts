@@ -1,6 +1,6 @@
 // Seeds demo SBOMs. With --offline, also enriches them from canned data instead of OSV.dev / deps.dev.
-//   npm run db:seed              # uploads demo SBOMs; the worker enriches them
-//   npm run db:seed -- --offline # uploads and enriches without network access
+//   pnpm run db:seed              # uploads demo SBOMs; the worker enriches them
+//   pnpm run db:seed -- --offline # uploads and enriches without network access
 import { closeDb, getDb } from '@/db';
 import { ingestSbom } from '@/server/ingest';
 import { enrich } from '@/worker/enrich';

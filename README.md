@@ -45,13 +45,13 @@ Open http://localhost:3000. Compose starts Postgres, applies migrations, then ru
 Requires Node 22+ and a Postgres 16 database.
 
 ```sh
-npm install
+pnpm install
 cp .env.example .env.local          # adjust DATABASE_URL
 export DATABASE_URL=postgres://sbom:sbom@localhost:5432/sbom
-npm run db:migrate
-npm run db:seed                     # optional demo data (add -- --offline to enrich it without network access)
-npm run dev                         # http://localhost:3000
-npm run worker                      # in a second terminal
+pnpm run db:migrate
+pnpm run db:seed                     # optional demo data (add -- --offline to enrich it without network access)
+pnpm run dev                         # http://localhost:3000
+pnpm run worker                      # in a second terminal
 ```
 
 ## Uploading SBOMs from GitHub Actions
@@ -149,16 +149,16 @@ The dashboard itself has no login yet; put it behind your network or a reverse p
 ## Development
 
 ```sh
-npm run lint          # TypeScript type check
-npm test              # Vitest: unit + API tests on in-process Postgres (PGlite), no database needed
-npm run build && npm run test:e2e   # Playwright, needs Postgres; uses E2E_DATABASE_URL (default .../sbom_e2e), which it wipes
+pnpm run lint          # TypeScript type check
+pnpm test             # Vitest: unit + API tests on in-process Postgres (PGlite), no database needed
+pnpm run build && pnpm run test:e2e   # Playwright, needs Postgres; uses E2E_DATABASE_URL (default .../sbom_e2e), which it wipes
 ```
 
 ### Changing the schema
 
 1. Edit `src/db/schema.ts`.
-2. Run `npm run db:generate` to create a SQL migration in `drizzle/`. Review it and edit it if needed (e.g. data backfills).
-3. Run `npm run db:migrate`.
+2. Run `pnpm run db:generate` to create a SQL migration in `drizzle/`. Review it and edit it if needed (e.g. data backfills).
+3. Run `pnpm run db:migrate`.
 
 CI fails if the schema changes without a matching migration.
 
