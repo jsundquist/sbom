@@ -20,7 +20,7 @@ export const osvVulnSchema = z.looseObject({
   published: z.string().nullish(),
   modified: z.string().nullish(),
   severity: z.array(severityEntry).nullish(),
-  database_specific: z.looseObject({ severity: z.unknown() }).nullish(),
+  database_specific: z.looseObject({ severity: z.unknown().optional() }).nullish(),
   references: z.array(z.looseObject({ type: z.string(), url: z.string() })).nullish(),
   affected: z
     .array(
@@ -30,8 +30,8 @@ export const osvVulnSchema = z.looseObject({
         ranges: z
           .array(z.looseObject({ type: z.string(), events: z.array(z.record(z.string(), z.string())).nullish() }))
           .nullish(),
-        ecosystem_specific: z.looseObject({ severity: z.unknown() }).nullish(),
-        database_specific: z.looseObject({ severity: z.unknown() }).nullish(),
+        ecosystem_specific: z.looseObject({ severity: z.unknown().optional() }).nullish(),
+        database_specific: z.looseObject({ severity: z.unknown().optional() }).nullish(),
       }),
     )
     .nullish(),
