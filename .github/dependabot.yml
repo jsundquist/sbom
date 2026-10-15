@@ -1,0 +1,59 @@
+version: 2
+
+# Version updates only. Security alerts/updates are enabled in repo settings
+# and bypass the schedule and cooldown below.
+#
+# Every entry follows the same policy:
+#   - weekly, so a burst of releases becomes one batch of PRs
+#   - 7-day cooldown, so a freshly published (possibly malicious) release is
+#     never proposed until it has had time to be caught and yanked
+#   - minor/patch updates grouped into one PR; majors stay separate PRs so
+#     they get a deliberate review
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'build(deps)'
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+
+  # Keeps the SHA pins in .github/workflows and action.yml current (updates
+  # the "# vX.Y.Z" comment together with the SHA).
+  - package-ecosystem: github-actions
+    directories: [/, /.github/workflows]
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ci(deps)'
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'build(docker)'
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'build(docker)'
