@@ -7,6 +7,7 @@ A dashboard for software bills of materials (SBOMs) across many applications and
 - **Packages:** every package used across the latest SBOM of each application, which versions are in use, and by whom.
 - **Vulnerabilities:** known CVEs/advisories for those packages from [OSV.dev](https://osv.dev), with severity, CVSS score and the version that fixes them.
 - **Known exploited:** vulnerabilities in the [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) are flagged so you can fix what attackers actually use first.
+- **Exploit likelihood:** each CVE shows its [EPSS](https://www.first.org/epss/) score, the estimated chance of exploitation in the next 30 days.
 - **Outdated packages:** the latest release of each package from [deps.dev](https://deps.dev), classified as a major, minor or patch update.
 
 ## Stack
@@ -118,6 +119,8 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | `VULN_TTL_HOURS` | 12 | Re-scan package versions for new vulnerabilities after this long |
 | `LATEST_TTL_HOURS` | 24 | Re-check latest package versions after this long |
 | `KEV_TTL_HOURS` | 24 | Re-download the [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) catalog (vulnerabilities known to be exploited) after this long |
+| `EPSS_TTL_HOURS` | 24 | Re-check [FIRST EPSS](https://www.first.org/epss/) exploit-probability scores after this long (new CVEs are looked up immediately) |
+| `EPSS_API_URL` | FIRST public API | Override for mirrors or testing |
 | `KEV_URL` | CISA JSON feed | Override for mirrors or testing |
 | `OSV_API_URL` / `DEPS_DEV_API_URL` | public APIs | Override for mirrors or testing |
 

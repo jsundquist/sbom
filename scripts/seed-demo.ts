@@ -20,6 +20,8 @@ if (process.argv.includes('--offline')) {
     latestTtlHours: 24,
     kevUrl: 'https://kev.demo/feed.json',
     kevTtlHours: 24,
+    epssUrl: 'https://epss.demo/epss',
+    epssTtlHours: 24,
     force: true,
   });
   console.log('Enriched from demo data:', stats);

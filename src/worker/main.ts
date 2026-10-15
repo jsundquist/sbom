@@ -30,6 +30,8 @@ async function run() {
         latestTtlHours: config.LATEST_TTL_HOURS,
         kevUrl: config.KEV_URL,
         kevTtlHours: config.KEV_TTL_HOURS,
+        epssUrl: config.EPSS_API_URL,
+        epssTtlHours: config.EPSS_TTL_HOURS,
         logger: console,
       });
       if (stats.versionsScanned || stats.packagesChecked || stats.feedsSynced || stats.errors) {

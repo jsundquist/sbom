@@ -1,14 +1,11 @@
 // CISA Known Exploited Vulnerabilities (KEV) catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '@/db';
-import { feedSyncs, kevEntries } from '@/db/schema';
+import { kevEntries } from '@/db/schema';
+import { feedIsCurrent, recordFeedFailure, recordFeedSuccess } from './feeds';
 import { fetchJson, type FetchFn } from './http';
 
 export const KEV_FEED = 'kev';
-/** After a failed attempt, wait this long before trying again. */
-const RETRY_MINUTES = 15;
-
 const kevFeedSchema = z.looseObject({
   vulnerabilities: z.array(
     z.looseObject({
@@ -32,12 +29,8 @@ export interface KevSyncOptions {
 
 /** Downloads the catalog when it is older than the TTL. Returns true when it was refreshed. Throws on failure. */
 export async function syncKev(db: Db, { fetchImpl, url, ttlHours, force }: KevSyncOptions): Promise<boolean> {
-  const now = Date.now();
-  const [state] = await db.select().from(feedSyncs).where(eq(feedSyncs.name, KEV_FEED));
-  if (!force && state) {
-    const fresh = state.syncedAt && state.syncedAt.getTime() > now - ttlHours * 3600e3;
-    const backingOff = state.error && state.attemptedAt.getTime() > now - RETRY_MINUTES * 60e3;
-    if (fresh || backingOff) return false;
+  if (await feedIsCurrent(db, KEV_FEED, ttlHours, force)) {
+    return false;
   }
 
   try {
@@ -58,19 +51,11 @@ export async function syncKev(db: Db, { fetchImpl, url, ttlHours, force }: KevSy
       for (let i = 0; i < rows.length; i += 500) {
         await tx.insert(kevEntries).values(rows.slice(i, i + 500)).onConflictDoNothing();
       }
-      await tx
-        .insert(feedSyncs)
-        .values({ name: KEV_FEED, syncedAt: at, attemptedAt: at, error: null })
-        .onConflictDoUpdate({ target: feedSyncs.name, set: { syncedAt: at, attemptedAt: at, error: null } });
+      await recordFeedSuccess(tx, KEV_FEED, at);
     });
     return true;
   } catch (err) {
-    const message = (err as Error).message.slice(0, 500);
-    const at = new Date();
-    await db
-      .insert(feedSyncs)
-      .values({ name: KEV_FEED, attemptedAt: at, error: message })
-      .onConflictDoUpdate({ target: feedSyncs.name, set: { attemptedAt: at, error: message } });
+    await recordFeedFailure(db, KEV_FEED, err);
     throw err;
   }
 }

@@ -8,6 +8,16 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-15: A-002 EPSS scores
+- Done: `epss_scores` table (migration `0002_epss_scores`), `src/worker/epss.ts` (per-CVE FIRST API, 50 per request, per-CVE
+  TTL `EPSS_TTL_HOURS`), shared `src/worker/feeds.ts` (TTL and retry backoff, now used by KEV too), `epss` on
+  `ComponentVuln` and the vulnerability APIs, EPSS column (sortable/filterable) and detail row, `formatEpss`, demo data.
+- Verified: lint, 47 unit tests, build, 5 e2e tests, live stack (75 CVEs scored; 87/87 vulns have EPSS).
+- Next: A-003 (rank by KEV > EPSS > CVSS) is unblocked once A-001 and A-002 are merged.
+- Gotchas: EPSS is gated per CVE, not by the feed-level TTL, otherwise newly found CVEs would wait up to 24h; `feed_syncs`
+  only provides failure backoff for it. A CVE with several CVE aliases shows the highest score. `fetchJson` retries 5xx twice,
+  so one failed run makes 3 requests. Stacked on A-001's branch; if A-001 changes in review, renumber/rebase the migration.
+
 ## 2026-10-15: A-001 CISA KEV ingestion
 - Done: `kev_entries` and `feed_syncs` tables (migration `0001_kev_and_feed_syncs`), `src/worker/kev.ts` daily sync (TTL
   `KEV_TTL_HOURS`, 15 min backoff after failures, existing data kept on failure), `kev` on `ComponentVuln`/vulnerability
@@ -35,6 +45,6 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
   blocked). No code changed.
 - Failed / blocked: a mid-session `pnpm install` failure (minimumReleaseAge) was caused by running on `main`, which has no
   `pnpm-workspace.yaml`/pnpm lockfile. On `build/pnpm` install, lint and tests pass (32 tests).
-- Next: A-002, then A-003 (see `features.json`).
+- Next: A-003 (see `features.json`).
 - Gotchas: Dockerfile/compose intentionally run scripts with `npm` in the runtime stage; that is not a leftover from the pnpm
   migration. Do not commit `pnpm-lock.yaml` churn unrelated to a dependency change.

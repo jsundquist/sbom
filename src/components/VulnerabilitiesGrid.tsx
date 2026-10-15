@@ -1,9 +1,11 @@
 'use client';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { GridColDef } from '@mui/x-data-grid';
 import type { VulnerabilitySummary } from '@/server/inventory';
+import { formatEpss } from '@/lib/epss';
 import { SEVERITY_RANK } from '@/lib/severity';
 import { KevChip, SeverityChip } from './chips';
 import { DateTime } from './DateTime';
@@ -42,6 +44,19 @@ const columns: GridColDef<VulnerabilitySummary>[] = [
     width: 120,
     valueGetter: (_v, row) => !!row.kev,
     renderCell: ({ row }) => (row.kev ? <KevChip kev={row.kev} /> : null),
+  },
+  {
+    field: 'epss',
+    headerName: 'EPSS',
+    type: 'number',
+    width: 100,
+    valueGetter: (_v, row) => row.epss?.score ?? null,
+    renderCell: ({ row }) =>
+      row.epss ? (
+        <Tooltip title={`Chance of exploitation in the next 30 days. Higher than ${Math.round(row.epss.percentile * 100)}% of scored CVEs.`}>
+          <span>{formatEpss(row.epss.score)}</span>
+        </Tooltip>
+      ) : null,
   },
   { field: 'summary', headerName: 'Summary', flex: 2, minWidth: 240, valueGetter: (v) => v ?? '' },
   {

@@ -16,6 +16,7 @@ import { DateTime } from '@/components/DateTime';
 import { AppLink } from '@/components/Links';
 import { packageHref, projectHref } from '@/lib/routes';
 import { PageHeader } from '@/components/PageHeader';
+import { formatEpss } from '@/lib/epss';
 
 export const dynamic = 'force-dynamic';
 
@@ -114,6 +115,15 @@ export default async function VulnerabilityPage({ params }: { params: Promise<{ 
                     CISA KEV, added {vuln.kev.dateAdded}
                     {vuln.kev.dueDate ? `, remediation due ${vuln.kev.dueDate}` : ''}
                     {vuln.kev.ransomware ? ', used in ransomware campaigns' : ''}
+                  </Box>
+                </>
+              )}
+              {vuln.epss && (
+                <>
+                  <Box component="dt" sx={{ color: 'text.secondary' }}>EPSS</Box>
+                  <Box component="dd" sx={{ m: 0 }}>
+                    {formatEpss(vuln.epss.score)} chance of exploitation in the next 30 days (higher than{' '}
+                    {Math.round(vuln.epss.percentile * 100)}% of scored CVEs)
                   </Box>
                 </>
               )}

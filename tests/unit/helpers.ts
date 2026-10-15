@@ -28,6 +28,8 @@ export interface FakeApis {
   latest?: Record<string, string>;
   /** CISA KEV catalog served at https://kev.test/kev.json; `null` makes the feed fail with HTTP 503. */
   kev?: KevFeedEntry[] | null;
+  /** FIRST EPSS API served at https://epss.test/epss; CVEs not listed are omitted like the real API; `null` fails with HTTP 503. */
+  epss?: Record<string, { epss: number; percentile: number }> | null;
   calls?: string[];
 }
 
@@ -42,13 +44,21 @@ export interface KevFeedEntry {
 }
 
 /** Fake OSV.dev + deps.dev backend. */
-export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, kev, calls = [] }: FakeApis = {}): FetchFn {
+export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, kev, epss, calls = [] }: FakeApis = {}): FetchFn {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
   return (async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(input.toString());
     calls.push(url.toString());
     if (url.hostname === 'kev.test') {
       return kev ? json({ catalogVersion: 'test', count: kev.length, vulnerabilities: kev }) : json({}, 503);
+    }
+    if (url.hostname === 'epss.test') {
+      if (!epss) return json({}, 503);
+      const wanted = (url.searchParams.get('cve') ?? '').split(',').filter(Boolean);
+      const data = wanted
+        .filter((cve) => epss[cve])
+        .map((cve) => ({ cve, epss: epss[cve].epss.toFixed(9), percentile: epss[cve].percentile.toFixed(9), date: '2026-10-14' }));
+      return json({ status: 'OK', total: data.length, offset: 0, limit: 100, data });
     }
     if (url.pathname === '/v1/querybatch') {
       const { queries } = JSON.parse(String(init?.body)) as { queries: { package: { purl: string }; version: string }[] };
@@ -95,3 +105,5 @@ export const kevOptions = { kevUrl: 'https://kev.test/kev.json', kevTtlHours: 24
 
 /** Requests in `calls` that were sent to `hostname` (compares the parsed host, not a URL prefix). */
 export const callsTo = (calls: string[], hostname: string) => calls.filter((c) => new URL(c).hostname === hostname);
+
+export const epssOptions = { epssUrl: 'https://epss.test/epss', epssTtlHours: 24 };
