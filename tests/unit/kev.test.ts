@@ -4,7 +4,7 @@ import { schema, type Db } from '@/db';
 import { ingestSbom } from '@/server/ingest';
 import { getVulnerability, listVulnerabilities, loadComponents, summarize } from '@/server/inventory';
 import { enrich } from '@/worker/enrich';
-import { createTestDb, enrichOptions, fixture, kevOptions, LODASH_VULN, type KevFeedEntry } from './helpers';
+import { callsTo, createTestDb, enrichOptions, fixture, kevOptions, LODASH_VULN, type KevFeedEntry } from './helpers';
 
 let db: Db;
 let close: () => Promise<void>;
@@ -47,10 +47,10 @@ describe('CISA KEV sync', () => {
     });
     expect(rows.find((r) => r.cveId === 'CVE-2099-0001')).toMatchObject({ dueDate: null, knownRansomwareUse: false });
 
-    const before = calls.filter((c) => c.startsWith('https://kev.test')).length;
+    const before = callsTo(calls, 'kev.test').length;
     expect(before).toBe(1);
     await run({ kev: [LODASH_KEV], calls });
-    expect(calls.filter((c) => c.startsWith('https://kev.test')).length).toBe(1);
+    expect(callsTo(calls, 'kev.test').length).toBe(1);
     expect(await db.select().from(schema.kevEntries)).toHaveLength(2);
   });
 
@@ -74,7 +74,7 @@ describe('CISA KEV sync', () => {
     // Right after a failure the feed is not hammered again.
     const retryCalls: string[] = [];
     await run({ kev: null, calls: retryCalls });
-    expect(retryCalls.filter((c) => c.startsWith('https://kev.test'))).toHaveLength(0);
+    expect(callsTo(retryCalls, 'kev.test')).toHaveLength(0);
   });
 
   test('is skipped entirely when no feed URL is configured', async () => {

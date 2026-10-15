@@ -92,3 +92,6 @@ export const enrichOptions = (apis: FakeApis = {}) => ({
 });
 
 export const kevOptions = { kevUrl: 'https://kev.test/kev.json', kevTtlHours: 24 };
+
+/** Requests in `calls` that were sent to `hostname` (compares the parsed host, not a URL prefix). */
+export const callsTo = (calls: string[], hostname: string) => calls.filter((c) => new URL(c).hostname === hostname);
