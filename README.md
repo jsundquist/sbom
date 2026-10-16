@@ -37,10 +37,12 @@ Because the worker only reads and writes tables, it can be replaced (a job queue
 ### Docker Compose
 
 ```sh
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" > .env   # compose refuses to start without it
 docker compose up --build
 ```
 
-Open http://localhost:3000. Compose starts Postgres, applies migrations, then runs the web app and the worker.
+Open http://localhost:3000. Postgres is published on `127.0.0.1:5432` only; the containers run with all capabilities dropped,
+`no-new-privileges` and a read-only root filesystem. Compose starts Postgres, applies migrations, then runs the web app and the worker.
 
 ### Local development
 

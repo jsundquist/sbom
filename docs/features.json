@@ -54,12 +54,12 @@
       "id": "S-003",
       "title": "Compose hardening: no default DB creds, bind 5432 to localhost, no-new-privileges, cap_drop, read-only rootfs, HEALTHCHECK",
       "priority": 3,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "docker compose up still works from README steps",
         "README documents required env"
       ],
-      "evidence": ""
+      "evidence": "Brought up a parallel stack (project sbomhard, ports 3300/5433): all services up, web healthy, /api/healthz ok, worker running on read-only rootfs; config fails without POSTGRES_PASSWORD"
     },
     {
       "id": "S-004",
