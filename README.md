@@ -113,7 +113,10 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | `DATABASE_URL` | `postgres://sbom:sbom@localhost:5432/sbom` | Postgres connection string |
 | `UPLOAD_TOKENS` | empty | Comma-separated bearer tokens required for uploads and deletes. Empty = open uploads outside production; in production uploads are rejected (503) |
 | `ALLOW_OPEN_UPLOADS` | `false` | Set `true` to allow open uploads in production (e.g. `docker compose` on localhost) |
-| `MAX_UPLOAD_BYTES` | 52428800 | Maximum SBOM size |
+| `MAX_UPLOAD_BYTES` | 52428800 | Maximum SBOM size; larger bodies are cut off while streaming and get 413 |
+| `WRITE_RATE_LIMIT` | 60 | Uploads/deletes allowed per client per window (429 with `Retry-After` beyond it); `0` disables. In-memory, per web process |
+| `WRITE_RATE_WINDOW_SECONDS` | 60 | Length of the rate-limit window |
+| `TRUST_PROXY` | `false` | Key the limit on `X-Forwarded-For`/`X-Real-IP`; only set behind a proxy that overwrites them. When `false`, all clients share one bucket |
 | `SBOM_HISTORY_LIMIT` | 20 | Uploads kept per application (older ones are pruned) |
 | `WORKER_POLL_SECONDS` | 30 | How often the worker checks for due work (uploads also wake it immediately) |
 | `VULN_TTL_HOURS` | 12 | Re-scan package versions for new vulnerabilities after this long |

@@ -42,13 +42,13 @@
       "id": "S-002",
       "title": "Upload rate limiting and request-size hardening",
       "priority": 2,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "Per-token or per-IP limit with 429",
         "Oversized body rejected before full buffering",
         "Tests for 429 and 413"
       ],
-      "evidence": ""
+      "evidence": "lint, 52 unit tests incl. 413 (header and streamed) and 429 + Retry-After; in-memory fixed window, key from X-Forwarded-For only when TRUST_PROXY=true"
     },
     {
       "id": "S-003",

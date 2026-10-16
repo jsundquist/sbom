@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { setDb, type Db } from '@/db';
 import { resetEnv } from '@/lib/env';
+import { checkRateLimit, resetRateLimits } from '@/server/api';
 import { POST as upload } from '@/app/api/v1/sboms/route';
 import { GET as downloadSbom } from '@/app/api/v1/sboms/[id]/route';
 import { DELETE as deleteProject, GET as getProject } from '@/app/api/v1/projects/[id]/route';
@@ -23,6 +24,7 @@ beforeEach(async () => {
   setDb(db);
   process.env.UPLOAD_TOKENS = TOKEN;
   resetEnv();
+  resetRateLimits();
 });
 afterEach(async () => {
   vi.unstubAllEnvs();
@@ -55,6 +57,48 @@ const APIS: FakeApis = {
 };
 
 describe('upload API', () => {
+  test('rejects bodies over MAX_UPLOAD_BYTES with 413, by header or by streamed size', async () => {
+    process.env.MAX_UPLOAD_BYTES = '1000';
+    resetEnv();
+    try {
+      const big = JSON.stringify({ pad: 'x'.repeat(2000) });
+      const headers = { authorization: `Bearer ${TOKEN}` };
+      const declared = await upload(
+        new Request(`${BASE}/api/v1/sboms`, { method: 'POST', headers: { ...headers, 'content-length': '2000' }, body: big }),
+      );
+      expect(declared.status).toBe(413);
+      // No content-length (chunked): the stream must be cut off at the limit.
+      const stream = new ReadableStream({
+        start(c) {
+          c.enqueue(new TextEncoder().encode(big));
+          c.close();
+        },
+      });
+      const streamed = await upload(
+        new Request(`${BASE}/api/v1/sboms`, { method: 'POST', headers, body: stream, duplex: 'half' } as RequestInit),
+      );
+      expect(streamed.status).toBe(413);
+    } finally {
+      delete process.env.MAX_UPLOAD_BYTES;
+    }
+  });
+
+  test('rate limits write requests with 429 and Retry-After, then recovers', async () => {
+    process.env.WRITE_RATE_LIMIT = '2';
+    resetEnv();
+    try {
+      expect((await post({ nope: true })).status).toBe(400);
+      expect((await post({ nope: true })).status).toBe(400);
+      const limited = await post({ nope: true });
+      expect(limited.status).toBe(429);
+      expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(0);
+      const later = checkRateLimit(new Request(`${BASE}/x`), Date.now() + 61_000);
+      expect(later).toBeNull();
+    } finally {
+      delete process.env.WRITE_RATE_LIMIT;
+    }
+  });
+
   test('requires a valid token when UPLOAD_TOKENS is set', async () => {
     expect((await post(fixture('cyclonedx.json'), '', {})).status).toBe(401);
     expect((await post(fixture('cyclonedx.json'), '', { authorization: 'Bearer wrong' })).status).toBe(401);
