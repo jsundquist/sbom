@@ -127,7 +127,8 @@ not shared across replicas.
 
 ## Roadmap
 
-Planned work lives in `docs/features.json` (epics A-E, with `depends_on`). Three structural changes it will introduce:
-a generic `reports` upload (C-001) alongside SBOMs, a Zod-validated `policy.yaml` (E-001), and persisted
-`project_snapshots` / `vulnerability_findings` tables (A-005, A-007) because SBOM history is pruned. Document each here when
+Planned work lives in `docs/features.json` (epics A-E, with `depends_on`). Two structural changes it will introduce:
+a generic `reports` upload (C-001) alongside SBOMs, and persisted `project_snapshots` / `vulnerability_findings` tables
+(A-005, A-007) because SBOM history is pruned. Thresholds and lists (SLA days, license rules) are plain env settings read
+through `env()`; there is no separate policy file. Document each here when
 it is built, not before.

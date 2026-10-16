@@ -211,14 +211,12 @@
     },
     {
       "id": "A-007",
-      "title": "Time to fix: persisted vulnerability_findings (first seen, resolved) from diffing consecutive SBOMs, SLA targets from policy, breach list",
+      "title": "Time to fix: persisted vulnerability_findings (first seen, resolved) from diffing consecutive SBOMs, SLA targets from env (days per severity), breach list",
       "epic": "A",
       "size": "M",
       "priority": 20,
       "status": "todo",
-      "depends_on": [
-        "E-001"
-      ],
+      "depends_on": [],
       "acceptance": [
         "Findings persist independently of pruned SBOMs",
         "Time open and SLA breach computed per finding",
@@ -228,17 +226,15 @@
     },
     {
       "id": "A-008",
-      "title": "License policy: parse SPDX expressions in components.licenses, flag denied/copyleft/missing per policy, chips + filter",
+      "title": "License policy: parse SPDX expressions in components.licenses, flag denied/copyleft/missing per allow/deny lists from env, chips + filter",
       "epic": "A",
       "size": "S",
       "priority": 21,
       "status": "todo",
-      "depends_on": [
-        "E-001"
-      ],
+      "depends_on": [],
       "acceptance": [
         "Expression parser with unit tests",
-        "Policy decides allow/deny lists",
+        "Allow/deny lists come from env",
         "UI chips and filter on app and package pages"
       ],
       "evidence": "",
@@ -255,10 +251,11 @@
       "acceptance": [
         "Mapping table covers node, python, spring-boot, angular at minimum",
         "Worker job refreshes by TTL",
-        "Flag visible on component and app views"
+        "Flag visible on component and app views",
+        "A runtime or framework past its end-of-life date (for example Node.js 22 after its EOL) is flagged as a security risk with the EOL date and shown beside the findings of the same app"
       ],
       "evidence": "",
-      "notes": "Source SBOMs rarely list the runtime; may need an explicit runtimes input or image scans (B-004). Verify endoflife.date product names."
+      "notes": "Source SBOMs rarely list the runtime. Take it from an explicit runtimes input on the Action (for example node 22) or from image scans (B-004; Syft lists the node binary). Verify endoflife.date product names."
     },
     {
       "id": "B-002",
@@ -272,7 +269,7 @@
       ],
       "acceptance": [
         "Both signals stored and shown",
-        "Threshold N from policy or env",
+        "Threshold N from env",
         "Tests cover each signal"
       ],
       "evidence": "",
@@ -382,7 +379,7 @@
       "epic": "C",
       "size": "M",
       "priority": 32,
-      "status": "todo",
+      "status": "superseded",
       "depends_on": [
         "C-001"
       ],
@@ -390,7 +387,8 @@
         "Parser and per-app view",
         "Flaky definition documented"
       ],
-      "evidence": ""
+      "evidence": "",
+      "notes": "Out of scope for this dashboard: CI, coverage and delivery metrics are not supply-chain data and are better shown by a developer portal."
     },
     {
       "id": "C-005",
@@ -398,7 +396,7 @@
       "epic": "C",
       "size": "M",
       "priority": 33,
-      "status": "todo",
+      "status": "superseded",
       "depends_on": [
         "C-001",
         "A-005"
@@ -407,7 +405,8 @@
         "At least two formats parsed with fixtures",
         "Coverage in snapshots and trend chart"
       ],
-      "evidence": ""
+      "evidence": "",
+      "notes": "Out of scope for this dashboard: CI, coverage and delivery metrics are not supply-chain data and are better shown by a developer portal."
     },
     {
       "id": "C-006",
@@ -415,7 +414,7 @@
       "epic": "C",
       "size": "L",
       "priority": 34,
-      "status": "todo",
+      "status": "superseded",
       "depends_on": [
         "C-001",
         "E-002"
@@ -426,23 +425,22 @@
         "Split change-failure/recovery into a follow-up if events are unavailable"
       ],
       "evidence": "",
-      "notes": "Needs decision: source of deployment and incident events."
+      "notes": "Out of scope for this dashboard: CI, coverage and delivery metrics are not supply-chain data and are better shown by a developer portal."
     },
     {
       "id": "D-001",
-      "title": "PR gate: diff-only endpoint comparing a PR's SBOM to the app's latest (never replaces latest_sbom_id), Action PR comment, optional fail on policy",
+      "title": "PR gate: diff-only endpoint comparing a PR's SBOM to the app's latest (never replaces latest_sbom_id), Action PR comment, optional fail on thresholds",
       "epic": "D",
       "size": "M-L",
       "priority": 22,
       "status": "todo",
       "depends_on": [
-        "E-001",
         "A-001"
       ],
       "acceptance": [
         "Diff endpoint stores nothing and does not consume history",
         "Comment lists added/removed vulnerable dependencies",
-        "Fail threshold from policy (KEV, severity, denied license)"
+        "Fail thresholds are Action inputs (KEV, severity; denied license once A-008 is done)"
       ],
       "evidence": ""
     },
@@ -459,7 +457,7 @@
       "acceptance": [
         "No duplicate alerts for the same finding",
         "Webhook calls go through FetchFn and are faked in tests",
-        "Config via env/policy"
+        "Config via env"
       ],
       "evidence": "",
       "notes": "Outbound webhooks: consider SSRF allowlisting."
@@ -470,13 +468,14 @@
       "epic": "D",
       "size": "S",
       "priority": 23,
-      "status": "todo",
+      "status": "superseded",
       "depends_on": [],
       "acceptance": [
         "owner accepted as upload metadata and validated",
         "Shown and filterable in projects grid"
       ],
-      "evidence": ""
+      "evidence": "",
+      "notes": "Out of scope: ownership belongs in whatever catalog the team uses. Per-user visibility of SBOMs, if the dashboard is ever hosted for several users, is part of E-002."
     },
     {
       "id": "D-004",
@@ -497,7 +496,7 @@
     },
     {
       "id": "D-005",
-      "title": "App health score with visible breakdown (security, freshness, license, process), weights in policy",
+      "title": "App health score with visible breakdown (security, freshness, license), weights from env",
       "epic": "D",
       "size": "M",
       "priority": 35,
@@ -512,7 +511,7 @@
         "Missing signals excluded, not scored as zero"
       ],
       "evidence": "",
-      "notes": "Include process signals from C-002..C-005 as they exist."
+      "notes": "Add repo-health signals from C-002 and C-003 if they exist when this is picked up."
     },
     {
       "id": "E-001",
@@ -520,14 +519,15 @@
       "epic": "E",
       "size": "S",
       "priority": 19,
-      "status": "todo",
+      "status": "superseded",
       "depends_on": [],
       "acceptance": [
         "Invalid policy fails fast at startup with a clear error",
         "Example policy committed",
         "Documented in README"
       ],
-      "evidence": ""
+      "evidence": "",
+      "notes": "Dropped: a shared policy file is more machinery than needed. Consumers (A-007, A-008, B-002, D-001, D-002, D-005) read their own settings through env() in src/lib/env.ts, validated with Zod."
     },
     {
       "id": "E-002",
@@ -538,11 +538,13 @@
       "status": "todo",
       "depends_on": [],
       "acceptance": [
+        "Design decision (single tenant vs per-user/team visibility) recorded in ARCHITECTURE.md before implementation",
         "Design recorded in ARCHITECTURE.md before code",
         "Off by default so local use is unchanged",
         "Tests for each role on a protected action"
       ],
-      "evidence": ""
+      "evidence": "",
+      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004."
     },
     {
       "id": "Q-003",

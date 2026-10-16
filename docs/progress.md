@@ -8,6 +8,14 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-16: P-002 Roadmap scoped to the dashboard
+- Done: marked C-004/C-005/C-006 (CI health, coverage, DORA), D-003 (ownership) and E-001 (policy file) `superseded`; kept E-002
+  (auth is required for a standalone tool) and added a visibility-model decision to it; B-001 now flags EOL runtimes (for example
+  Node.js 22 past EOL) as a security risk. A-007, A-008, D-001 no longer depend on E-001 and read thresholds from env.
+- Verified: JSON parses, all `depends_on` resolve, dependencies keep lower priority numbers. No code changed.
+- Open: where the runtime for B-001 comes from (explicit Action input vs image scans) is decided when it is picked up.
+- Next: B-001.
+
 ## 2026-10-16: A-003 Priority ordering
 - Done: `comparePriority` in `src/lib/priority.ts` (KEV, then EPSS, then severity, then CVSS; unscored EPSS counts as 0);
   `aggregateVulnerabilities` sorts with it and adds a 1-based `rank`; the vulnerabilities grid defaults to a Priority column
