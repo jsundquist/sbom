@@ -9,6 +9,7 @@ import { requestOrigin } from '@/server/origin';
 import { KevChip, PendingChip, SeverityCounts } from '@/components/chips';
 import { ProjectRiskChart, SeverityBarChart } from '@/components/charts';
 import { DateTime } from '@/components/DateTime';
+import { FixFirstList } from '@/components/FixFirstList';
 import { GettingStarted } from '@/components/GettingStarted';
 import { AppLink } from '@/components/Links';
 import { projectHref } from '@/lib/routes';
@@ -69,6 +70,8 @@ export default async function OverviewPage() {
           />
         </Grid>
       </Grid>
+
+      <FixFirstList vulnerabilities={data.fixFirst} />
 
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid size={{ xs: 12, md: 5 }}>

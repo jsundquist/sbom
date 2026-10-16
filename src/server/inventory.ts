@@ -15,6 +15,7 @@ import {
 import { OSV_TYPES } from '@/worker/osv';
 import { depsDevSystem } from '@/worker/depsdev';
 import { compareVersions, UPDATE_RANK, updateType, type UpdateType } from '@/lib/version';
+import { comparePriority } from '@/lib/priority';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';
 
 /** CISA Known Exploited Vulnerabilities entry for a vulnerability. */
@@ -509,6 +510,8 @@ export interface AffectedPackage {
 }
 
 export interface VulnerabilitySummary extends Omit<ComponentVuln, 'fixedVersions'> {
+  /** 1-based position in the fix-first order (known exploited, then EPSS, then severity). */
+  rank: number;
   affected: AffectedPackage[];
   projects: { id: number; name: string }[];
 }
@@ -517,7 +520,7 @@ export interface VulnerabilitySummary extends Omit<ComponentVuln, 'fixedVersions
 export function aggregateVulnerabilities(list: InventoryComponent[]): VulnerabilitySummary[] {
   const map = new Map<
     string,
-    Omit<VulnerabilitySummary, 'affected' | 'projects'> & {
+    Omit<VulnerabilitySummary, 'affected' | 'projects' | 'rank'> & {
       affected: Map<string, AffectedPackage>;
       projects: Map<number, { id: number; name: string }>;
     }
@@ -545,7 +548,8 @@ export function aggregateVulnerabilities(list: InventoryComponent[]): Vulnerabil
   }
   return [...map.values()]
     .map((v) => ({ ...v, affected: [...v.affected.values()], projects: [...v.projects.values()] }))
-    .sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || (b.score ?? 0) - (a.score ?? 0) || a.id.localeCompare(b.id));
+    .sort((a, b) => comparePriority(a, b) || a.id.localeCompare(b.id))
+    .map((v, i) => ({ ...v, rank: i + 1 }));
 }
 
 export async function listPackages(db: Db) {
@@ -565,7 +569,7 @@ export async function listVulnerabilities(db: Db) {
   return aggregateVulnerabilities(await loadComponents(db));
 }
 
-export interface VulnerabilityDetail extends VulnerabilitySummary {
+export interface VulnerabilityDetail extends Omit<VulnerabilitySummary, 'rank'> {
   details: string | null;
   vector: string | null;
   modified: string | null;
@@ -599,6 +603,8 @@ export async function getVulnerability(db: Db, id: string): Promise<Vulnerabilit
   };
 }
 
+const FIX_FIRST_COUNT = 5;
+
 export async function getOverview(db: Db) {
   const all = await loadComponents(db);
   const pkgs = aggregatePackages(all);
@@ -617,6 +623,7 @@ export async function getOverview(db: Db) {
     vulnerablePackages: pkgs.filter((p) => p.vulnCount).length,
     outdatedPackages: pkgs.filter((p) => p.outdated).length,
     stats: summarize(all),
+    fixFirst: aggregateVulnerabilities(all).slice(0, FIX_FIRST_COUNT),
     projects: projectList,
     recentUploads: recentUploads.map((u) => ({ ...u, uploadedAt: iso(u.uploadedAt)! })),
   };

@@ -13,6 +13,16 @@ test('overview summarizes applications, vulnerabilities and outdated packages', 
   await expect(firstRow).toContainText('Critical 1');
 });
 
+test('overview lists the vulnerabilities to fix first, known exploited first', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Fix first' })).toBeVisible();
+  const items = page.getByTestId('fix-first-item');
+  expect(await items.count()).toBeLessThanOrEqual(5);
+  await expect(items.first()).toContainText('#1');
+  await expect(items.first()).toContainText('CVE-2021-44228');
+  await expect(items.first()).toContainText('Exploited');
+});
+
 test('application page lists packages and filters to vulnerable ones', async ({ page }) => {
   await page.goto('/projects');
   await page.getByRole('link', { name: 'web-storefront' }).click();

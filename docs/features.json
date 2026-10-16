@@ -146,7 +146,7 @@
       "epic": "A",
       "size": "S",
       "priority": 12,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "A-001",
         "A-002"
@@ -156,7 +156,7 @@
         "Default sort uses it",
         "Overview lists top N to fix"
       ],
-      "evidence": ""
+      "evidence": "lint, 58 unit tests (comparePriority + aggregate ranking), build, 7 e2e tests; checked in the dev server (overview Fix first, vulnerabilities grid sorted by Priority)"
     },
     {
       "id": "A-004",

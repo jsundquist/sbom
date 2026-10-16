@@ -8,6 +8,15 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-16: A-003 Priority ordering
+- Done: `comparePriority` in `src/lib/priority.ts` (KEV, then EPSS, then severity, then CVSS; unscored EPSS counts as 0);
+  `aggregateVulnerabilities` sorts with it and adds a 1-based `rank`; the vulnerabilities grid defaults to a Priority column
+  (ascending); `getOverview` returns `fixFirst` (top 5) rendered by `FixFirstList` on the overview.
+- Verified: lint, 58 unit tests, build, 7 e2e tests, and a screenshot check against `pnpm run dev:all`.
+- Gotchas: rank is per list, so on a project or package page it is the position within that page's vulnerabilities. One CVE
+  that appears under several advisory ids (GHSA, GO) shows as separate rows. Next: B-001 (EOL) should feed this order.
+- Next: B-001, or the Backstage-driven roadmap changes.
+
 ## 2026-10-16: S-001, S-002, S-003, S-005 security hardening
 - Done (one commit each, branch `security/hardening`): security headers + CSP (`src/lib/security-headers.ts`); streaming 413 and
   per-client write rate limit (`checkRateLimit`/`readBodyLimited` in `src/server/api.ts`); compose hardening; actionlint, zizmor,
