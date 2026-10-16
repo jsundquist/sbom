@@ -44,6 +44,7 @@ src/lib/        pure helpers: env, purl, version, severity, params, routes      
 | `projects` | An application or library | `name` unique; `latest_sbom_id` points at newest SBOM |
 | `sboms` | One uploaded document | Raw `document` jsonb kept; pruned to `SBOM_HISTORY_LIMIT` per project |
 | `components` | Package entries of one SBOM | Cascade-deleted with the SBOM; `package_key` = `<ecosystem>:<name>` |
+| `component_edges` | "parent depends on child" within one SBOM | Null `parent_id` = the application depends on the child directly; no null rows = direct dependencies unknown. Cascade-deleted with the SBOM |
 | `packages` | Distinct package, version independent | Holds `latest_version`, `latest_checked_at` |
 | `package_versions` | A version in use | `vulns_checked_at` drives the scan queue |
 | `vulnerabilities` | OSV record (GHSA/CVE/...) | `severity` enum, CVSS `score`/`vector` |

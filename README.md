@@ -152,6 +152,7 @@ The dashboard itself has no login yet; put it behind your network or a reverse p
 | `GET` | `/api/v1/summary` | Totals, severity counts and recent uploads |
 | `GET` | `/api/v1/projects` | Applications with their latest SBOM stats |
 | `GET` | `/api/v1/projects/:id[?sbom=:sbomId]` | Application details and enriched packages |
+| `GET` | `/api/v1/projects/:id/dependencies[?sbom=:sbomId]` | Dependency edges of an SBOM (`components`, `edges`, `directIds`); empty when the SBOM has no relationships |
 | `DELETE` | `/api/v1/projects/:id` | Delete an application and its SBOMs (token required when configured) |
 | `GET` | `/api/v1/packages` | Packages across all applications |
 | `GET` | `/api/v1/packages/:key` | One package (key such as `npm%3Alodash`) |
@@ -168,6 +169,11 @@ The dashboard itself has no login yet; put it behind your network or a reverse p
   Supported: npm, PyPI, Maven, Go, Cargo, RubyGems, NuGet.
 - **Outdated:** the version in use compared to the latest. A different major version is a major update, a different minor is
   minor, anything else is patch.
+- **Dependency tree:** the Dependencies tab on an application shows the relationships stored from the SBOM (CycloneDX
+  `dependencies`, SPDX `DEPENDS_ON`/`DEPENDENCY_OF`). GitHub's dependency-graph export includes them and marks the direct
+  dependencies; Syft includes them for lockfile-based projects but does not say which are direct; container and archive scans
+  usually have none. Relationships are only stored from this version on, so upload the SBOM again to see a tree for an
+  existing application.
 
 ## Development
 
