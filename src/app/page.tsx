@@ -101,7 +101,7 @@ export default async function OverviewPage() {
             Recent uploads
           </Typography>
           <Paper>
-            <Stack divider={<Box sx={{ borderTop: 1, borderColor: 'divider' }} />}>
+            <Stack sx={{ '& > * + *': { borderTop: 1, borderColor: 'divider' } }}>
               {data.recentUploads.map((u) => (
                 <Box key={u.id} sx={{ px: 2, py: 1.25 }}>
                   <AppLink href={`${projectHref(u.projectId)}?sbom=${u.id}`}>{u.projectName}</AppLink>
