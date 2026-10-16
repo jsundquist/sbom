@@ -8,6 +8,19 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-16: B-006 Dependency graph
+- Done: parser keeps dependency edges (`ParsedSbom.edges`/`direct`; CycloneDX `dependencies`, SPDX `DEPENDS_ON` and reversed
+  `DEPENDENCY_OF`); `component_edges` table (migration `0003`, null parent = direct dependency); `getDependencyGraph` and
+  `GET /api/v1/projects/:id/dependencies`; pure `src/lib/dependency-tree.ts` (roots, tree items with "shown above" repeats and
+  cycle safety, vulnerable-only filter, paths to a package); Dependencies tab on the application page (`@mui/x-tree-view`)
+  with a path/versions side panel; demo data now has edges for web-storefront and payments-api.
+- Verified: lint, 78 unit tests, build, 9 e2e tests; screenshots in the dev server (demo data and the real GitHub fixture).
+- Gotchas: edges are only stored for uploads made after this change, so existing applications need a re-upload (empty-state text
+  says so). Syft output has no root entry, so the top level is "packages nothing depends on" and includes orphans. A
+  stale `.next` from a production build makes `next dev` reload in a loop; delete `.next` first. Item ids in the tree are
+  path-based (`parent/child`) because a shared dependency appears under several parents.
+- Next: A-004, then B-001. Phase 2 (which parent to upgrade, from deps.dev per-version dependencies) is not ticketed.
+
 ## 2026-10-16: P-003 Dependency graph ticket
 - Done: added B-006 (priority 12.5, so it runs before A-004) for storing SBOM dependency edges and a dependency tree per
   application. Tree UI is `@mui/x-tree-view`; React Flow is deferred. Feasibility measured on this repo's own SBOMs (see the ticket notes).

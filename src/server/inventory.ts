@@ -2,6 +2,7 @@
 import { and, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import {
+  componentEdges,
   components,
   epssScores,
   kevEntries,
@@ -405,6 +406,49 @@ export async function getProject(db: Db, id: number, sbomId?: number): Promise<P
     history: history.map((h) => toSbomInfo(h)!),
     sbomId: selected,
     components: list,
+  };
+}
+
+export interface DependencyGraph {
+  sbomId: number;
+  /** Components of the SBOM with their vulnerabilities. */
+  components: InventoryComponent[];
+  /** `parentId` depends on `childId` (component ids). */
+  edges: { parentId: number; childId: number }[];
+  /** Components the application depends on directly, or null when the SBOM does not say. */
+  directIds: number[] | null;
+}
+
+/** The dependency graph of a project's latest SBOM (or `sbomId`); null when the project or SBOM does not exist. */
+export async function getDependencyGraph(db: Db, projectId: number, sbomId?: number): Promise<DependencyGraph | null> {
+  const [project] = await db.select({ latestSbomId: projects.latestSbomId }).from(projects).where(eq(projects.id, projectId));
+  if (!project) {
+    return null;
+  }
+  const selected = sbomId ?? project.latestSbomId;
+  if (!selected) {
+    return null;
+  }
+  const [owned] = await db
+    .select({ id: sboms.id })
+    .from(sboms)
+    .where(and(eq(sboms.id, selected), eq(sboms.projectId, projectId)));
+  if (!owned) {
+    return null;
+  }
+  const [list, rows] = await Promise.all([
+    loadComponents(db, [selected]),
+    db
+      .select({ parentId: componentEdges.parentId, childId: componentEdges.childId })
+      .from(componentEdges)
+      .where(eq(componentEdges.sbomId, selected)),
+  ]);
+  const direct = rows.filter((r) => r.parentId === null).map((r) => r.childId);
+  return {
+    sbomId: selected,
+    components: list,
+    edges: rows.flatMap((r) => (r.parentId === null ? [] : [{ parentId: r.parentId, childId: r.childId }])),
+    directIds: direct.length ? direct : null,
   };
 }
 

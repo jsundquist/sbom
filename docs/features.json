@@ -164,7 +164,7 @@
       "epic": "B",
       "size": "L",
       "priority": 12.5,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "Parser keeps edges from CycloneDX `dependencies` and SPDX `DEPENDS_ON`/`DEPENDENCY_OF`, mapping bom-ref/SPDXID to components (merging duplicates that dedupe to one component); unit tests use trimmed real GitHub SPDX and Syft CycloneDX exports",
@@ -176,7 +176,7 @@
         "SBOMs without edges show an explanatory empty state; README notes that existing uploads must be re-uploaded",
         "e2e covers the tree and the path panel"
       ],
-      "evidence": "",
+      "evidence": "lint, 78 unit tests (parser edges on real GitHub/Syft fixtures, ingest and API, tree/paths builder), build, 9 e2e tests (tree, filter, path panel, empty state); checked in the dev server with the demo data and a trimmed real GitHub export",
       "notes": "Feasibility checked on this repo (2026-10-16): the GitHub dependency-graph SPDX export has 1,319 DEPENDS_ON edges and links the root to its 38 direct dependencies; Syft CycloneDX has 281 dependencies entries but no root entry, so direct dependencies cannot be told from orphans, and 46 npm packages appear in more than one version. Image/jar SBOMs usually carry no edges. Phase 1 only: it explains why a version is present. Recommending which parent to upgrade needs per-version dependency data (deps.dev) and is not ticketed yet. A focused React Flow diagram for one selected package is deferred; decide after the tree ships. Justify the new @mui/x-tree-view dependency in the commit (MIT, same version as @mui/x-data-grid, peers @mui/material ^9)."
     },
     {

@@ -31,6 +31,7 @@
     "@mui/material": "^9.5.0",
     "@mui/material-nextjs": "^9.5.0",
     "@mui/x-data-grid": "^9.15.0",
+    "@mui/x-tree-view": "^9.15.0",
     "drizzle-orm": "^0.45.4",
     "next": "^16.4.1",
     "pg": "^8.23.1",

@@ -1,0 +1,252 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:2b098970-b147-49b3-8d75-ab59580179a9",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-10-16T13:43:08Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "author": "anchore",
+          "name": "syft",
+          "version": "1.54.1"
+        }
+      ]
+    },
+    "component": {
+      "bom-ref": "dfcd457ff0b35452",
+      "type": "file",
+      "name": "/src"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:npm/%40mui/material-nextjs@9.5.0?package-id=e97110e6311e51ce",
+      "type": "library",
+      "name": "@mui/material-nextjs",
+      "version": "9.5.0",
+      "cpe": "cpe:2.3:a:\\@mui\\/material-nextjs:\\@mui\\/material-nextjs:9.5.0:*:*:*:*:*:*:*",
+      "purl": "pkg:npm/%40mui/material-nextjs@9.5.0",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "javascript-lock-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "javascript"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "npm"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "javascript-pnpm-lock-entry"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:\\@mui\\/material-nextjs:\\@mui\\/material_nextjs:9.5.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:\\@mui\\/material_nextjs:\\@mui\\/material-nextjs:9.5.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:\\@mui\\/material_nextjs:\\@mui\\/material_nextjs:9.5.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:\\@mui\\/material:\\@mui\\/material-nextjs:9.5.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:cpe23",
+          "value": "cpe:2.3:a:\\@mui\\/material:\\@mui\\/material_nextjs:9.5.0:*:*:*:*:*:*:*"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/pnpm-lock.yaml"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/next@16.4.1?package-id=c01b5c1ea399d68f",
+      "type": "library",
+      "name": "next",
+      "version": "16.4.1",
+      "cpe": "cpe:2.3:a:vercel:next.js:16.4.1:*:*:*:*:node.js:*:*",
+      "purl": "pkg:npm/next@16.4.1",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "javascript-lock-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "javascript"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "npm"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "javascript-pnpm-lock-entry"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/pnpm-lock.yaml"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/postcss@8.5.23?package-id=1c7e01ba095b7440",
+      "type": "library",
+      "name": "postcss",
+      "version": "8.5.23",
+      "cpe": "cpe:2.3:a:postcss:postcss:8.5.23:*:*:*:*:node.js:*:*",
+      "purl": "pkg:npm/postcss@8.5.23",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "javascript-lock-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "javascript"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "npm"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "javascript-pnpm-lock-entry"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/pnpm-lock.yaml"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/postcss@8.5.29?package-id=e46db8199961c050",
+      "type": "library",
+      "name": "postcss",
+      "version": "8.5.29",
+      "cpe": "cpe:2.3:a:postcss:postcss:8.5.29:*:*:*:*:node.js:*:*",
+      "purl": "pkg:npm/postcss@8.5.29",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "javascript-lock-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "javascript"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "npm"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "javascript-pnpm-lock-entry"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/pnpm-lock.yaml"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/vite@8.3.4?package-id=6b2f10719119a882",
+      "type": "library",
+      "name": "vite",
+      "version": "8.3.4",
+      "cpe": "cpe:2.3:a:vitejs:vite:8.3.4:*:*:*:*:node.js:*:*",
+      "purl": "pkg:npm/vite@8.3.4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "javascript-lock-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "javascript"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "npm"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "javascript-pnpm-lock-entry"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/pnpm-lock.yaml"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/vitest@5.0.4?package-id=02b8b0989b507b65",
+      "type": "library",
+      "name": "vitest",
+      "version": "5.0.4",
+      "cpe": "cpe:2.3:a:vitest.dev:vitest:5.0.4:*:*:*:*:node.js:*:*",
+      "purl": "pkg:npm/vitest@5.0.4",
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "javascript-lock-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "javascript"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "npm"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "javascript-pnpm-lock-entry"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/pnpm-lock.yaml"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:npm/%40mui/material-nextjs@9.5.0?package-id=e97110e6311e51ce",
+      "dependsOn": ["pkg:npm/next@16.4.1?package-id=c01b5c1ea399d68f"]
+    },
+    {
+      "ref": "pkg:npm/next@16.4.1?package-id=c01b5c1ea399d68f",
+      "dependsOn": ["pkg:npm/postcss@8.5.23?package-id=1c7e01ba095b7440", "pkg:npm/postcss@8.5.29?package-id=e46db8199961c050"]
+    },
+    {
+      "ref": "pkg:npm/postcss@8.5.23?package-id=1c7e01ba095b7440",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:npm/postcss@8.5.29?package-id=e46db8199961c050",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:npm/vite@8.3.4?package-id=6b2f10719119a882",
+      "dependsOn": ["pkg:npm/postcss@8.5.23?package-id=1c7e01ba095b7440", "pkg:npm/postcss@8.5.29?package-id=e46db8199961c050"]
+    },
+    {
+      "ref": "pkg:npm/vitest@5.0.4?package-id=02b8b0989b507b65",
+      "dependsOn": ["pkg:npm/vite@8.3.4?package-id=6b2f10719119a882"]
+    }
+  ]
+}

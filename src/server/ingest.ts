@@ -1,8 +1,8 @@
 import { and, desc, eq, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { components, packages, packageVersions, projects, sboms } from '@/db/schema';
+import { componentEdges, components, packages, packageVersions, projects, sboms } from '@/db/schema';
 import { parsePurl } from '@/lib/purl';
-import { parseSbom } from '@/sbom/parse';
+import { componentKey, parseSbom } from '@/sbom/parse';
 
 export const SBOM_UPLOADED_CHANNEL = 'sbom_uploaded';
 
@@ -58,8 +58,24 @@ export async function ingestSbom(db: Db, document: unknown, meta: UploadMeta, { 
       })
       .returning({ id: sboms.id });
 
+    const idByKey = new Map<string, number>();
     for (const rows of chunk(parsed.components, 1000)) {
-      await tx.insert(components).values(rows.map((c) => ({ ...c, sbomId: sbom.id })));
+      const inserted = await tx
+        .insert(components)
+        .values(rows.map((c) => ({ ...c, sbomId: sbom.id })))
+        .returning({ id: components.id });
+      rows.forEach((c, i) => idByKey.set(componentKey(c), inserted[i].id));
+    }
+    const edgeRows = [
+      ...(parsed.direct ?? []).map((to) => ({ parent: null, to })),
+      ...parsed.edges.map((e) => ({ parent: e.from, to: e.to })),
+    ].map((e) => ({
+      sbomId: sbom.id,
+      parentId: e.parent === null ? null : (idByKey.get(e.parent) ?? null),
+      childId: idByKey.get(e.to)!,
+    }));
+    for (const rows of chunk(edgeRows, 1000)) {
+      await tx.insert(componentEdges).values(rows);
     }
 
     const withPurl = parsed.components.filter((c) => c.packageKey);

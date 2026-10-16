@@ -1,5 +1,5 @@
 'use client';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import type { SbomInfo } from '@/server/inventory';
@@ -7,6 +7,7 @@ import type { SbomInfo } from '@/server/inventory';
 export function SbomHistorySelect({ history, selected, latestId }: { history: SbomInfo[]; selected: number; latestId: number | null }) {
   const router = useRouter();
   const pathname = usePathname();
+  const params = useSearchParams();
   return (
     <TextField
       select
@@ -15,7 +16,15 @@ export function SbomHistorySelect({ history, selected, latestId }: { history: Sb
       value={selected}
       onChange={(e) => {
         const id = Number(e.target.value);
-        router.push(id === latestId ? pathname : `${pathname}?sbom=${id}`);
+        // Keep the other parameters (such as the selected tab) when switching uploads.
+        const next = new URLSearchParams(params);
+        if (id === latestId) {
+          next.delete('sbom');
+        } else {
+          next.set('sbom', String(id));
+        }
+        const query = next.toString();
+        router.push(query ? `${pathname}?${query}` : pathname);
       }}
       sx={{ minWidth: 260 }}
     >

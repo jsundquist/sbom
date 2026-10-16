@@ -2,15 +2,25 @@
 // Advisory details are abbreviated copies of real advisories.
 import type { OsvVuln } from '@/worker/osv';
 
-const cdx = (name: string, version: string, purls: string[], licenses: Record<string, string> = {}) => ({
+/** `graph` lists the direct dependencies (`root`) and who depends on whom; components use their purl as bom-ref. */
+type Graph = { root: string[]; depends?: Record<string, string[]> };
+
+const cdx = (name: string, version: string, purls: string[], licenses: Record<string, string> = {}, graph?: Graph) => ({
   bomFormat: 'CycloneDX',
   specVersion: '1.6',
-  metadata: { component: { type: 'application', name, version } },
+  metadata: { component: { type: 'application', name, version, 'bom-ref': 'root' } },
+  ...(graph && {
+    dependencies: [
+      { ref: 'root', dependsOn: graph.root },
+      ...Object.entries(graph.depends ?? {}).map(([ref, dependsOn]) => ({ ref, dependsOn })),
+    ],
+  }),
   components: purls.map((purl) => {
     const [, rest] = purl.split(/^pkg:[^/]+\//);
     const at = rest.lastIndexOf('@');
     return {
       type: 'library',
+      'bom-ref': purl,
       name: decodeURIComponent(rest.slice(0, at)),
       version: rest.slice(at + 1),
       purl,
@@ -35,18 +45,46 @@ export const DEMO_SBOMS = [
         'pkg:npm/zod@3.23.8',
       ],
       { 'pkg:npm/lodash@4.17.15': 'MIT', 'pkg:npm/react@18.2.0': 'MIT' },
+      {
+        root: [
+          'pkg:npm/express@4.18.2',
+          'pkg:npm/react-dom@18.2.0',
+          'pkg:npm/%40babel/core@7.24.0',
+          'pkg:npm/axios@1.5.1',
+          'pkg:npm/zod@3.23.8',
+        ],
+        depends: {
+          'pkg:npm/react-dom@18.2.0': ['pkg:npm/react@18.2.0'],
+          'pkg:npm/express@4.18.2': ['pkg:npm/lodash@4.17.15'],
+          'pkg:npm/%40babel/core@7.24.0': ['pkg:npm/lodash@4.17.15'],
+        },
+      },
     ),
   },
   {
     meta: { project: 'payments-api', version: '1.12.0', ref: 'refs/tags/v1.12.0', commit: '41ab09d', repository: 'acme/payments-api' },
-    document: cdx('payments-api', '1.12.0', [
-      'pkg:pypi/requests@2.31.0',
-      'pkg:pypi/jinja2@3.1.2',
-      'pkg:pypi/fastapi@0.115.0',
-      'pkg:pypi/pydantic@2.9.2',
-      'pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1',
-      'pkg:npm/lodash@4.17.21',
-    ]),
+    document: cdx(
+      'payments-api',
+      '1.12.0',
+      [
+        'pkg:pypi/requests@2.31.0',
+        'pkg:pypi/jinja2@3.1.2',
+        'pkg:pypi/fastapi@0.115.0',
+        'pkg:pypi/pydantic@2.9.2',
+        'pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1',
+        'pkg:npm/lodash@4.17.21',
+      ],
+      {},
+      {
+        root: [
+          'pkg:pypi/fastapi@0.115.0',
+          'pkg:pypi/requests@2.31.0',
+          'pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1',
+          'pkg:npm/lodash@4.17.21',
+        ],
+        depends: { 'pkg:pypi/fastapi@0.115.0': ['pkg:pypi/pydantic@2.9.2', 'pkg:pypi/jinja2@3.1.2'] },
+      },
+    ),
   },
   {
     meta: {

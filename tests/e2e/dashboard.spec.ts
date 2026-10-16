@@ -63,6 +63,33 @@ test('vulnerability detail links affected packages and applications', async ({ p
   await expect(page.getByRole('heading', { name: 'payments-api' })).toBeVisible();
 });
 
+test('dependency tree explains why a vulnerable package is in an application', async ({ page }) => {
+  await page.goto('/projects');
+  await page.getByRole('link', { name: 'web-storefront' }).first().click();
+  await page.getByRole('tab', { name: 'Dependencies' }).click();
+  await expect(page).toHaveURL(/tab=dependencies/);
+  const tree = page.getByRole('tree', { name: 'Dependency tree' });
+  await expect(tree.getByText('react-dom@18.2.0')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Expand all' }).click();
+  await expect(tree.getByText('shown above')).toBeVisible();
+
+  await page.getByLabel('Only paths to vulnerable packages').check();
+  await expect(tree.getByText('react-dom@18.2.0')).toBeHidden();
+  await expect(tree.getByText('zod@3.23.8')).toBeHidden();
+
+  await tree.getByText('lodash@4.17.15').first().click();
+  await expect(page.getByText('express@4.18.2 › lodash@4.17.15')).toBeVisible();
+  await expect(page.getByText('@babel/core@7.24.0 › lodash@4.17.15')).toBeVisible();
+});
+
+test('applications whose SBOM has no relationships explain the empty dependency tree', async ({ page }) => {
+  await page.goto('/projects');
+  await page.getByRole('link', { name: 'inventory-service' }).first().click();
+  await page.getByRole('tab', { name: 'Dependencies' }).click();
+  await expect(page.getByText(/does not contain dependency relationships/)).toBeVisible();
+});
+
 test('SBOMs uploaded through the API appear in the dashboard', async ({ page, request }) => {
   const document = JSON.parse(fs.readFileSync('tests/fixtures/spdx.json', 'utf8'));
   const denied = await request.post('/api/v1/sboms?project=e2e-upload', { data: document });

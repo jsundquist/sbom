@@ -22,6 +22,13 @@
       "when": 1792073381421,
       "tag": "0002_epss_scores",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792159213024,
+      "tag": "0003_component_edges",
+      "breakpoints": true
     }
   ]
 }
