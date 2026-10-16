@@ -8,6 +8,12 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-16: P-003 Dependency graph ticket
+- Done: added B-006 (priority 12.5, so it runs before A-004) for storing SBOM dependency edges and a dependency tree per
+  application. Tree UI is `@mui/x-tree-view`; React Flow is deferred. Feasibility measured on this repo's own SBOMs (see the ticket notes).
+- Verified: JSON parses, ids unique, dependencies keep lower priority numbers. No code changed.
+- Next: B-006, then A-004.
+
 ## 2026-10-16: P-002 Roadmap scoped to the dashboard
 - Done: marked C-004/C-005/C-006 (CI health, coverage, DORA), D-003 (ownership) and E-001 (policy file) `superseded`; kept E-002
   (auth is required for a standalone tool) and added a visibility-model decision to it; B-001 now flags EOL runtimes (for example
