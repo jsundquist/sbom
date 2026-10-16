@@ -104,13 +104,17 @@ Fixtures in `tests/fixtures/`. Tests never touch the network.
 ## Security
 
 Implemented: upload bearer tokens (constant-time compare); fail-closed uploads (503) in production without
-`UPLOAD_TOKENS` unless `ALLOW_OPEN_UPLOADS=true`; `MAX_UPLOAD_BYTES`; Zod on all external input; CI least-privilege
-permissions with SHA-pinned actions; Dependabot; gitleaks; `pnpm audit`.
+`UPLOAD_TOKENS` unless `ALLOW_OPEN_UPLOADS=true`; `MAX_UPLOAD_BYTES` enforced while streaming (413); in-memory write rate
+limit (`WRITE_RATE_LIMIT`, 429, keyed on `X-Forwarded-For` only with `TRUST_PROXY=true`; per web process); CSP and
+baseline headers from `src/lib/security-headers.ts` (`'unsafe-inline'` for Next bootstrap scripts and MUI styles); Zod on all
+external input; compose requires `POSTGRES_PASSWORD`, binds Postgres to loopback, and runs containers with `cap_drop: ALL`,
+`no-new-privileges` and a read-only rootfs (tmpfs for `/tmp`, `.next/cache`); web `healthcheck`; CI least-privilege
+permissions with SHA-pinned actions; Dependabot; gitleaks; `pnpm audit`; actionlint, zizmor, dependency-review (PRs) and a
+Trivy image scan (HIGH/CRITICAL, npm's bundled modules skipped).
 
-Known open items (do not silently "fix" unrelated to a task; track in `docs/features.json`): reads are unauthenticated;
-default `sbom:sbom` DB credentials and port 5432 published in compose; no security headers in `next.config.ts`; no upload
-rate limit; compose lacks hardening (read-only rootfs, `cap_drop`, `no-new-privileges`, `HEALTHCHECK`); no image
-signing/Trivy; no actionlint/zizmor/dependency-review.
+Known open items (do not silently "fix" unrelated to a task; track in `docs/features.json`): reads are unauthenticated (E-002);
+the worker's external HTTP (SSRF via configurable API URLs) is not audited; no image signing/provenance; the rate limit is
+not shared across replicas.
 
 ## Decisions that constrain future work
 
