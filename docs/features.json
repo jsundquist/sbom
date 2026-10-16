@@ -77,12 +77,12 @@
       "id": "S-005",
       "title": "CI supply-chain additions: actionlint, zizmor, dependency-review, Trivy image scan",
       "priority": 5,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "Actions SHA-pinned",
         "Workflows keep least-privilege permissions"
       ],
-      "evidence": ""
+      "evidence": "actionlint and zizmor clean locally; Trivy (HIGH,CRITICAL, unfixed ignored, npm bundled modules skipped) clean after upgrading perl-base in the runtime image; dependency-review only runs on PRs"
     },
     {
       "id": "Q-001",
