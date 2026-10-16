@@ -15,6 +15,18 @@ import { packageHref, projectHref, vulnHref } from '@/lib/routes';
 
 const columns: GridColDef<VulnerabilitySummary>[] = [
   {
+    field: 'rank',
+    headerName: 'Priority',
+    type: 'number',
+    width: 105,
+    valueGetter: (_v, row) => row.rank,
+    renderCell: ({ row }) => (
+      <Tooltip title="Fix-first order: known exploited (KEV), then EPSS, then severity and CVSS score.">
+        <span>#{row.rank}</span>
+      </Tooltip>
+    ),
+  },
+  {
     field: 'id',
     headerName: 'Vulnerability',
     width: 200,
@@ -118,7 +130,7 @@ export function VulnerabilitiesGrid({
       label="Vulnerabilities"
       rows={vulnerabilities}
       columns={hideProjects ? columns.filter((c) => c.field !== 'projects') : columns}
-      initialState={{ sorting: { sortModel: [{ field: 'severity', sort: 'desc' }] } }}
+      initialState={{ sorting: { sortModel: [{ field: 'rank', sort: 'asc' }] } }}
     />
   );
 }
