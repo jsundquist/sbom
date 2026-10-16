@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
@@ -6,10 +7,12 @@ import Stack from '@mui/material/Stack';
 import DownloadIcon from '@mui/icons-material/Download';
 import { getDb } from '@/db';
 import { parseIdOrNull } from '@/lib/params';
-import { getProject } from '@/server/inventory';
+import { getDependencyGraph, getProject } from '@/server/inventory';
 import { ComponentsGrid } from '@/components/ComponentsGrid';
 import { PendingChip, SeverityCounts } from '@/components/chips';
 import { DateTime } from '@/components/DateTime';
+import { DependencyTree } from '@/components/DependencyTree';
+import { ProjectTabs } from '@/components/ProjectTabs';
 import { PageHeader } from '@/components/PageHeader';
 import { SbomHistorySelect } from '@/components/SbomHistorySelect';
 import { StatTile } from '@/components/StatTile';
@@ -21,16 +24,18 @@ export default async function ProjectPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ sbom?: string }>;
+  searchParams: Promise<{ sbom?: string; tab?: string }>;
 }) {
   const id = parseIdOrNull((await params).id);
-  const sbomParam = (await searchParams).sbom;
+  const { sbom: sbomParam, tab } = await searchParams;
+  const activeTab = tab === 'dependencies' ? 'dependencies' : 'packages';
   const sbomId = sbomParam ? parseIdOrNull(sbomParam) : undefined;
   const project = id && sbomId !== null ? await getProject(getDb(), id, sbomId) : null;
   if (!project) {
     notFound();
   }
 
+  const graph = activeTab === 'dependencies' && project.sbomId ? await getDependencyGraph(getDb(), project.id, project.sbomId) : null;
   const sbom = project.history.find((h) => h.id === project.sbomId);
   const { stats } = project;
   return (
@@ -99,7 +104,16 @@ export default async function ProjectPage({
           </StatTile>
         </Grid>
       </Grid>
-      <ComponentsGrid components={project.components} />
+      <ProjectTabs value={activeTab} />
+      {activeTab === 'dependencies' ? (
+        graph ? (
+          <DependencyTree graph={graph} />
+        ) : (
+          <Alert severity="info">No SBOM has been uploaded for this application yet.</Alert>
+        )
+      ) : (
+        <ComponentsGrid components={project.components} />
+      )}
     </>
   );
 }
