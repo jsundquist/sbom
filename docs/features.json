@@ -30,13 +30,13 @@
       "id": "S-001",
       "title": "Security headers in next.config.ts (CSP, X-Frame-Options, Referrer-Policy, nosniff)",
       "priority": 1,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "Headers set for all routes",
         "App and MUI still render under the CSP (e2e passes)",
         "Test asserts headers"
       ],
-      "evidence": ""
+      "evidence": "lint, 50 unit tests, build, 6 e2e tests (CSP console-error check) green"
     },
     {
       "id": "S-002",

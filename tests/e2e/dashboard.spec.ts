@@ -70,3 +70,17 @@ test('SBOMs uploaded through the API appear in the dashboard', async ({ page, re
   await expect(page.getByText('acme/e2e · version 9.9.9')).toBeVisible();
   await expect(page.getByRole('grid', { name: 'Packages' })).toContainText('requests');
 });
+
+test('responses carry security headers and the page still renders under the CSP', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (m) => {
+    if (m.type() === 'error' && /content security policy/i.test(m.text())) {
+      errors.push(m.text());
+    }
+  });
+  const res = await page.goto('/');
+  expect(res?.headers()['x-frame-options']).toBe('DENY');
+  expect(res?.headers()['content-security-policy']).toContain("frame-ancestors 'none'");
+  await expect(page.getByRole('heading').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
