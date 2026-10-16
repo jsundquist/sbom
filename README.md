@@ -46,7 +46,19 @@ Open http://localhost:3000. Postgres is published on `127.0.0.1:5432` only; the 
 
 ### Local development
 
-Requires Node 22+ and a Postgres 16 database.
+Requires Node 22+. The quickest way is one command: it starts Postgres in Docker (needs `POSTGRES_PASSWORD` in `.env`, see
+above), applies migrations, then runs the web app with hot reload and the worker on your machine. Stop the compose `web` and
+`worker` containers first (`docker compose stop web worker`), since they use port 3000.
+
+```sh
+pnpm install
+pnpm run dev:all                     # http://localhost:3000, Ctrl-C stops everything
+```
+
+`docker compose up --build` runs the hardened production image (read-only rootfs, production CSP); use it as a pre-merge check,
+since `dev:all` does not reproduce container-specific problems.
+
+To run the pieces yourself against any Postgres 16 database:
 
 ```sh
 pnpm install
