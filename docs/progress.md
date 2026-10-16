@@ -8,6 +8,15 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-16: Worker poll interval
+- Done: `WORKER_POLL_SECONDS` default 30s -> 6h, with a 300s floor (`MIN_WORKER_POLL_SECONDS`, clamped in `src/lib/env.ts`) so a
+  low override such as 5s cannot hammer OSV, deps.dev, CISA or FIRST. Uploads still wake the worker via NOTIFY. Branch `fix/worker-poll-interval`.
+- Verified: `pnpm run lint`, `pnpm test` (81 tests, 3 new in `tests/unit/env.test.ts`). No UI or route change, e2e not run.
+- Gotchas: the repo default was already 30s, so the 5s in production comes from a deploy-time env var; remove or raise it. Package
+  versions whose vulnerability detail lookups fail keep a null `vulns_checked_at` and are retried on every run (each upload and
+  poll) with no backoff; not changed here.
+- Next: A-004, then B-001.
+
 ## 2026-10-16: Q-001, Q-002 layering
 - Done: shared constants moved to `src/lib/ecosystems.ts` (OSV_TYPES, depsDevSystem) and `src/lib/channels.ts`
   (SBOM_UPLOADED_CHANNEL); `no-restricted-imports` layer rules in `eslint.config.mjs` (type-only imports allowed from components);

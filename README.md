@@ -132,7 +132,7 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | `WRITE_RATE_WINDOW_SECONDS` | 60 | Length of the rate-limit window |
 | `TRUST_PROXY` | `false` | Key the limit on `X-Forwarded-For`/`X-Real-IP`; only set behind a proxy that overwrites them. When `false`, all clients share one bucket |
 | `SBOM_HISTORY_LIMIT` | 20 | Uploads kept per application (older ones are pruned) |
-| `WORKER_POLL_SECONDS` | 30 | How often the worker checks for due work (uploads also wake it immediately) |
+| `WORKER_POLL_SECONDS` | 21600 | How often the worker checks for due work (uploads also wake it immediately). Values under 300 are raised to 300 to protect the upstream APIs |
 | `VULN_TTL_HOURS` | 12 | Re-scan package versions for new vulnerabilities after this long |
 | `LATEST_TTL_HOURS` | 24 | Re-check latest package versions after this long |
 | `KEV_TTL_HOURS` | 24 | Re-download the [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) catalog (vulnerabilities known to be exploited) after this long |
