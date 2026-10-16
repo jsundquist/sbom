@@ -13,8 +13,7 @@ import {
   versionVulnerabilities,
   vulnerabilities,
 } from '@/db/schema';
-import { OSV_TYPES } from '@/worker/osv';
-import { depsDevSystem } from '@/worker/depsdev';
+import { depsDevSystem, OSV_TYPES } from '@/lib/ecosystems';
 import { compareVersions, UPDATE_RANK, updateType, type UpdateType } from '@/lib/version';
 import { comparePriority } from '@/lib/priority';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';

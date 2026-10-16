@@ -5,29 +5,6 @@ import { compareVersions } from '@/lib/version';
 import { cvss3Score, normalizeSeverity, ratingFromScore, type Severity } from '@/lib/severity';
 import { fetchJson, HttpError, type FetchFn } from './http';
 
-/** purl types OSV can map to one of its ecosystems. */
-export const OSV_TYPES = new Set([
-  'npm',
-  'pypi',
-  'maven',
-  'golang',
-  'cargo',
-  'gem',
-  'nuget',
-  'composer',
-  'hex',
-  'pub',
-  'deb',
-  'apk',
-  'rpm',
-  'swift',
-  'cran',
-  'hackage',
-  'conan',
-  'bitnami',
-  'github',
-]);
-
 const severityEntry = z.looseObject({ type: z.string(), score: z.string() });
 export const osvVulnSchema = z.looseObject({
   id: z.string(),

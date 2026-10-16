@@ -1,10 +1,9 @@
 import { and, desc, eq, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { componentEdges, components, packages, packageVersions, projects, sboms } from '@/db/schema';
+import { SBOM_UPLOADED_CHANNEL } from '@/lib/channels';
 import { parsePurl } from '@/lib/purl';
 import { componentKey, parseSbom } from '@/sbom/parse';
-
-export const SBOM_UPLOADED_CHANNEL = 'sbom_uploaded';
 
 export interface UploadMeta {
   project?: string;

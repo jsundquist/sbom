@@ -3,11 +3,12 @@
 import { and, asc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { packages, packageVersions, versionVulnerabilities, vulnerabilities } from '@/db/schema';
-import { depsDevSystem, latestVersion } from './depsdev';
+import { depsDevSystem, OSV_TYPES } from '@/lib/ecosystems';
+import { latestVersion } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
 import { syncEpss } from './epss';
 import { syncKev } from './kev';
-import { fetchVuln, fixedVersions, OSV_TYPES, queryBatch, vulnRecord, type OsvVuln, type VersionQuery } from './osv';
+import { fetchVuln, fixedVersions, queryBatch, vulnRecord, type OsvVuln, type VersionQuery } from './osv';
 
 export interface EnrichOptions {
   fetchImpl?: FetchFn;

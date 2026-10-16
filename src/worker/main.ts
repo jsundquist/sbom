@@ -3,7 +3,7 @@
 import { Client } from 'pg';
 import { closeDb, getDb } from '@/db';
 import { env } from '@/lib/env';
-import { SBOM_UPLOADED_CHANNEL } from '@/server/ingest';
+import { SBOM_UPLOADED_CHANNEL } from '@/lib/channels';
 import { enrich } from './enrich';
 
 const config = env();

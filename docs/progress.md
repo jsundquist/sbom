@@ -8,6 +8,15 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-16: Q-001, Q-002 layering
+- Done: shared constants moved to `src/lib/ecosystems.ts` (OSV_TYPES, depsDevSystem) and `src/lib/channels.ts`
+  (SBOM_UPLOADED_CHANNEL); `no-restricted-imports` layer rules in `eslint.config.mjs` (type-only imports allowed from components);
+  AGENTS.md and ARCHITECTURE.md updated.
+- Verified: `pnpm run lint`, `pnpm test` (78 tests), rule fires on temporary lib->server and components->db imports. No UI or
+  route behavior changed, so e2e and build were not run.
+- Gotchas: the new rule caught a second cross-edge (worker/main.ts importing the channel name from server/ingest), also fixed.
+- Next: A-004, then B-001.
+
 ## 2026-10-16: B-006 Dependency graph
 - Done: parser keeps dependency edges (`ParsedSbom.edges`/`direct`; CycloneDX `dependencies`, SPDX `DEPENDS_ON` and reversed
   `DEPENDENCY_OF`); `component_edges` table (migration `0003`, null parent = direct dependency); `getDependencyGraph` and

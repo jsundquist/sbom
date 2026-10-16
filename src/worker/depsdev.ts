@@ -1,20 +1,9 @@
 // Latest-version lookups against the deps.dev API (https://docs.deps.dev/api/v3/).
 import { z } from 'zod';
+import { depsDevSystem } from '@/lib/ecosystems';
 import { displayName, type PackageRef } from '@/lib/purl';
 import { isPrerelease, maxVersion } from '@/lib/version';
 import { fetchJson, type FetchFn } from './http';
-
-const SYSTEMS: Record<string, string> = {
-  npm: 'npm',
-  pypi: 'pypi',
-  maven: 'maven',
-  golang: 'go',
-  cargo: 'cargo',
-  gem: 'rubygems',
-  nuget: 'nuget',
-};
-
-export const depsDevSystem = (purlType: string): string | null => SYSTEMS[purlType] ?? null;
 
 const versionSchema = z.looseObject({
   versionKey: z.looseObject({ version: z.string() }),

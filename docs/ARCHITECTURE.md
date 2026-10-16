@@ -34,8 +34,9 @@ src/db/         schema.ts (source of truth), index.ts (getDb/setDb)             
 src/lib/        pure helpers: env, purl, version, severity, params, routes      -> nothing app-level
 ```
 
-`inventory.ts` currently imports `OSV_TYPES` and `depsDevSystem` from `src/worker/`. That is the one tolerated cross-edge
-(shared constants); do not add more. If it grows, move those constants to `src/lib/`.
+Shared constants live in `src/lib/` (`ecosystems.ts` for the OSV/deps.dev ecosystem maps, `channels.ts` for the NOTIFY
+channel), so `server/` and `worker/` never import each other. ESLint enforces the import directions (`no-restricted-imports`
+blocks in `eslint.config.mjs`); `components/` may import only types from `db/` and `server/`.
 
 ## Data model (`src/db/schema.ts`)
 

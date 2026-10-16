@@ -88,23 +88,23 @@
       "id": "Q-001",
       "title": "Move shared OSV/deps.dev ecosystem constants from src/worker to src/lib",
       "priority": 6,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "server/inventory.ts no longer imports from worker/",
         "Update the tolerated cross-edge note in ARCHITECTURE.md"
       ],
-      "evidence": ""
+      "evidence": "Moved OSV_TYPES/depsDevSystem to src/lib/ecosystems.ts and SBOM_UPLOADED_CHANNEL to src/lib/channels.ts; server/ and worker/ no longer import each other. lint and 78 unit tests pass."
     },
     {
       "id": "Q-002",
       "title": "Add an automated layering check (import-direction rules) to lint",
       "priority": 7,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "CI fails when lib/ or sbom/ imports server/worker/app, or components import db/ or server/ (other than types)",
         "Documented in AGENTS.md"
       ],
-      "evidence": ""
+      "evidence": "no-restricted-imports layer rules in eslint.config.mjs (lib/sbom, db, server, worker, components); verified they fail on a temporary lib->server and components->db import; it also caught worker/main.ts importing server/ingest (fixed under Q-001). lint passes."
     },
     {
       "id": "A-001",

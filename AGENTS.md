@@ -37,6 +37,7 @@ This file is the entry point for any coding agent. `CLAUDE.md` imports it. Keep 
 
 - `src/db/schema.ts` is the single source of truth for tables. Never hand-edit `drizzle/*.sql` or `drizzle/meta`; regenerate.
 - Dependency direction: `app/` and `components/` -> `server/` -> `db/` + `lib/`. `worker/` -> `db/` + `lib/`. `lib/` and `sbom/` import nothing from `server/`, `worker/`, `app/`.
+  `pnpm run lint` enforces these directions (`no-restricted-imports` in `eslint.config.mjs`); `components/` may import only types from `db/` and `server/`. Share constants via `lib/`.
 - Route handlers (`src/app/api/v1/**/route.ts`) stay thin: validate input, call a function in `src/server/`, return JSON. No SQL in routes, pages, or components.
 - Reads go through `src/server/inventory.ts`; writes through `src/server/ingest.ts`. Pages and API routes share these functions.
 - The app and worker communicate **only through Postgres** (tables plus `NOTIFY sbom_uploaded`). The app must never import worker enrichment to run it; the worker must never call app routes.
