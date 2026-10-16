@@ -1,5 +1,5 @@
 {
-  "_readme": "Scope boundary for agents. Work on one feature at a time. status: todo | in_progress | done | superseded. Lower priority number first; skip items whose depends_on are not done. Optional fields: epic (A prioritization/freshness, B dependency health, C reports and repo health, D tools that act, E foundations), size (S/M/L), depends_on, notes. Set done only after the Definition of Done in docs/WORKFLOW.md passes and put the commands/results in evidence.",
+  "_readme": "Scope boundary for agents. Work on one feature at a time. status: todo | in_progress | done | superseded. Lower priority number first; skip items whose depends_on are not done. Optional fields: epic (A prioritization/freshness, B dependency health, C reports and repo health, D tools that act, E foundations), size (S/M/L), depends_on, notes, labels (triage roles, docs/agents/triage-labels.md), parent and assignee (wayfinding, docs/agents/issue-tracker.md). Set done only after the Definition of Done in docs/WORKFLOW.md passes and put the commands/results in evidence.",
   "features": [
     {
       "id": "F-000",

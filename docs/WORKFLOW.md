@@ -16,6 +16,9 @@ One feature at a time, verified before it is called done. Scope lives in `docs/f
    `docs/ARCHITECTURE.md` if structure, schema, flows or decisions changed.
 7. **Commit** one Conventional Commit with scope. Leave the tree green.
 
+Skills from mattpocock-skills (`to-tickets`, `triage`, `wayfinder`) read and write `docs/features.json` as the issue tracker;
+conventions are in `docs/agents/issue-tracker.md`.
+
 If you discover unrelated problems, add them to `docs/features.json` as `todo`; do not fix them in this change.
 
 ## Checklists by change type
