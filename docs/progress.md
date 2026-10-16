@@ -8,6 +8,18 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-16: S-001, S-002, S-003, S-005 security hardening
+- Done (one commit each, branch `security/hardening`): security headers + CSP (`src/lib/security-headers.ts`); streaming 413 and
+  per-client write rate limit (`checkRateLimit`/`readBodyLimited` in `src/server/api.ts`); compose hardening; actionlint, zizmor,
+  dependency-review and Trivy in `security.yml`.
+- Verified: lint, 52 unit tests, build, 6 e2e tests (incl. CSP console check); parallel compose stack healthy on a read-only
+  rootfs; actionlint, zizmor and Trivy clean locally.
+- Gotchas: compose now fails without `POSTGRES_PASSWORD` (existing `pgdata` volumes keep their old password; the variable only
+  seeds new DBs). Trivy flagged perl-base in the pinned base image, so the runtime stage runs `apt-get --only-upgrade perl-base`;
+  it also skips npm's bundled modules. Without a proxy all clients share one rate-limit bucket. Dependency-review needs the
+  repo's dependency graph enabled.
+- Next: A-003, or Q-001/Q-002.
+
 ## 2026-10-15: Q-003 ESLint + Prettier
 - Done: ESLint 9 (eslint-config-next, typescript-eslint with type-aware `no-floating-promises`/`no-misused-promises`, `curly`),
   Prettier (single quotes, width 140), `pnpm run lint` = typecheck + eslint + prettier check, CI runs all three on every push,

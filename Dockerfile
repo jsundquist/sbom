@@ -12,6 +12,8 @@ RUN pnpm run build && pnpm prune --prod
 
 FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
 WORKDIR /app
+# The pinned base image lags Debian security fixes (Trivy flags perl-base); pull patched packages at build time.
+RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade perl-base && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
 COPY --from=build /app/package.json /app/tsconfig.json /app/next.config.ts ./
 COPY --from=build /app/node_modules ./node_modules

@@ -30,36 +30,36 @@
       "id": "S-001",
       "title": "Security headers in next.config.ts (CSP, X-Frame-Options, Referrer-Policy, nosniff)",
       "priority": 1,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "Headers set for all routes",
         "App and MUI still render under the CSP (e2e passes)",
         "Test asserts headers"
       ],
-      "evidence": ""
+      "evidence": "lint, 50 unit tests, build, 6 e2e tests (CSP console-error check) green"
     },
     {
       "id": "S-002",
       "title": "Upload rate limiting and request-size hardening",
       "priority": 2,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "Per-token or per-IP limit with 429",
         "Oversized body rejected before full buffering",
         "Tests for 429 and 413"
       ],
-      "evidence": ""
+      "evidence": "lint, 52 unit tests incl. 413 (header and streamed) and 429 + Retry-After; in-memory fixed window, key from X-Forwarded-For only when TRUST_PROXY=true"
     },
     {
       "id": "S-003",
       "title": "Compose hardening: no default DB creds, bind 5432 to localhost, no-new-privileges, cap_drop, read-only rootfs, HEALTHCHECK",
       "priority": 3,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "docker compose up still works from README steps",
         "README documents required env"
       ],
-      "evidence": ""
+      "evidence": "Brought up a parallel stack (project sbomhard, ports 3300/5433): all services up, web healthy, /api/healthz ok, worker running on read-only rootfs; config fails without POSTGRES_PASSWORD"
     },
     {
       "id": "S-004",
@@ -77,12 +77,12 @@
       "id": "S-005",
       "title": "CI supply-chain additions: actionlint, zizmor, dependency-review, Trivy image scan",
       "priority": 5,
-      "status": "todo",
+      "status": "done",
       "acceptance": [
         "Actions SHA-pinned",
         "Workflows keep least-privilege permissions"
       ],
-      "evidence": ""
+      "evidence": "actionlint and zizmor clean locally; Trivy (HIGH,CRITICAL, unfixed ignored, npm bundled modules skipped) clean after upgrading perl-base in the runtime image; dependency-review only runs on PRs"
     },
     {
       "id": "Q-001",

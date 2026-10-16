@@ -1,13 +1,23 @@
 # Local / self-hosted stack: Postgres, migrations, web app and enrichment worker.
+#   echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" > .env
 #   docker compose up --build        -> http://localhost:3000
+x-hardened: &hardened
+  security_opt: ['no-new-privileges:true']
+  cap_drop: [ALL]
+  read_only: true
+  # Next.js writes its runtime cache under .next/cache; everything else stays read-only.
+  tmpfs: ['/tmp', '/app/.next/cache']
+
 services:
   db:
-    image: postgres:16
+    image: postgres:16@sha256:ca0bd484cb98bf4b24eb1010e73fb3fcbd6714d240fbc1a10eea5b7dbecb641d
     environment:
       POSTGRES_USER: sbom
-      POSTGRES_PASSWORD: sbom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env, see README}
       POSTGRES_DB: sbom
-    ports: ['5432:5432']
+    # Loopback only; the other services reach Postgres over the compose network.
+    ports: ['127.0.0.1:5432:5432']
+    security_opt: ['no-new-privileges:true']
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U sbom']
@@ -15,24 +25,34 @@ services:
       retries: 30
 
   migrate:
+    <<: *hardened
     build: .
     command: ['npm', 'run', 'db:migrate']
     environment: &env
-      DATABASE_URL: postgres://sbom:sbom@db:5432/sbom
+      DATABASE_URL: postgres://sbom:${POSTGRES_PASSWORD}@db:5432/sbom
       UPLOAD_TOKENS: ${UPLOAD_TOKENS:-}
       ALLOW_OPEN_UPLOADS: ${ALLOW_OPEN_UPLOADS:-false}
     depends_on:
       db: { condition: service_healthy }
 
   web:
+    <<: *hardened
     build: .
     environment: *env
     ports: ['3000:3000']
+    healthcheck:
+      test:
+        ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/api/healthz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     depends_on:
       migrate: { condition: service_completed_successfully }
     restart: unless-stopped
 
   worker:
+    <<: *hardened
     build: .
     command: ['npm', 'run', 'worker']
     environment: *env

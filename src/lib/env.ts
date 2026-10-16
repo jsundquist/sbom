@@ -25,6 +25,14 @@ const schema = z.object({
     .int()
     .positive()
     .default(50 * 1024 * 1024),
+  /** Write requests (uploads, deletes) allowed per client per window; 0 disables the limit. */
+  WRITE_RATE_LIMIT: z.coerce.number().int().nonnegative().default(60),
+  WRITE_RATE_WINDOW_SECONDS: z.coerce.number().positive().default(60),
+  /** Trust X-Forwarded-For / X-Real-IP for the client address; only enable behind a proxy that sets them. */
+  TRUST_PROXY: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   SBOM_HISTORY_LIMIT: z.coerce.number().int().positive().default(20),
   WORKER_POLL_SECONDS: z.coerce.number().positive().default(30),
   VULN_TTL_HOURS: z.coerce.number().positive().default(12),

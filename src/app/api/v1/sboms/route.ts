@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { env } from '@/lib/env';
 import { SbomParseError } from '@/sbom/parse';
-import { checkUploadToken, jsonError } from '@/server/api';
+import { checkUploadToken, jsonError, readBodyLimited } from '@/server/api';
 import { IngestError, ingestSbom } from '@/server/ingest';
 
 const field = z
@@ -25,11 +25,8 @@ export async function POST(req: Request) {
   }
 
   const limit = env().MAX_UPLOAD_BYTES;
-  if (Number(req.headers.get('content-length') ?? 0) > limit) {
-    return jsonError(413, `SBOM exceeds ${limit} bytes`);
-  }
-  const text = await req.text();
-  if (Buffer.byteLength(text) > limit) {
+  const text = await readBodyLimited(req, limit);
+  if (text === null) {
     return jsonError(413, `SBOM exceeds ${limit} bytes`);
   }
 
