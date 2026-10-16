@@ -68,6 +68,7 @@ async function listen() {
 
 await listen();
 void run();
+console.info(`[worker] polling every ${config.WORKER_POLL_SECONDS}s`);
 const timer = setInterval(() => void run(), config.WORKER_POLL_SECONDS * 1000);
 
 async function shutdown() {

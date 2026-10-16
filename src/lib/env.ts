@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+/** Lowest poll interval the worker honors, so a misconfigured value cannot hammer OSV, deps.dev, CISA or FIRST. */
+export const MIN_WORKER_POLL_SECONDS = 300;
+
 const csv = z
   .string()
   .default('')
@@ -34,7 +37,12 @@ const schema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
   SBOM_HISTORY_LIMIT: z.coerce.number().int().positive().default(20),
-  WORKER_POLL_SECONDS: z.coerce.number().positive().default(30),
+  /** Uploads wake the worker immediately; the poll only catches TTL expiry, so a few runs a day is enough. */
+  WORKER_POLL_SECONDS: z.coerce
+    .number()
+    .positive()
+    .default(6 * 3600)
+    .transform((s) => Math.max(s, MIN_WORKER_POLL_SECONDS)),
   VULN_TTL_HOURS: z.coerce.number().positive().default(12),
   LATEST_TTL_HOURS: z.coerce.number().positive().default(24),
   KEV_TTL_HOURS: z.coerce.number().positive().default(24),
