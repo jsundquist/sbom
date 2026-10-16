@@ -24,6 +24,8 @@ function useChartColors() {
 }
 
 const tooltipStyle = (c: ReturnType<typeof useChartColors>) => ({
+  // The legend is a later sibling of the tooltip wrapper, so without a z-index its labels paint over the tooltip.
+  wrapperStyle: { zIndex: 10 },
   contentStyle: { background: c.surface, border: `1px solid ${c.grid}`, borderRadius: 8, color: c.text },
   itemStyle: { color: c.text },
   cursor: { fill: c.grid, opacity: 0.4 },
