@@ -1,0 +1,187 @@
+{
+  "sbom": {
+    "SPDXID": "SPDXRef-DOCUMENT",
+    "spdxVersion": "SPDX-2.3",
+    "name": "com.github.jsundquist/sbom",
+    "dataLicense": "CC0-1.0",
+    "documentNamespace": "https://spdx.org/spdxdocs/protobom/cc5e0894-c2d1-4d52-a550-75e566570d69",
+    "creationInfo": {
+      "creators": ["Tool: protobom-v0.0.0-20261015211749-8209a84538f6+dirty", "Tool: GitHub.com-Dependency-Graph"],
+      "created": "2026-10-16T13:43:27Z"
+    },
+    "packages": [
+      {
+        "name": "@vitest/mocker",
+        "SPDXID": "SPDXRef-npm-vitest-mocker-5.0.4-7f03af",
+        "versionInfo": "5.0.4",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:npm/%40vitest/mocker@5.0.4"
+          }
+        ]
+      },
+      {
+        "name": "postcss",
+        "SPDXID": "SPDXRef-npm-postcss-8.5.23-e9ca71",
+        "versionInfo": "8.5.23",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "copyrightText": "Copyright 2013 Andrey Sitnik <andrey@sitnik.es>",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:npm/postcss@8.5.23"
+          }
+        ]
+      },
+      {
+        "name": "postcss",
+        "SPDXID": "SPDXRef-npm-postcss-8.5.29-d262aa",
+        "versionInfo": "8.5.29",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:npm/postcss@8.5.29"
+          }
+        ]
+      },
+      {
+        "name": "vitest",
+        "SPDXID": "SPDXRef-npm-vitest-5.0.4-cf9ffa",
+        "versionInfo": "5.0.4",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:npm/vitest@5.0.4"
+          }
+        ]
+      },
+      {
+        "name": "next",
+        "SPDXID": "SPDXRef-npm-next-16.4.1-a9f620",
+        "versionInfo": "16.4.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:npm/next@16.4.1"
+          }
+        ]
+      },
+      {
+        "name": "@mui/material-nextjs",
+        "SPDXID": "SPDXRef-npm-mui-material-nextjs-9.5.0-c92818",
+        "versionInfo": "9.5.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:npm/%40mui/material-nextjs@9.5.0"
+          }
+        ]
+      },
+      {
+        "name": "vite",
+        "SPDXID": "SPDXRef-npm-vite-8.3.4-44f990",
+        "versionInfo": "8.3.4",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:npm/vite@8.3.4"
+          }
+        ]
+      },
+      {
+        "name": "com.github.jsundquist/sbom",
+        "SPDXID": "SPDXRef-github-jsundquist-sbom-main-8e5ae9",
+        "versionInfo": "main",
+        "downloadLocation": "git+https://github.com/jsundquist/sbom",
+        "filesAnalyzed": false,
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:github/jsundquist/sbom@main"
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "spdxElementId": "SPDXRef-npm-vitest-mocker-5.0.4-7f03af",
+        "relatedSpdxElement": "SPDXRef-npm-vite-8.3.4-44f990",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-npm-vitest-5.0.4-cf9ffa",
+        "relatedSpdxElement": "SPDXRef-npm-vite-8.3.4-44f990",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-npm-vitest-5.0.4-cf9ffa",
+        "relatedSpdxElement": "SPDXRef-npm-vitest-mocker-5.0.4-7f03af",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-npm-next-16.4.1-a9f620",
+        "relatedSpdxElement": "SPDXRef-npm-postcss-8.5.23-e9ca71",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-npm-mui-material-nextjs-9.5.0-c92818",
+        "relatedSpdxElement": "SPDXRef-npm-next-16.4.1-a9f620",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-npm-vite-8.3.4-44f990",
+        "relatedSpdxElement": "SPDXRef-npm-postcss-8.5.29-d262aa",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-github-jsundquist-sbom-main-8e5ae9",
+        "relatedSpdxElement": "SPDXRef-npm-vitest-5.0.4-cf9ffa",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-github-jsundquist-sbom-main-8e5ae9",
+        "relatedSpdxElement": "SPDXRef-npm-next-16.4.1-a9f620",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-github-jsundquist-sbom-main-8e5ae9",
+        "relatedSpdxElement": "SPDXRef-npm-mui-material-nextjs-9.5.0-c92818",
+        "relationshipType": "DEPENDS_ON"
+      },
+      {
+        "spdxElementId": "SPDXRef-DOCUMENT",
+        "relatedSpdxElement": "SPDXRef-github-jsundquist-sbom-main-8e5ae9",
+        "relationshipType": "DESCRIBES"
+      }
+    ]
+  }
+}

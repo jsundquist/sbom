@@ -71,6 +71,25 @@ export const components = pgTable(
   (t) => [index('components_sbom_idx').on(t.sbomId), index('components_package_idx').on(t.packageKey, t.version)],
 );
 
+/**
+ * "parent depends on child" within one SBOM. A null parent means the SBOM's subject depends on the child directly, so a
+ * graph with no null-parent rows does not say which components are direct.
+ */
+export const componentEdges = pgTable(
+  'component_edges',
+  {
+    id: serial('id').primaryKey(),
+    sbomId: integer('sbom_id')
+      .notNull()
+      .references(() => sboms.id, { onDelete: 'cascade' }),
+    parentId: integer('parent_id').references(() => components.id, { onDelete: 'cascade' }),
+    childId: integer('child_id')
+      .notNull()
+      .references(() => components.id, { onDelete: 'cascade' }),
+  },
+  (t) => [index('component_edges_sbom_idx').on(t.sbomId)],
+);
+
 /** A distinct package (version independent), e.g. "npm:lodash". Enriched with the latest release. */
 export const packages = pgTable('packages', {
   key: text('key').primaryKey(),
