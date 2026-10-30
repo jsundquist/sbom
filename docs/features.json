@@ -597,7 +597,7 @@
         "Frontier empty; E-002 re-scoped and ready to build"
       ],
       "evidence": "",
-      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR:\n- W-002 Research: Auth.js v5 fit for this stack, and minimal alternatives: Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Detail in W-002 notes.\n- W-003 Auth mechanism for a single owner: GitHub OAuth via next-auth v4, one owner id, others see nothing, 7-day cookie; see ADR 0001.\nNOT YET SPECIFIED: live GitHub OAuth round trip and behaviour under compose read_only; how long next-auth v4 gets security patches; NEXTAUTH_URL/cookie-name handling behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
+      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR:\n- W-002 Research: Auth.js v5 fit for this stack, and minimal alternatives: Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Detail in W-002 notes.\n- W-003 Auth mechanism for a single owner: GitHub OAuth via next-auth v4, one owner id, others see nothing, 7-day cookie; see ADR 0001.\n- W-004 Enforcement boundary: gate all pages + GET /api/v1/*, proxy plus requireOwner() with a coverage test, 503 fail-closed in production (ALLOW_OPEN_READS opt-out).\nNOT YET SPECIFIED: live GitHub OAuth round trip and behaviour under compose read_only; how long next-auth v4 gets security patches; NEXTAUTH_URL/cookie-name handling behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
     },
     {
       "id": "W-002",
@@ -641,7 +641,7 @@
       "title": "Enforcement boundary: which surfaces are gated and where",
       "epic": "E",
       "priority": 23,
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [],
       "parent": "W-001",
       "labels": [
@@ -650,8 +650,8 @@
       "acceptance": [
         "Answer recorded in notes and gist appended to W-001 Decisions so far"
       ],
-      "evidence": "",
-      "notes": "QUESTION: Which of pages, GET /api/v1/*, health and static assets require a session? Enforced in middleware or in src/server/? Fail-closed in production like UPLOAD_TOKENS, or off by default as E-002 states? Upload POST stays bearer-token.",
+      "evidence": "2026-10-30: decided with the user in session after listing routes in src/app.",
+      "notes": "QUESTION: Which of pages, GET /api/v1/*, health and static assets require a session? Enforced in middleware or in src/server/? Fail-closed in production like UPLOAD_TOKENS, or off by default as E-002 states? Upload POST stays bearer-token. ANSWER (2026-10-30): Gated: every page and every GET /api/v1/*. Open: /api/auth/*, /api/healthz, static assets (/_next/*, icon), and the two bearer-token routes (POST /api/v1/sboms, DELETE /api/v1/projects/[id]) which the proxy passes through by method+path to their existing UPLOAD_TOKENS check. Two layers: proxy (cheap token check; pages redirect to sign-in, /api/* JSON 401; unknown paths gated too) plus requireOwner() in src/server/auth.ts called at the top of every GET handler and page; a test enumerates all route.ts/page.tsx and fails if one lacks the guard or an allow-list entry. Not put in inventory.ts read functions (signature churn). Fail-closed: in production with auth not fully configured (owner id, secret, GitHub client id/secret, NEXTAUTH_URL) reads return 503; ALLOW_OPEN_READS=true opts out (mirrors ALLOW_OPEN_UPLOADS); dev/test off by default. Signed-out: minimal sign-in page with one GitHub button, no auto-redirect; non-owner sees Access denied page; API 401 without session, 403 for non-owner.",
       "assignee": "jsundquist"
     },
     {
