@@ -597,14 +597,14 @@
         "Frontier empty; E-002 re-scoped and ready to build"
       ],
       "evidence": "",
-      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR: (none yet)\nNOT YET SPECIFIED: login brute-force limiting; session cookie/CSRF behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
+      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR:\n- W-002 Research: Auth.js v5 fit for this stack, and minimal alternatives: Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Detail in W-002 notes.\nNOT YET SPECIFIED: login brute-force limiting; session cookie/CSRF behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
     },
     {
       "id": "W-002",
       "title": "Research: Auth.js v5 fit for this stack, and minimal alternatives",
       "epic": "E",
       "priority": 23,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "parent": "W-001",
       "labels": [
@@ -613,8 +613,8 @@
       "acceptance": [
         "Answer recorded in notes and gist appended to W-001 Decisions so far"
       ],
-      "evidence": "",
-      "notes": "QUESTION: Does Auth.js v5 fit this repo's Next.js version (middleware/proxy, JWT sessions with no DB adapter, standalone Docker build, known CVEs)? What would a minimal signed-cookie single-user gate cost by comparison? Findings go in the research/auth-fit branch."
+      "evidence": "2026-10-30: research subagent findings pushed to branch research/auth-fit (docs/research/auth-fit.md); no PR, not merged.",
+      "notes": "QUESTION: Does Auth.js v5 fit this repo's Next.js version (middleware/proxy, JWT sessions with no DB adapter, standalone Docker build, known CVEs)? What would a minimal signed-cookie single-user gate cost by comparison? Findings go in the research/auth-fit branch. ANSWER (2026-10-30): Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Full findings: docs/research/auth-fit.md on branch research/auth-fit."
     },
     {
       "id": "W-003",
