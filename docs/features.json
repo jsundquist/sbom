@@ -641,7 +641,7 @@
       "title": "Enforcement boundary: which surfaces are gated and where",
       "epic": "E",
       "priority": 23,
-      "status": "todo",
+      "status": "in_progress",
       "depends_on": [],
       "parent": "W-001",
       "labels": [
@@ -651,7 +651,8 @@
         "Answer recorded in notes and gist appended to W-001 Decisions so far"
       ],
       "evidence": "",
-      "notes": "QUESTION: Which of pages, GET /api/v1/*, health and static assets require a session? Enforced in middleware or in src/server/? Fail-closed in production like UPLOAD_TOKENS, or off by default as E-002 states? Upload POST stays bearer-token."
+      "notes": "QUESTION: Which of pages, GET /api/v1/*, health and static assets require a session? Enforced in middleware or in src/server/? Fail-closed in production like UPLOAD_TOKENS, or off by default as E-002 states? Upload POST stays bearer-token.",
+      "assignee": "jsundquist"
     },
     {
       "id": "W-005",
