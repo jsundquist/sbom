@@ -513,7 +513,8 @@
         "Counts exclude accepted risks; they remain listed",
         "Expiry job re-opens findings"
       ],
-      "evidence": ""
+      "evidence": "",
+      "notes": "2026-10-30: E-002 is now owner-only (no roles); 'author' is the owner."
     },
     {
       "id": "D-005",
@@ -552,20 +553,23 @@
     },
     {
       "id": "E-002",
-      "title": "Authentication and roles: Auth.js with GitHub sign-in, viewer/maintainer/admin, protect write actions. Supersedes S-004",
+      "title": "Owner-only authentication: next-auth v4 GitHub sign-in, proxy + requireOwner() on all reads, fail-closed in production. Supersedes S-004",
       "epic": "E",
-      "size": "M-L",
+      "size": "M",
       "priority": 24,
       "status": "todo",
       "depends_on": [],
       "acceptance": [
-        "Design decision (single tenant vs per-user/team visibility) recorded in ARCHITECTURE.md before implementation",
-        "Design recorded in ARCHITECTURE.md before code",
-        "Off by default so local use is unchanged",
-        "Tests for each role on a protected action"
+        "Design is already decided: see map W-001 notes, W-003/W-004 notes and docs/adr/0001; record it in ARCHITECTURE.md#security before or with the code",
+        "next-auth v4 pinned exactly; GitHub client id/secret, session secret, owner id and NEXTAUTH_URL read via env() (assign process.env.NEXTAUTH_URL from env(); never set AUTH_TRUST_HOST); session.maxAge and jwt.maxAge both 604800",
+        "Only the owner's numeric GitHub id (env, compared as a string, empty = nobody) sees pages and GET /api/v1/*; re-checked on every request in proxy() and requireOwner(); others get an Access denied page (API 403), signed-out gets a sign-in page (API 401)",
+        "POST /api/v1/sboms and DELETE /api/v1/projects/[id] keep bearer-token auth and pass through the proxy by method+path; /api/auth/*, /api/healthz and static assets stay open",
+        "In production with auth not fully configured reads return 503 unless ALLOW_OPEN_READS=true; off by default in dev/test so local use is unchanged",
+        "Existing in-memory rate limiter applied to auth routes; GitHub egress confined to the auth module via injectable FetchFn (ADR 0001)",
+        "Test enumerates every route.ts and page.tsx and fails if one lacks requireOwner() or an allow-list entry; unit tests for owner, non-owner, no session; one Playwright spec with auth enabled using a forged session cookie"
       ],
       "evidence": "",
-      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004. 2026-10-30: being re-scoped by map W-001 (single owner, in-app auth, public deployment)."
+      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004. 2026-10-30: being re-scoped by map W-001 (single owner, in-app auth, public deployment). 2026-10-30: re-scoped by map W-001: roles dropped (single owner), ops work split into E-003."
     },
     {
       "id": "Q-003",
@@ -588,7 +592,7 @@
       "title": "Map: in-app auth for a public single-user deployment",
       "epic": "E",
       "priority": 23,
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [],
       "labels": [
         "wayfinder:map"
@@ -596,8 +600,8 @@
       "acceptance": [
         "Frontier empty; E-002 re-scoped and ready to build"
       ],
-      "evidence": "",
-      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR:\n- W-002 Research: Auth.js v5 fit for this stack, and minimal alternatives: Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Detail in W-002 notes.\n- W-003 Auth mechanism for a single owner: GitHub OAuth via next-auth v4, one owner id, others see nothing, 7-day cookie; see ADR 0001.\n- W-004 Enforcement boundary: gate all pages + GET /api/v1/*, proxy plus requireOwner() with a coverage test, 503 fail-closed in production (ALLOW_OPEN_READS opt-out).\nNOT YET SPECIFIED: live GitHub OAuth round trip and behaviour under compose read_only; how long next-auth v4 gets security patches; NEXTAUTH_URL/cookie-name handling behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
+      "evidence": "2026-10-30: frontier empty; E-002 re-scoped, E-003 added.",
+      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR:\n- W-002 Research: Auth.js v5 fit for this stack, and minimal alternatives: Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Detail in W-002 notes.\n- W-003 Auth mechanism for a single owner: GitHub OAuth via next-auth v4, one owner id, others see nothing, 7-day cookie; see ADR 0001.\n- W-004 Enforcement boundary: gate all pages + GET /api/v1/*, proxy plus requireOwner() with a coverage test, 503 fail-closed in production (ALLOW_OPEN_READS opt-out).\n- W-005 Roles: none; single owner, others denied; E-002 re-scoped and split, ops moved to E-003.\nNOT YET SPECIFIED (cleared; now steps in E-003): live GitHub OAuth round trip and behaviour under compose read_only; how long next-auth v4 gets security patches; NEXTAUTH_URL/cookie-name handling behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
     },
     {
       "id": "W-002",
@@ -659,7 +663,7 @@
       "title": "Roles: collapse viewer/maintainer/admin to a single owner?",
       "epic": "E",
       "priority": 23,
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "W-003"
       ],
@@ -670,9 +674,29 @@
       "acceptance": [
         "Answer recorded in notes and gist appended to W-001 Decisions so far"
       ],
-      "evidence": "",
-      "notes": "QUESTION: With one user, are roles dead weight? Re-scope E-002 acceptance criteria accordingly.",
+      "evidence": "2026-10-30: decided with the user in session.",
+      "notes": "QUESTION: With one user, are roles dead weight? Re-scope E-002 acceptance criteria accordingly. ANSWER (2026-10-30): No roles; single owner, everyone else denied. E-002 re-scoped to the owner-only build and split: ops/public-deploy checklist moved to E-003. Auth tests: unit mocks plus one Playwright spec with a forged next-auth/jwt session cookie. No decisions remain; map complete.",
       "assignee": "jsundquist"
+    },
+    {
+      "id": "E-003",
+      "title": "Public-deploy checklist for owner-only auth: GitHub OAuth app, NEXTAUTH_URL and secrets, TLS, live sign-in, read-only compose run, worker SSRF audit",
+      "epic": "E",
+      "size": "S",
+      "priority": 24,
+      "status": "todo",
+      "depends_on": [
+        "E-002"
+      ],
+      "acceptance": [
+        "GitHub OAuth app registered with the production callback URL; client id/secret, session secret, owner id and NEXTAUTH_URL set via secrets, not committed",
+        "Live GitHub sign-in verified: owner sees data, a second GitHub account sees Access denied, signed-out API gets 401",
+        "Works under compose read_only: true; session cookie name correct behind TLS and TRUST_PROXY",
+        "Worker external HTTP (configurable API URLs) audited for SSRF; findings recorded in ARCHITECTURE.md#security",
+        "Rate limit not shared across replicas and next-auth v4 patch horizon recorded as known limits; evidence recorded"
+      ],
+      "evidence": "",
+      "notes": "Created by map W-001. Manual steps (OAuth app registration) are HITL."
     }
   ]
 }
