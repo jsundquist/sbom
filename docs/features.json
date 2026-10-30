@@ -597,7 +597,7 @@
         "Frontier empty; E-002 re-scoped and ready to build"
       ],
       "evidence": "",
-      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR:\n- W-002 Research: Auth.js v5 fit for this stack, and minimal alternatives: Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Detail in W-002 notes.\nNOT YET SPECIFIED: login brute-force limiting; session cookie/CSRF behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
+      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR:\n- W-002 Research: Auth.js v5 fit for this stack, and minimal alternatives: Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Detail in W-002 notes.\n- W-003 Auth mechanism for a single owner: GitHub OAuth via next-auth v4, one owner id, others see nothing, 7-day cookie; see ADR 0001.\nNOT YET SPECIFIED: live GitHub OAuth round trip and behaviour under compose read_only; how long next-auth v4 gets security patches; NEXTAUTH_URL/cookie-name handling behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
     },
     {
       "id": "W-002",
@@ -621,7 +621,7 @@
       "title": "Auth mechanism for a single owner",
       "epic": "E",
       "priority": 23,
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "W-002"
       ],
@@ -632,8 +632,8 @@
       "acceptance": [
         "Answer recorded in notes and gist appended to W-001 Decisions so far"
       ],
-      "evidence": "",
-      "notes": "QUESTION: GitHub OAuth with a one-login allow-list, password/passkey, or generic OIDC? How is the owner identity configured via env()?",
+      "evidence": "2026-10-30: decided with the user in session; research on branch research/next-auth-v4 (smoke app, no live GitHub round trip).",
+      "notes": "QUESTION: GitHub OAuth with a one-login allow-list, password/passkey, or generic OIDC? How is the owner identity configured via env()? ANSWER (2026-10-30): GitHub OAuth via next-auth v4 (stable latest), pinned exactly; config from env() (public URL assigned to NEXTAUTH_URL from env(); never set AUTH_TRUST_HOST). Owner = one numeric GitHub id in env, compared as a string, re-checked on every request in proxy and requireOwner(); empty = nobody. Others can sign in but get a plain 'Access denied' page (their login + sign-out link), nothing stored. isAllowed() is the seam for future grants. Session: 7-day cookie, set BOTH session.maxAge and jwt.maxAge to 604800 (jwt default is 30d); revoke by changing the owner id or rotating NEXTAUTH_SECRET. Reuse the existing in-memory rate limiter on auth routes. Proxy: custom proxy() with getToken, JSON 401 for /api/*, gate everything except upload POSTs (branch on method inside the proxy). GitHub egress exception recorded in docs/adr/0001-github-oauth-egress-from-web-app.md. Detail: docs/research/next-auth-v4.md on branch research/next-auth-v4.",
       "assignee": "jsundquist"
     },
     {
