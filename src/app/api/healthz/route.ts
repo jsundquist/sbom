@@ -7,6 +7,8 @@ export async function GET() {
     await getDb().execute(sql`select 1`);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 503 });
+    // Open endpoint: the driver message can carry the DB host and port, so it goes to the server log only.
+    console.error('healthz: database check failed', err);
+    return NextResponse.json({ ok: false }, { status: 503 });
   }
 }

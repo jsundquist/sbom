@@ -101,3 +101,17 @@ test('healthz stays open with auth configured', async () => {
   configure();
   expect((await healthz()).status).toBe(200);
 });
+
+test('healthz failure returns a generic body, never the driver error', async () => {
+  const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  setDb({
+    execute: () => Promise.reject(new Error('connect ECONNREFUSED 10.0.0.5:5432')),
+  } as never);
+  const res = await healthz();
+  expect(res.status).toBe(503);
+  const text = await res.text();
+  expect(text).not.toMatch(/ECONNREFUSED|10\.0\.0\.5|5432/);
+  expect(JSON.parse(text)).toEqual({ ok: false });
+  expect(spy).toHaveBeenCalled();
+  spy.mockRestore();
+});
