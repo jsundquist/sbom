@@ -6,10 +6,16 @@ import { NavBar } from '@/components/NavBar';
 import { Providers } from '@/components/Providers';
 import { requireOwnerPage } from '@/server/auth';
 
-export const metadata: Metadata = {
-  title: 'SBOM Dashboard',
-  description: 'Software bills of materials, vulnerable packages and outdated dependencies across applications.',
-};
+// A gated viewer learns nothing about what the app holds: the neutral text names neither SBOMs nor vulnerabilities.
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await requireOwnerPage()) !== null) {
+    return { title: 'Dashboard', description: 'Sign in required.' };
+  }
+  return {
+    title: 'SBOM Dashboard',
+    description: 'Software bills of materials, vulnerable packages and outdated dependencies across applications.',
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // No nav for a gated viewer: it would list what the app contains.

@@ -13,6 +13,7 @@ import { createTestDb } from './helpers';
 const headerStore = vi.hoisted(() => ({ current: new Headers() }));
 vi.mock('next/headers', () => ({ headers: async () => headerStore.current }));
 
+import { generateMetadata } from '@/app/layout';
 import Overview from '@/app/page';
 import Projects from '@/app/projects/page';
 import Project from '@/app/projects/[id]/page';
@@ -176,5 +177,17 @@ describe('guard coverage', () => {
     for (const k of Object.keys(ALLOW)) {
       expect(all).toContain(k);
     }
+  });
+});
+
+describe('layout metadata', () => {
+  test('neutral for signed-out and non-owner viewers, descriptive for the owner', async () => {
+    configure();
+    const neutral = async () => JSON.stringify(await generateMetadata());
+    expect(await neutral()).not.toMatch(/sbom|vulnerab|bill|dependenc/i);
+    await signInAs('999', 'mallory');
+    expect(await neutral()).not.toMatch(/sbom|vulnerab|bill|dependenc/i);
+    await signInAs(OWNER);
+    expect((await generateMetadata()).title).toBe('SBOM Dashboard');
   });
 });
