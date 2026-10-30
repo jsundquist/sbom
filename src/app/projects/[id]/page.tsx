@@ -6,6 +6,8 @@ import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import DownloadIcon from '@mui/icons-material/Download';
 import { getDb } from '@/db';
+import { requireOwnerPage } from '@/server/auth';
+import { AccessGate } from '@/components/AccessGate';
 import { parseIdOrNull } from '@/lib/params';
 import { getDependencyGraph, getProject } from '@/server/inventory';
 import { ComponentsGrid } from '@/components/ComponentsGrid';
@@ -26,6 +28,10 @@ export default async function ProjectPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ sbom?: string; tab?: string }>;
 }) {
+  const gate = await requireOwnerPage();
+  if (gate) {
+    return <AccessGate gate={gate} />;
+  }
   const id = parseIdOrNull((await params).id);
   const { sbom: sbomParam, tab } = await searchParams;
   const activeTab = tab === 'dependencies' ? 'dependencies' : 'packages';

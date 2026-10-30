@@ -4,6 +4,8 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { getDb } from '@/db';
+import { requireOwnerPage } from '@/server/auth';
+import { AccessGate } from '@/components/AccessGate';
 import { getOverview } from '@/server/inventory';
 import { requestOrigin } from '@/server/origin';
 import { KevChip, PendingChip, SeverityCounts } from '@/components/chips';
@@ -20,6 +22,10 @@ import { StatTile } from '@/components/StatTile';
 export const dynamic = 'force-dynamic';
 
 export default async function OverviewPage() {
+  const gate = await requireOwnerPage();
+  if (gate) {
+    return <AccessGate gate={gate} />;
+  }
   const data = await getOverview(getDb());
   if (!data.projectCount) {
     return (

@@ -114,21 +114,27 @@ describe('authOptions', () => {
     expect(process.env.AUTH_TRUST_HOST).toBeUndefined();
   });
 
-  test('signIn allows only the owner numeric id (numbers and strings), via github', async () => {
+  test('signIn lets any GitHub account with an id through (non-owners get the Access denied page), nothing else', async () => {
     const signIn = authOptions().callbacks!.signIn!;
     const call = (provider: string, id: unknown) => signIn({ account: { provider } as never, profile: { id } as never, user: {} as never });
     expect(await call('github', 4242)).toBe(true);
-    expect(await call('github', '4242')).toBe(true);
-    expect(await call('github', 4243)).toBe(false);
+    expect(await call('github', 4243)).toBe(true);
     expect(await call('github', undefined)).toBe(false);
+    expect(await call('github', '')).toBe(false);
     expect(await call('other', 4242)).toBe(false);
   });
 
-  test('empty owner id means nobody can sign in', async () => {
-    configure({ OWNER_GITHUB_ID: '' });
-    const signIn = authOptions().callbacks!.signIn!;
-    expect(await signIn({ account: { provider: 'github' } as never, profile: { id: '' } as never, user: {} as never })).toBe(false);
-    expect(await signIn({ account: { provider: 'github' } as never, profile: {} as never, user: {} as never })).toBe(false);
+  test('jwt callback keeps the GitHub login on sign-in so the denied page can show it', async () => {
+    const jwt = authOptions().callbacks!.jwt!;
+    const out = await jwt({
+      token: { sub: '9' },
+      profile: { id: 9, login: 'mallory' } as never,
+      account: { provider: 'github' } as never,
+      user: {} as never,
+    });
+    expect(out.login).toBe('mallory');
+    const later = await jwt({ token: { sub: '9', login: 'mallory' }, user: {} as never, account: null });
+    expect(later.login).toBe('mallory');
   });
 });
 

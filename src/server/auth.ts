@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import type { NextAuthOptions } from 'next-auth';
 import { getToken } from 'next-auth/jwt';
@@ -93,24 +94,35 @@ export function authOptions(fetchFn: FetchFn = fetch): NextAuthOptions {
       }),
     ],
     callbacks: {
-      // Seam for future grants: swap isOwner for an allow-list lookup.
-      signIn: ({ account, profile }) => account?.provider === 'github' && isOwner((profile as { id?: unknown } | undefined)?.id),
+      // Any GitHub account may sign in so a non-owner gets the Access denied page with their login; the owner
+      // check happens on every request (ownerState). Nothing is stored beyond the JWT cookie.
+      signIn: ({ account, profile }) => {
+        const id = (profile as { id?: unknown } | undefined)?.id;
+        return account?.provider === 'github' && id !== undefined && id !== null && String(id) !== '';
+      },
+      jwt: ({ token, profile }) => {
+        const login = (profile as { login?: unknown } | undefined)?.login;
+        if (typeof login === 'string') {
+          token.login = login;
+        }
+        return token;
+      },
     },
   };
 }
 
+export type OwnerState =
+  { state: 'open' } | { state: 'unavailable' } | { state: 'signed-out' } | { state: 'denied'; login?: string } | { state: 'owner' };
+
 /**
- * Guard for every GET handler. Returns an error response, or null when the caller may read.
- * Auth fully configured: 401 without a valid session, 403 for a non-owner (id re-checked against
- * current config each request). Not configured: open in dev/test, 503 in production unless ALLOW_OPEN_READS=true.
+ * The one owner decision shared by API routes and pages. Auth fully configured: signed-out, non-owner (id re-checked
+ * against current config each request) or owner. Not configured: open in dev/test, unavailable in production unless
+ * ALLOW_OPEN_READS=true.
  */
-export async function requireOwner(req: Request): Promise<NextResponse | null> {
+export async function ownerState(req: Request): Promise<OwnerState> {
   const e = env();
   if (!authConfigured()) {
-    if (e.NODE_ENV === 'production' && !e.ALLOW_OPEN_READS) {
-      return deny(503, 'Reads are disabled: configure owner sign-in (or ALLOW_OPEN_READS=true for local use)');
-    }
-    return null;
+    return e.NODE_ENV === 'production' && !e.ALLOW_OPEN_READS ? { state: 'unavailable' } : { state: 'open' };
   }
   // NextRequest parses the Cookie header into req.cookies, which getToken reads.
   const token = await getToken({
@@ -119,10 +131,43 @@ export async function requireOwner(req: Request): Promise<NextResponse | null> {
     secureCookie: e.NEXTAUTH_URL.startsWith('https://'),
   }).catch(() => null);
   if (!token?.sub) {
-    return deny(401, 'Sign in required');
+    return { state: 'signed-out' };
   }
   if (!isOwner(token.sub)) {
-    return deny(403, 'Access denied');
+    return { state: 'denied', login: typeof token.login === 'string' ? token.login : undefined };
   }
-  return null;
+  return { state: 'owner' };
+}
+
+/** Guard for every GET handler. Returns an error response (401, 403, or 503 when unavailable), or null when the caller may read. */
+export async function requireOwner(req: Request): Promise<NextResponse | null> {
+  const s = await ownerState(req);
+  switch (s.state) {
+    case 'unavailable':
+      return deny(503, 'Reads are disabled: configure owner sign-in (or ALLOW_OPEN_READS=true for local use)');
+    case 'signed-out':
+      return deny(401, 'Sign in required');
+    case 'denied':
+      return deny(403, 'Access denied');
+    default:
+      return null;
+  }
+}
+
+/** What a gated page renders instead of its content. Plain data so components can import the type only. */
+export type PageGate = { kind: 'sign-in' } | { kind: 'denied'; login?: string } | { kind: 'unavailable' };
+
+/** Page counterpart of requireOwner(): null when the viewer may see the page, else the gate to render. Call first. */
+export async function requireOwnerPage(): Promise<PageGate | null> {
+  const s = await ownerState(new Request('http://page.local/', { headers: await headers() }));
+  switch (s.state) {
+    case 'unavailable':
+      return { kind: 'unavailable' };
+    case 'signed-out':
+      return { kind: 'sign-in' };
+    case 'denied':
+      return { kind: 'denied', login: s.login };
+    default:
+      return null;
+  }
 }

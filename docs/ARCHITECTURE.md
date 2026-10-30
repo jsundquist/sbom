@@ -118,10 +118,9 @@ Owner-only reads (E-004; ADR 0001): `src/server/auth.ts` holds the next-auth v4 
 `jwt.maxAge` both 604800, `NEXTAUTH_URL` assigned to `process.env` from `env()`, `AUTH_TRUST_HOST` never set) and `requireOwner(req)`,
 called first in every `GET /api/v1/*` handler: 401 no session, 403 non-owner (numeric GitHub id compared as a string against
 `OWNER_GITHUB_ID`, re-checked per request), 503 in production without full auth config unless `ALLOW_OPEN_READS=true`; open in
-dev/test when auth is unconfigured. GitHub egress only through the injectable `FetchFn` in that module. Pages, proxy and the
-route-coverage test come with E-005..E-007.
+dev/test when auth is unconfigured. GitHub egress only through the injectable `FetchFn` in that module. Pages (E-005): every `page.tsx` starts with `requireOwnerPage()` (same `ownerState()` decision) and renders `AccessGate` (sign-in button, Access denied with login and sign-out link, or reads-disabled) in place; `tests/unit/page-auth.test.ts` fails if a page or route lacks the guard or an allow-list entry. The proxy comes with E-006/E-007.
 
-Known open items (do not silently "fix" unrelated to a task; track in `docs/features.json`): pages are still unauthenticated until E-005..E-007 land (E-002);
+Known open items (do not silently "fix" unrelated to a task; track in `docs/features.json`): the proxy layer lands with E-006/E-007 (E-002);
 the worker's external HTTP (SSRF via configurable API URLs) is not audited; no image signing/provenance; the rate limit is
 not shared across replicas.
 

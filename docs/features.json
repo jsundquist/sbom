@@ -725,7 +725,7 @@
       "epic": "E",
       "size": "M",
       "priority": 24,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "E-004"
       ],
@@ -738,7 +738,7 @@
         "A test enumerates every route.ts and page.tsx and fails if one lacks requireOwner() or an explicit allow-list entry (auth routes, healthz, bearer routes)",
         "pnpm run lint && pnpm test green"
       ],
-      "evidence": "",
+      "evidence": "2026-10-30: pnpm run typecheck, pnpm run lint:eslint, npx prettier --check . '!.claude' all clean; pnpm test 172 passed (13 files; new tests/unit/page-auth.test.ts, auth.test.ts updated); pnpm run build ok. Not run: pnpm run lint (worktree .claude Prettier warning), e2e (later ticket), live GitHub round trip. Deviations: signIn now admits any GitHub account (needed so a non-owner reaches Access denied) and a jwt callback stores login; 7 pages, not 6; layout hides NavBar when gated.",
       "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. "
     },
     {

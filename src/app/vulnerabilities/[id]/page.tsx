@@ -10,6 +10,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { getDb } from '@/db';
+import { requireOwnerPage } from '@/server/auth';
+import { AccessGate } from '@/components/AccessGate';
 import { getVulnerability } from '@/server/inventory';
 import { KevChip, SeverityChip } from '@/components/chips';
 import { DateTime } from '@/components/DateTime';
@@ -21,6 +23,10 @@ import { formatEpss } from '@/lib/epss';
 export const dynamic = 'force-dynamic';
 
 export default async function VulnerabilityPage({ params }: { params: Promise<{ id: string }> }) {
+  const gate = await requireOwnerPage();
+  if (gate) {
+    return <AccessGate gate={gate} />;
+  }
   const vuln = await getVulnerability(getDb(), decodeURIComponent((await params).id));
   if (!vuln) {
     notFound();

@@ -8,6 +8,11 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-30: E-005 Gated pages
+- Done: `ownerState()`/`requireOwnerPage()` in `src/server/auth.ts` (shared with `requireOwner`), `AccessGate` + `SignInButton` components, guard first in all 7 pages, NavBar hidden when gated (layout), coverage test in `tests/unit/page-auth.test.ts`. Branch `feat/E-005-gated-pages`.
+- Verified: typecheck, eslint, prettier --check, `pnpm test` (172 tests), `pnpm run build`. No e2e, no live GitHub round trip; gate renders in place with HTTP 200 (proxy/redirects are later tickets).
+- Gotchas: signIn callback must admit non-owners or they never get a session to show their login; owner check is per request.
+
 ## 2026-10-30: E-004 Owner-gated read API
 - Done: `src/server/auth.ts` (next-auth 4.24.15 options, `requireOwner(req)`, injectable-fetch GitHub token/userinfo), env vars
   `OWNER_GITHUB_ID`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `GITHUB_CLIENT_ID/SECRET`, `ALLOW_OPEN_READS`; guard on all 9 `GET /api/v1/*` handlers;
