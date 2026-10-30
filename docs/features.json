@@ -770,7 +770,7 @@
       "epic": "E",
       "size": "S",
       "priority": 24,
-      "status": "todo",
+      "status": "in_progress",
       "depends_on": [
         "E-006"
       ],
@@ -783,7 +783,7 @@
         "ARCHITECTURE.md#security and README setup notes document the owner-only gate and env vars; AGENTS.md exception for GitHub egress noted",
         "pnpm run lint && pnpm test && pnpm run test:e2e green"
       ],
-      "evidence": "",
+      "evidence": "2026-10-30: pnpm run lint and pnpm test (210 tests) green. NOT RUN: pnpm run test:e2e (both projects). The e2e Postgres at localhost:5432 rejected the default sbom_e2e credentials (password authentication failed for user sbom), so the new `authed` project (tests/e2e/auth.spec.ts, playwright.config.ts) is written and the config loads (project listed, spec failed red before config existed) but has not passed. Docs updated: README, .env.example, docker-compose.yml, ARCHITECTURE.md#security, AGENTS.md. Branch feat/E-007-authed-e2e-docs.",
       "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Needs Postgres for e2e."
     }
   ]

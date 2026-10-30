@@ -145,3 +145,8 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Next: A-003 (see `features.json`).
 - Gotchas: Dockerfile/compose intentionally run scripts with `npm` in the runtime stage; that is not a leftover from the pnpm
   migration. Do not commit `pnpm-lock.yaml` churn unrelated to a dependency change.
+
+## 2026-10-30: E-007 authed e2e and security docs (in progress)
+- Done: `authed` Playwright project (own port 3101, auth on, dummy GitHub creds, session forged with `next-auth/jwt`) in `playwright.config.ts` + `tests/e2e/auth.spec.ts`; existing `chromium` project unchanged (auth off, ignores auth spec). README owner-sign-in section, `.env.example`, compose env passthrough, ARCHITECTURE.md#security, AGENTS.md pointer to ADR 0001. `pnpm run lint` and `pnpm test` (210) green.
+- Blocked: `pnpm run test:e2e` not run; local Postgres refused the default `sbom:sbom` credentials for `sbom_e2e`. E-007 stays `in_progress`, E-002 stays `todo` until e2e passes.
+- Next: run `pnpm run build && pnpm run test:e2e` with a reachable E2E_DATABASE_URL, then mark E-007 and E-002 done.

@@ -42,7 +42,7 @@ This file is the entry point for any coding agent. `CLAUDE.md` imports it. Keep 
 - Reads go through `src/server/inventory.ts`; writes through `src/server/ingest.ts`. Pages and API routes share these functions.
 - The app and worker communicate **only through Postgres** (tables plus `NOTIFY sbom_uploaded`). The app must never import worker enrichment to run it; the worker must never call app routes.
 - All external input is validated with Zod (env in `src/lib/env.ts`, upload metadata, SBOM documents, OSV/deps.dev responses). Read config via `env()`, never `process.env` directly.
-- External HTTP only from `src/worker/`, always through the injectable `FetchFn` so tests can fake it. Tests never hit the network.
+- External HTTP only from `src/worker/`, always through the injectable `FetchFn` so tests can fake it. Tests never hit the network. The one exception is GitHub sign-in egress from `src/server/auth.ts` (ADR 0001, `docs/adr/0001-github-oauth-egress-from-web-app.md`).
 
 ## Code style
 
