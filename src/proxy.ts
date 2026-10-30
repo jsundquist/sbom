@@ -1,7 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { ownerState } from '@/server/auth';
-
-const deny = (status: number, error: string) => NextResponse.json({ error }, { status });
+import { denial, deny, ownerState } from '@/server/auth';
 
 /** Paths that never need a session (the next-auth endpoints rate-limit themselves; see the route handler). */
 function isOpenPath(path: string): boolean {
@@ -36,19 +34,15 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
   if (isOpenPath(path) || isBearerRoute(req.method, path)) {
     return NextResponse.next();
   }
-  const s = await ownerState(req);
-  if (s.state === 'owner' || s.state === 'open') {
+  const d = denial(await ownerState(req.headers));
+  if (!d) {
     return NextResponse.next();
   }
-  if (s.state === 'unavailable') {
-    const message = 'Reads are disabled: configure owner sign-in (or ALLOW_OPEN_READS=true for local use)';
-    return wantsJson(path) ? deny(503, message) : new NextResponse(message, { status: 503 });
-  }
   if (wantsJson(path)) {
-    if (s.state === 'signed-out') {
-      return deny(401, 'Sign in required');
-    }
-    return deny(403, 'Access denied');
+    return deny(d.status, d.message);
+  }
+  if (d.status === 503) {
+    return new NextResponse(d.message, { status: 503 });
   }
   // There is no sign-in route: the AccessGate renders in place on "/". Leave "/" alone (no loop) and send every other
   // page URL there with the query dropped, so a probe learns nothing about which pages exist.

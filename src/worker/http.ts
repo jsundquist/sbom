@@ -1,6 +1,7 @@
 import type { z } from 'zod';
+import type { FetchFn } from '@/lib/fetch';
 
-export type FetchFn = typeof fetch;
+export type { FetchFn };
 
 export class HttpError extends Error {
   constructor(

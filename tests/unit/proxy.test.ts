@@ -4,7 +4,7 @@ import { encode } from 'next-auth/jwt';
 import { resetEnv } from '@/lib/env';
 import { proxy } from '@/proxy';
 import { GET as authGet } from '@/app/api/auth/[...nextauth]/route';
-import { resetRateLimits } from '@/server/api';
+import { checkUploadToken, resetRateLimits } from '@/server/api';
 
 // The real handler needs a Next request scope (cookies()); the limiter runs before it, which is what is under test.
 vi.mock('next-auth', () => ({ default: () => new Response('{}', { status: 200 }) }));
@@ -153,7 +153,7 @@ describe('proxy: unconfigured auth', () => {
 describe('auth routes rate limit', () => {
   test('the next-auth handler is limited, and the proxy does not spend that budget', async () => {
     configure();
-    vi.stubEnv('WRITE_RATE_LIMIT', '2');
+    vi.stubEnv('AUTH_RATE_LIMIT', '2');
     resetEnv();
     resetRateLimits();
     for (let i = 0; i < 5; i++) {
@@ -165,6 +165,23 @@ describe('auth routes rate limit', () => {
     const limited = await call();
     expect(limited.status).toBe(429);
     expect(limited.headers.get('retry-after')).toBeTruthy();
+    resetRateLimits();
+  });
+});
+
+describe('auth rate limit bucket', () => {
+  test('hammering /api/auth/* never makes uploads or deletes return 429', async () => {
+    configure();
+    vi.stubEnv('WRITE_RATE_LIMIT', '2');
+    vi.stubEnv('AUTH_RATE_LIMIT', '100');
+    resetEnv();
+    resetRateLimits();
+    const call = () => authGet(req('/api/auth/csrf'), { params: Promise.resolve({ nextauth: ['csrf'] }) });
+    for (let i = 0; i < 150; i++) {
+      await call();
+    }
+    expect((await call()).status).toBe(429);
+    expect(checkUploadToken(new Request(`${BASE}/api/v1/sboms`, { method: 'POST' }))).toBeNull();
     resetRateLimits();
   });
 });

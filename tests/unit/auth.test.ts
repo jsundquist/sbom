@@ -67,6 +67,12 @@ describe('requireOwner with auth configured', () => {
     expect((await requireOwner(req))?.status).toBe(403);
   });
 
+  test('an Authorization: Bearer session token is ignored; sessions travel only in the cookie', async () => {
+    const jwt = await encode({ token: { sub: OWNER }, secret: SECRET, maxAge: 3600 });
+    const req = new Request('http://dash.test/x', { headers: { authorization: `Bearer ${jwt}` } });
+    expect((await requireOwner(req))?.status).toBe(401);
+  });
+
   test('https NEXTAUTH_URL reads the __Secure- cookie only', async () => {
     configure({ NEXTAUTH_URL: 'https://dash.test' });
     expect((await requireOwner(await reqWith(OWNER)))?.status).toBe(401);
@@ -88,6 +94,24 @@ describe('requireOwner without full auth config', () => {
       expect((await requireOwner(await reqWith(OWNER)))?.status).toBe(503);
     },
   );
+
+  test.each([
+    ['one-character secret', { NEXTAUTH_SECRET: 'x' }],
+    ['31-character secret', { NEXTAUTH_SECRET: 'x'.repeat(31) }],
+    ['URL that is not http(s)', { NEXTAUTH_URL: 'ftp://dash.test' }],
+    ['URL that is not a URL', { NEXTAUTH_URL: 'dash.test' }],
+  ])('production with a %s -> 503, even with a cookie forged using that secret', async (_name, extra) => {
+    configure({ NODE_ENV: 'production', ...extra });
+    const secret = 'NEXTAUTH_SECRET' in extra ? extra.NEXTAUTH_SECRET : SECRET;
+    const jwt = await encode({ token: { sub: OWNER }, secret, maxAge: 3600 });
+    const req = new Request('http://dash.test/x', { headers: { cookie: `next-auth.session-token=${jwt}` } });
+    expect((await requireOwner(req))?.status).toBe(503);
+  });
+
+  test('a 32-character secret is accepted', async () => {
+    configure({ NEXTAUTH_SECRET: 'y'.repeat(32) });
+    expect((await requireOwner(await reqWith()))?.status).toBe(401);
+  });
 
   test('production with ALLOW_OPEN_READS=true is open', async () => {
     vi.stubEnv('NODE_ENV', 'production');
@@ -133,6 +157,13 @@ describe('authOptions', () => {
       user: {} as never,
     });
     expect(out.login).toBe('mallory');
+    const first = await jwt({
+      token: {},
+      profile: { id: 4242, login: 'x' } as never,
+      account: { provider: 'github' } as never,
+      user: {} as never,
+    });
+    expect(first.sub).toBe('4242');
     const later = await jwt({ token: { sub: '9', login: 'mallory' }, user: {} as never, account: null });
     expect(later.login).toBe('mallory');
   });

@@ -3,21 +3,38 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { NextAuthOptions } from 'next-auth';
 import { getToken } from 'next-auth/jwt';
 import GithubProvider from 'next-auth/providers/github';
-import { env } from '@/lib/env';
+import { env, MIN_AUTH_SECRET_LENGTH } from '@/lib/env';
+import type { FetchFn } from '@/lib/fetch';
 
 const SESSION_SECONDS = 7 * 24 * 3600;
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_OAUTH = 'https://github.com/login/oauth';
 
-/** Same shape as the worker's FetchFn; redeclared because server/ may not import worker/. */
-export type FetchFn = typeof fetch;
+export const deny = (status: number, error: string) => NextResponse.json({ error }, { status });
 
-const deny = (status: number, error: string) => NextResponse.json({ error }, { status });
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
 
-/** True when every setting needed for owner-only sign-in is present. */
+/**
+ * True when every setting needed for owner-only sign-in is present and usable. The owner id is public on GitHub, so a
+ * short secret would let anyone forge a session: below MIN_AUTH_SECRET_LENGTH auth counts as not configured (which is
+ * 503 in production, never a quietly weak gate).
+ */
 export function authConfigured(): boolean {
   const e = env();
-  return Boolean(e.OWNER_GITHUB_ID && e.NEXTAUTH_SECRET && e.NEXTAUTH_URL && e.GITHUB_CLIENT_ID && e.GITHUB_CLIENT_SECRET);
+  return Boolean(
+    e.OWNER_GITHUB_ID &&
+    e.NEXTAUTH_SECRET.length >= MIN_AUTH_SECRET_LENGTH &&
+    isHttpUrl(e.NEXTAUTH_URL) &&
+    e.GITHUB_CLIENT_ID &&
+    e.GITHUB_CLIENT_SECRET,
+  );
 }
 
 /** Empty owner id means nobody. Compared as strings; GitHub ids are int64 numbers in the API. */
@@ -101,6 +118,11 @@ export function authOptions(fetchFn: FetchFn = fetch): NextAuthOptions {
         return account?.provider === 'github' && id !== undefined && id !== null && String(id) !== '';
       },
       jwt: ({ token, profile }) => {
+        // Set sub from the GitHub numeric id explicitly rather than relying on the provider's default profile mapping.
+        const id = (profile as { id?: unknown } | undefined)?.id;
+        if (id !== undefined && id !== null) {
+          token.sub = String(id);
+        }
         const login = (profile as { login?: unknown } | undefined)?.login;
         if (typeof login === 'string') {
           token.login = login;
@@ -138,14 +160,15 @@ export type OwnerState =
  * against current config each request) or owner. Not configured: open in dev/test, unavailable in production unless
  * ALLOW_OPEN_READS=true.
  */
-export async function ownerState(req: Request): Promise<OwnerState> {
+export async function ownerState(reqHeaders: Headers): Promise<OwnerState> {
   const e = env();
   if (!authConfigured()) {
     return e.NODE_ENV === 'production' && !e.ALLOW_OPEN_READS ? { state: 'unavailable' } : { state: 'open' };
   }
   const token = await getToken({
-    // The types only admit request classes, but v4 reads just cookies and headers.
-    req: { cookies: parseCookies(req.headers.get('cookie')), headers: req.headers } as unknown as NextRequest,
+    // The types only admit request classes, but v4 reads just cookies and headers. Empty headers on purpose: v4 would
+    // also accept `Authorization: Bearer <session JWE>`, and sessions must travel only in the cookie.
+    req: { cookies: parseCookies(reqHeaders.get('cookie')), headers: new Headers() } as unknown as NextRequest,
     secret: e.NEXTAUTH_SECRET,
     secureCookie: e.NEXTAUTH_URL.startsWith('https://'),
   }).catch(() => null);
@@ -158,19 +181,24 @@ export async function ownerState(req: Request): Promise<OwnerState> {
   return { state: 'owner' };
 }
 
-/** Guard for every GET handler. Returns an error response (401, 403, or 503 when unavailable), or null when the caller may read. */
-export async function requireOwner(req: Request): Promise<NextResponse | null> {
-  const s = await ownerState(req);
+/** The one OwnerState -> HTTP mapping (status + message) for every gate; null when the viewer may read. */
+export function denial(s: OwnerState): { status: 401 | 403 | 503; message: string } | null {
   switch (s.state) {
     case 'unavailable':
-      return deny(503, 'Reads are disabled: configure owner sign-in (or ALLOW_OPEN_READS=true for local use)');
+      return { status: 503, message: 'Reads are disabled: configure owner sign-in (or ALLOW_OPEN_READS=true for local use)' };
     case 'signed-out':
-      return deny(401, 'Sign in required');
+      return { status: 401, message: 'Sign in required' };
     case 'denied':
-      return deny(403, 'Access denied');
+      return { status: 403, message: 'Access denied' };
     default:
       return null;
   }
+}
+
+/** Guard for every GET handler. Returns an error response (401, 403, or 503 when unavailable), or null when the caller may read. */
+export async function requireOwner(req: Request): Promise<NextResponse | null> {
+  const d = denial(await ownerState(req.headers));
+  return d ? deny(d.status, d.message) : null;
 }
 
 /** What a gated page renders instead of its content. Plain data so components can import the type only. */
@@ -178,7 +206,7 @@ export type PageGate = { kind: 'sign-in' } | { kind: 'denied'; login?: string } 
 
 /** Page counterpart of requireOwner(): null when the viewer may see the page, else the gate to render. Call first. */
 export async function requireOwnerPage(): Promise<PageGate | null> {
-  const s = await ownerState(new Request('http://page.local/', { headers: await headers() }));
+  const s = await ownerState(await headers());
   switch (s.state) {
     case 'unavailable':
       return { kind: 'unavailable' };

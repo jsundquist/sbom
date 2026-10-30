@@ -6,7 +6,7 @@ type Ctx = { params: Promise<{ nextauth: string[] }> };
 
 // Options are built per request so env() is read at runtime, not at build time.
 async function handler(req: Request, ctx: Ctx) {
-  const limited = checkRateLimit(req);
+  const limited = checkRateLimit(req, Date.now(), 'auth');
   if (limited) {
     return limited;
   }
