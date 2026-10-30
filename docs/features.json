@@ -712,7 +712,7 @@
       ],
       "acceptance": [
         "next-auth v4 pinned exactly; owner id, secrets, GitHub creds, NEXTAUTH_URL and ALLOW_OPEN_READS read via env() with Zod; session.maxAge and jwt.maxAge 604800",
-        "signIn callback allows only the owner's numeric GitHub id (string compare, empty = nobody); id re-checked on every request",
+        "signIn callback admits any GitHub account with an id (so a non-owner reaches the Access denied page); the owner's numeric GitHub id (string compare, empty = nobody) is checked on every request and everyone else gets 401/403",
         "Every GET /api/v1/* route calls requireOwner(): no session 401, non-owner 403, owner 200; production without full auth config 503 unless ALLOW_OPEN_READS=true; dev/test open by default",
         "Route-handler tests with forged sessions for each case; pnpm run lint && pnpm test green"
       ],

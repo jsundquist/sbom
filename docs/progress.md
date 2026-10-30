@@ -5,25 +5,39 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 ## Current state
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
-- Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
+- Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-30: Owner-auth review fixes
+- Done (branch `fix/owner-auth-review`, on top of `feat/owner-auth`): secret must be >= 32 chars and `NEXTAUTH_URL` http(s), else auth counts as not configured (503 in production); `/api/auth/*` has its own rate-limit bucket (`AUTH_RATE_LIMIT`, default 60) so it cannot exhaust uploads/deletes; `/api/healthz` returns `{ok:false}` and logs the detail server-side; layout metadata is neutral for gated viewers; `Authorization: Bearer` is ignored for sessions (cookie only); jwt callback sets `token.sub` from `String(profile.id)` explicitly; one `denial()` mapping shared by `requireOwner`, `proxy()` (and `requireOwnerPage` via `ownerState(Headers)`); `FetchFn` single definition in `src/lib/fetch.ts`.
+- Gotchas: the older E-004 note below about passing `new NextRequest(req)` to `getToken` is superseded: wrapping throws in the Next runtime, so `ownerState` hands `getToken` a plain cookie record and empty headers. With `TRUST_PROXY` off all clients still share one bucket per scope, so an anonymous flood of `/api/auth/*` can still rate-limit sign-in itself (not uploads); set `TRUST_PROXY=true` behind a proxy for per-client limits. v4's github provider already maps `sub` to `profile.id.toString()`; the explicit set is hardening, not a bug fix.
+
+## 2026-10-30: E-007 verified, E-002 done
+- e2e (13 tests) run for the first time against a throwaway postgres container; found and fixed: `new NextRequest(req)` in `ownerState` throws "Cannot read private member #state" in the Next runtime (owner got 500, unit tests passed because they use plain `Request`; regression test added with a real `NextRequest`); existing chromium e2e server now sets `ALLOW_OPEN_READS=true` since `next start` is production.
+- Gotcha: a stale gitignored `.next/` from another branch can break `tsc` (`.next/types/validator.ts`); delete it. Worktrees inside the repo (`.claude/worktrees/`) make `pnpm run lint` fail on Prettier/ESLint while they exist.
+- Not verified: live GitHub OAuth round trip (E-003).
+
+## 2026-10-30: E-007 authed e2e and security docs
+- Done: `authed` Playwright project (own port 3101, auth on, dummy GitHub creds, session forged with `next-auth/jwt`) in `playwright.config.ts` + `tests/e2e/auth.spec.ts`; existing `chromium` project unchanged (auth off, ignores auth spec). README owner-sign-in section, `.env.example`, compose env passthrough, ARCHITECTURE.md#security, AGENTS.md pointer to ADR 0001. `pnpm run lint` and `pnpm test` (210) green.
+- Superseded: the e2e run that was blocked here later passed against a throwaway Postgres (see the entry above).
+- Branch `feat/owner-auth`.
+
 ## 2026-10-30: E-006 Proxy gate
-- Done: `src/proxy.ts` (Next 16 proxy, reuses `ownerState()`), `tests/unit/proxy.test.ts` (38 tests, calls `proxy()` with `NextRequest`). Non-owner page URLs redirect to `/`, which passes through to render the gate. Branch `feat/E-006-proxy-gate`.
+- Done: `src/proxy.ts` (Next 16 proxy, reuses `ownerState()`), `tests/unit/proxy.test.ts` (38 tests, calls `proxy()` with `NextRequest`). Non-owner page URLs redirect to `/`, which passes through to render the gate. Branch `feat/owner-auth`.
 - Verified: typecheck, eslint, prettier --check, `pnpm test`, `pnpm run build`. No e2e, no live round trip.
 - Gotchas: `NextRequest.nextUrl` rewrites `/_next/data/<build>/x.json` to `/x`, so the proxy reads the raw `req.url`. Rate limit on auth routes was already in the E-004 handler; test mocks `next-auth` because the real handler needs a request scope.
 
 ## 2026-10-30: E-005 Gated pages
-- Done: `ownerState()`/`requireOwnerPage()` in `src/server/auth.ts` (shared with `requireOwner`), `AccessGate` + `SignInButton` components, guard first in all 7 pages, NavBar hidden when gated (layout), coverage test in `tests/unit/page-auth.test.ts`. Branch `feat/E-005-gated-pages`.
+- Done: `ownerState()`/`requireOwnerPage()` in `src/server/auth.ts` (shared with `requireOwner`), `AccessGate` + `SignInButton` components, guard first in all 7 pages, NavBar hidden when gated (layout), coverage test in `tests/unit/page-auth.test.ts`. Branch `feat/owner-auth`.
 - Verified: typecheck, eslint, prettier --check, `pnpm test` (172 tests), `pnpm run build`. No e2e, no live GitHub round trip; gate renders in place with HTTP 200 (proxy/redirects are later tickets).
 - Gotchas: signIn callback must admit non-owners or they never get a session to show their login; owner check is per request.
 
 ## 2026-10-30: E-004 Owner-gated read API
 - Done: `src/server/auth.ts` (next-auth 4.24.15 options, `requireOwner(req)`, injectable-fetch GitHub token/userinfo), env vars
   `OWNER_GITHUB_ID`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `GITHUB_CLIENT_ID/SECRET`, `ALLOW_OPEN_READS`; guard on all 9 `GET /api/v1/*` handlers;
-  `/api/auth/[...nextauth]` handler with the write rate limiter. Branch `feat/E-004-owner-gated-api`.
+  `/api/auth/[...nextauth]` handler with the write rate limiter. Branch `feat/owner-auth`.
 - Verified: `pnpm run lint`, `pnpm test` (130 tests, 49 new). No live GitHub round trip, no pages/proxy/e2e (E-005..E-007).
-- Gotchas: `getToken` needs `req.cookies`, so pass `new NextRequest(req)`; cookie name follows `NEXTAUTH_URL` scheme (`__Secure-` on https).
+- Gotchas: `getToken` needs `req.cookies` (do NOT wrap in `new NextRequest(req)`: it throws in the Next runtime; superseded, see E-007 verified); cookie name follows `NEXTAUTH_URL` scheme (`__Secure-` on https).
   GET handlers now take a `Request` argument.
 
 ## 2026-10-16: Worker poll interval
@@ -145,13 +159,3 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Next: A-003 (see `features.json`).
 - Gotchas: Dockerfile/compose intentionally run scripts with `npm` in the runtime stage; that is not a leftover from the pnpm
   migration. Do not commit `pnpm-lock.yaml` churn unrelated to a dependency change.
-
-## 2026-10-30: E-007 authed e2e and security docs (in progress)
-- Done: `authed` Playwright project (own port 3101, auth on, dummy GitHub creds, session forged with `next-auth/jwt`) in `playwright.config.ts` + `tests/e2e/auth.spec.ts`; existing `chromium` project unchanged (auth off, ignores auth spec). README owner-sign-in section, `.env.example`, compose env passthrough, ARCHITECTURE.md#security, AGENTS.md pointer to ADR 0001. `pnpm run lint` and `pnpm test` (210) green.
-- Blocked: `pnpm run test:e2e` not run; local Postgres refused the default `sbom:sbom` credentials for `sbom_e2e`. E-007 stays `in_progress`, E-002 stays `todo` until e2e passes.
-- Next: run `pnpm run build && pnpm run test:e2e` with a reachable E2E_DATABASE_URL, then mark E-007 and E-002 done.
-
-## 2026-10-30: E-007 verified, E-002 done
-- e2e (13 tests) run for the first time against a throwaway postgres container; found and fixed: `new NextRequest(req)` in `ownerState` throws "Cannot read private member #state" in the Next runtime (owner got 500, unit tests passed because they use plain `Request`; regression test added with a real `NextRequest`); existing chromium e2e server now sets `ALLOW_OPEN_READS=true` since `next start` is production.
-- Gotcha: a stale gitignored `.next/` from another branch can break `tsc` (`.next/types/validator.ts`); delete it. Worktrees inside the repo (`.claude/worktrees/`) make `pnpm run lint` fail on Prettier/ESLint while they exist.
-- Not verified: live GitHub OAuth round trip (E-003).
