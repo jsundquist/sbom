@@ -659,7 +659,7 @@
       "title": "Roles: collapse viewer/maintainer/admin to a single owner?",
       "epic": "E",
       "priority": 23,
-      "status": "todo",
+      "status": "in_progress",
       "depends_on": [
         "W-003"
       ],
@@ -671,7 +671,8 @@
         "Answer recorded in notes and gist appended to W-001 Decisions so far"
       ],
       "evidence": "",
-      "notes": "QUESTION: With one user, are roles dead weight? Re-scope E-002 acceptance criteria accordingly."
+      "notes": "QUESTION: With one user, are roles dead weight? Re-scope E-002 acceptance criteria accordingly.",
+      "assignee": "jsundquist"
     }
   ]
 }
