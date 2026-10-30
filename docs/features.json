@@ -557,7 +557,7 @@
       "epic": "E",
       "size": "M",
       "priority": 24,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "Design is already decided: see map W-001 notes, W-003/W-004 notes and docs/adr/0001; record it in ARCHITECTURE.md#security before or with the code",
@@ -568,7 +568,7 @@
         "Existing in-memory rate limiter applied to auth routes; GitHub egress confined to the auth module via injectable FetchFn (ADR 0001)",
         "Test enumerates every route.ts and page.tsx and fails if one lacks requireOwner() or an allow-list entry; unit tests for owner, non-owner, no session; one Playwright spec with auth enabled using a forged session cookie"
       ],
-      "evidence": "",
+      "evidence": "2026-10-30: E-004, E-005, E-006, E-007 done. 2026-10-30: pnpm run lint clean; pnpm test 211 passed (14 files); pnpm run build ok; pnpm run test:e2e 13 passed (9 chromium with auth off + ALLOW_OPEN_READS, 4 authed with forged next-auth session cookies) against a throwaway postgres:18 container. The e2e run found two defects the unit tests missed, both fixed: requireOwner() wrapped the request in a NextRequest, which throws in the Next runtime (owner got 500); and the existing chromium server, which runs `next start` in production, needed ALLOW_OPEN_READS=true. Live GitHub sign-in not run (E-003).",
       "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004. 2026-10-30: being re-scoped by map W-001 (single owner, in-app auth, public deployment). 2026-10-30: re-scoped by map W-001: roles dropped (single owner), ops work split into E-003. Split into child tickets E-004, E-005, E-006, E-007; E-002 is done when all four are done."
     },
     {
@@ -770,7 +770,7 @@
       "epic": "E",
       "size": "S",
       "priority": 24,
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "E-006"
       ],
@@ -783,7 +783,7 @@
         "ARCHITECTURE.md#security and README setup notes document the owner-only gate and env vars; AGENTS.md exception for GitHub egress noted",
         "pnpm run lint && pnpm test && pnpm run test:e2e green"
       ],
-      "evidence": "2026-10-30: pnpm run lint and pnpm test (210 tests) green. NOT RUN: pnpm run test:e2e (both projects). The e2e Postgres at localhost:5432 rejected the default sbom_e2e credentials (password authentication failed for user sbom), so the new `authed` project (tests/e2e/auth.spec.ts, playwright.config.ts) is written and the config loads (project listed, spec failed red before config existed) but has not passed. Docs updated: README, .env.example, docker-compose.yml, ARCHITECTURE.md#security, AGENTS.md. Branch feat/E-007-authed-e2e-docs.",
+      "evidence": "2026-10-30: pnpm run lint clean; pnpm test 211 passed (14 files); pnpm run build ok; pnpm run test:e2e 13 passed (9 chromium with auth off + ALLOW_OPEN_READS, 4 authed with forged next-auth session cookies) against a throwaway postgres:18 container. The e2e run found two defects the unit tests missed, both fixed: requireOwner() wrapped the request in a NextRequest, which throws in the Next runtime (owner got 500); and the existing chromium server, which runs `next start` in production, needed ALLOW_OPEN_READS=true. Live GitHub sign-in not run (E-003).",
       "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Needs Postgres for e2e."
     }
   ]

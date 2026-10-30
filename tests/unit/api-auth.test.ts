@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { NextRequest } from 'next/server';
 import { encode } from 'next-auth/jwt';
 import { setDb } from '@/db';
 import { resetEnv } from '@/lib/env';
@@ -86,6 +87,13 @@ describe.each(ROUTES)('GET /api/v1/%s', (_name, call) => {
 test('summary returns data for the owner', async () => {
   configure();
   const res = await getSummary(new Request(`${BASE}/api/v1/summary`, { headers: await session(OWNER) }));
+  expect(res.status).toBe(200);
+});
+
+// Next hands route handlers a NextRequest; wrapping one in another NextRequest threw at runtime.
+test('summary accepts a NextRequest from the owner', async () => {
+  configure();
+  const res = await getSummary(new NextRequest(`${BASE}/api/v1/summary`, { headers: await session(OWNER) }));
   expect(res.status).toBe(200);
 });
 

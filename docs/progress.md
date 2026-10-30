@@ -150,3 +150,8 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Done: `authed` Playwright project (own port 3101, auth on, dummy GitHub creds, session forged with `next-auth/jwt`) in `playwright.config.ts` + `tests/e2e/auth.spec.ts`; existing `chromium` project unchanged (auth off, ignores auth spec). README owner-sign-in section, `.env.example`, compose env passthrough, ARCHITECTURE.md#security, AGENTS.md pointer to ADR 0001. `pnpm run lint` and `pnpm test` (210) green.
 - Blocked: `pnpm run test:e2e` not run; local Postgres refused the default `sbom:sbom` credentials for `sbom_e2e`. E-007 stays `in_progress`, E-002 stays `todo` until e2e passes.
 - Next: run `pnpm run build && pnpm run test:e2e` with a reachable E2E_DATABASE_URL, then mark E-007 and E-002 done.
+
+## 2026-10-30: E-007 verified, E-002 done
+- e2e (13 tests) run for the first time against a throwaway postgres container; found and fixed: `new NextRequest(req)` in `ownerState` throws "Cannot read private member #state" in the Next runtime (owner got 500, unit tests passed because they use plain `Request`; regression test added with a real `NextRequest`); existing chromium e2e server now sets `ALLOW_OPEN_READS=true` since `next start` is production.
+- Gotcha: a stale gitignored `.next/` from another branch can break `tsc` (`.next/types/validator.ts`); delete it. Worktrees inside the repo (`.claude/worktrees/`) make `pnpm run lint` fail on Prettier/ESLint while they exist.
+- Not verified: live GitHub OAuth round trip (E-003).

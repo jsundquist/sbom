@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import type { NextAuthOptions } from 'next-auth';
 import { getToken } from 'next-auth/jwt';
 import GithubProvider from 'next-auth/providers/github';
@@ -111,6 +111,25 @@ export function authOptions(fetchFn: FetchFn = fetch): NextAuthOptions {
   };
 }
 
+// getToken only reads req.cookies and req.headers. Wrapping the request in a NextRequest throws inside Next's runtime
+// ("Cannot read private member #state"), so hand it a plain cookie record instead.
+function parseCookies(header: string | null): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of (header ?? '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0) {
+      const name = part.slice(0, i).trim();
+      const value = part.slice(i + 1).trim();
+      try {
+        out[name] = decodeURIComponent(value);
+      } catch {
+        out[name] = value;
+      }
+    }
+  }
+  return out;
+}
+
 export type OwnerState =
   { state: 'open' } | { state: 'unavailable' } | { state: 'signed-out' } | { state: 'denied'; login?: string } | { state: 'owner' };
 
@@ -124,9 +143,9 @@ export async function ownerState(req: Request): Promise<OwnerState> {
   if (!authConfigured()) {
     return e.NODE_ENV === 'production' && !e.ALLOW_OPEN_READS ? { state: 'unavailable' } : { state: 'open' };
   }
-  // NextRequest parses the Cookie header into req.cookies, which getToken reads.
   const token = await getToken({
-    req: new NextRequest(req),
+    // The types only admit request classes, but v4 reads just cookies and headers.
+    req: { cookies: parseCookies(req.headers.get('cookie')), headers: req.headers } as unknown as NextRequest,
     secret: e.NEXTAUTH_SECRET,
     secureCookie: e.NEXTAUTH_URL.startsWith('https://'),
   }).catch(() => null);

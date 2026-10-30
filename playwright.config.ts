@@ -35,7 +35,8 @@ export default defineConfig({
       command: `npx next start -p ${PORT}`,
       url: `http://localhost:${PORT}/api/healthz`,
       reuseExistingServer: false,
-      env: { DATABASE_URL: E2E_DATABASE_URL, UPLOAD_TOKENS: 'e2e-token' },
+      // `next start` is production, where unconfigured auth fails closed; this server tests the open dashboard.
+      env: { DATABASE_URL: E2E_DATABASE_URL, UPLOAD_TOKENS: 'e2e-token', ALLOW_OPEN_READS: 'true' },
     },
     {
       command: `npx next start -p ${AUTH_PORT}`,
