@@ -22,6 +22,18 @@ const schema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((v) => v === 'true'),
+  /** Owner-only sign-in (next-auth v4, GitHub). Reads are gated only when all five are set. */
+  OWNER_GITHUB_ID: z.string().trim().default(''),
+  NEXTAUTH_SECRET: z.string().default(''),
+  /** Canonical public URL; also decides the session cookie name (https -> __Secure-). */
+  NEXTAUTH_URL: z.string().default(''),
+  GITHUB_CLIENT_ID: z.string().default(''),
+  GITHUB_CLIENT_SECRET: z.string().default(''),
+  /** In production, reads return 503 when auth is not fully configured unless this is "true". */
+  ALLOW_OPEN_READS: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   NODE_ENV: z.string().default('development'),
   MAX_UPLOAD_BYTES: z.coerce
     .number()

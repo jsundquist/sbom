@@ -8,6 +8,14 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-30: E-004 Owner-gated read API
+- Done: `src/server/auth.ts` (next-auth 4.24.15 options, `requireOwner(req)`, injectable-fetch GitHub token/userinfo), env vars
+  `OWNER_GITHUB_ID`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `GITHUB_CLIENT_ID/SECRET`, `ALLOW_OPEN_READS`; guard on all 9 `GET /api/v1/*` handlers;
+  `/api/auth/[...nextauth]` handler with the write rate limiter. Branch `feat/E-004-owner-gated-api`.
+- Verified: `pnpm run lint`, `pnpm test` (130 tests, 49 new). No live GitHub round trip, no pages/proxy/e2e (E-005..E-007).
+- Gotchas: `getToken` needs `req.cookies`, so pass `new NextRequest(req)`; cookie name follows `NEXTAUTH_URL` scheme (`__Secure-` on https).
+  GET handlers now take a `Request` argument.
+
 ## 2026-10-16: Worker poll interval
 - Done: `WORKER_POLL_SECONDS` default 30s -> 6h, with a 300s floor (`MIN_WORKER_POLL_SECONDS`, clamped in `src/lib/env.ts`) so a
   low override such as 5s cannot hammer OSV, deps.dev, CISA or FIRST. Uploads still wake the worker via NOTIFY. Branch `fix/worker-poll-interval`.

@@ -1,9 +1,14 @@
 import { getDb } from '@/db';
+import { requireOwner } from '@/server/auth';
 import { jsonError, parseId } from '@/server/api';
 import { getSbomDocument } from '@/server/inventory';
 
 /** Downloads the original SBOM document. */
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireOwner(req);
+  if (denied) {
+    return denied;
+  }
   const id = parseId((await params).id);
   const row = id ? await getSbomDocument(getDb(), id) : null;
   if (!row) {

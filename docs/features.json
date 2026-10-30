@@ -704,7 +704,7 @@
       "epic": "E",
       "size": "M",
       "priority": 24,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "parent": "E-002",
       "labels": [
@@ -716,7 +716,7 @@
         "Every GET /api/v1/* route calls requireOwner(): no session 401, non-owner 403, owner 200; production without full auth config 503 unless ALLOW_OPEN_READS=true; dev/test open by default",
         "Route-handler tests with forged sessions for each case; pnpm run lint && pnpm test green"
       ],
-      "evidence": "",
+      "evidence": "2026-10-30: `pnpm run lint` (tsc, eslint, prettier) green; `pnpm test` green: 130 tests in 12 files (49 new: 20 in auth.test.ts, 29 in api-auth.test.ts). New tests: tests/unit/auth.test.ts (requireOwner 401/403/503/open, owner re-check, __Secure- cookie, maxAge, signIn owner-only, FetchFn egress) and tests/unit/api-auth.test.ts (each GET /api/v1 route: dev open, 401/403/owner, production 503, ALLOW_OPEN_READS).",
       "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Tracer bullet. GitHub egress only via injectable FetchFn."
     },
     {
