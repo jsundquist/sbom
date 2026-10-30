@@ -569,7 +569,7 @@
         "Test enumerates every route.ts and page.tsx and fails if one lacks requireOwner() or an allow-list entry; unit tests for owner, non-owner, no session; one Playwright spec with auth enabled using a forged session cookie"
       ],
       "evidence": "",
-      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004. 2026-10-30: being re-scoped by map W-001 (single owner, in-app auth, public deployment). 2026-10-30: re-scoped by map W-001: roles dropped (single owner), ops work split into E-003."
+      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004. 2026-10-30: being re-scoped by map W-001 (single owner, in-app auth, public deployment). 2026-10-30: re-scoped by map W-001: roles dropped (single owner), ops work split into E-003. Split into child tickets E-004, E-005, E-006, E-007; E-002 is done when all four are done."
     },
     {
       "id": "Q-003",
@@ -697,6 +697,94 @@
       ],
       "evidence": "",
       "notes": "Created by map W-001. Manual steps (OAuth app registration) are HITL."
+    },
+    {
+      "id": "E-004",
+      "title": "Owner-gated read API: next-auth v4 config, requireOwner(), 401/403/503 on every GET /api/v1/*",
+      "epic": "E",
+      "size": "M",
+      "priority": 24,
+      "status": "todo",
+      "depends_on": [],
+      "parent": "E-002",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "next-auth v4 pinned exactly; owner id, secrets, GitHub creds, NEXTAUTH_URL and ALLOW_OPEN_READS read via env() with Zod; session.maxAge and jwt.maxAge 604800",
+        "signIn callback allows only the owner's numeric GitHub id (string compare, empty = nobody); id re-checked on every request",
+        "Every GET /api/v1/* route calls requireOwner(): no session 401, non-owner 403, owner 200; production without full auth config 503 unless ALLOW_OPEN_READS=true; dev/test open by default",
+        "Route-handler tests with forged sessions for each case; pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Tracer bullet. GitHub egress only via injectable FetchFn."
+    },
+    {
+      "id": "E-005",
+      "title": "Gated pages with sign-in and Access denied pages, plus route/page guard coverage test",
+      "epic": "E",
+      "size": "M",
+      "priority": 24,
+      "status": "todo",
+      "depends_on": [
+        "E-004"
+      ],
+      "parent": "E-002",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "All pages call requireOwner(); signed-out sees a bare sign-in page with one Sign in with GitHub button (no auto-redirect); non-owner sees Access denied with their login and a sign-out link",
+        "A test enumerates every route.ts and page.tsx and fails if one lacks requireOwner() or an explicit allow-list entry (auth routes, healthz, bearer routes)",
+        "pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. "
+    },
+    {
+      "id": "E-006",
+      "title": "Proxy first line: gate by default, bearer-route pass-through, rate-limited auth routes",
+      "epic": "E",
+      "size": "S",
+      "priority": 24,
+      "status": "todo",
+      "depends_on": [
+        "E-005"
+      ],
+      "parent": "E-002",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "proxy gates everything except /api/auth/*, /api/healthz, static assets, and POST /api/v1/sboms + DELETE /api/v1/projects/[id] (pass-through by method+path); pages redirect to sign-in, /api/* gets JSON 401",
+        "A GET carrying a bearer header gains nothing; unknown paths are gated",
+        "Existing in-memory rate limiter applied to auth routes",
+        "Tests call proxy() directly with a NextRequest; pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. "
+    },
+    {
+      "id": "E-007",
+      "title": "Authed Playwright spec and security docs",
+      "epic": "E",
+      "size": "S",
+      "priority": 24,
+      "status": "todo",
+      "depends_on": [
+        "E-006"
+      ],
+      "parent": "E-002",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "Separate Playwright project starts the server with auth enabled and forges a next-auth/jwt session cookie; asserts owner, non-owner and signed-out behaviour; existing spec still runs with auth off",
+        "ARCHITECTURE.md#security and README setup notes document the owner-only gate and env vars; AGENTS.md exception for GitHub egress noted",
+        "pnpm run lint && pnpm test && pnpm run test:e2e green"
+      ],
+      "evidence": "",
+      "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Needs Postgres for e2e."
     }
   ]
 }
