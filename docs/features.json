@@ -621,7 +621,7 @@
       "title": "Auth mechanism for a single owner",
       "epic": "E",
       "priority": 23,
-      "status": "todo",
+      "status": "in_progress",
       "depends_on": [
         "W-002"
       ],
@@ -633,7 +633,8 @@
         "Answer recorded in notes and gist appended to W-001 Decisions so far"
       ],
       "evidence": "",
-      "notes": "QUESTION: GitHub OAuth with a one-login allow-list, password/passkey, or generic OIDC? How is the owner identity configured via env()?"
+      "notes": "QUESTION: GitHub OAuth with a one-login allow-list, password/passkey, or generic OIDC? How is the owner identity configured via env()?",
+      "assignee": "jsundquist"
     },
     {
       "id": "W-004",
