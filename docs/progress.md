@@ -8,6 +8,11 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: `pnpm run lint` and `pnpm test` pass (32 unit/API tests). `scripts/init.sh` passes on main; e2e not run.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-30: E-006 Proxy gate
+- Done: `src/proxy.ts` (Next 16 proxy, reuses `ownerState()`), `tests/unit/proxy.test.ts` (38 tests, calls `proxy()` with `NextRequest`). Non-owner page URLs redirect to `/`, which passes through to render the gate. Branch `feat/E-006-proxy-gate`.
+- Verified: typecheck, eslint, prettier --check, `pnpm test`, `pnpm run build`. No e2e, no live round trip.
+- Gotchas: `NextRequest.nextUrl` rewrites `/_next/data/<build>/x.json` to `/x`, so the proxy reads the raw `req.url`. Rate limit on auth routes was already in the E-004 handler; test mocks `next-auth` because the real handler needs a request scope.
+
 ## 2026-10-30: E-005 Gated pages
 - Done: `ownerState()`/`requireOwnerPage()` in `src/server/auth.ts` (shared with `requireOwner`), `AccessGate` + `SignInButton` components, guard first in all 7 pages, NavBar hidden when gated (layout), coverage test in `tests/unit/page-auth.test.ts`. Branch `feat/E-005-gated-pages`.
 - Verified: typecheck, eslint, prettier --check, `pnpm test` (172 tests), `pnpm run build`. No e2e, no live GitHub round trip; gate renders in place with HTTP 200 (proxy/redirects are later tickets).

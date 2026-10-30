@@ -747,7 +747,7 @@
       "epic": "E",
       "size": "S",
       "priority": 24,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "E-005"
       ],
@@ -761,7 +761,7 @@
         "Existing in-memory rate limiter applied to auth routes",
         "Tests call proxy() directly with a NextRequest; pnpm run lint && pnpm test green"
       ],
-      "evidence": "",
+      "evidence": "2026-10-30: typecheck, eslint, prettier --check, pnpm test (210 tests, 38 new in tests/unit/proxy.test.ts) and pnpm run build (lists Proxy (Middleware)) pass. No e2e, no live GitHub round trip. Branch feat/E-006-proxy-gate.",
       "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. "
     },
     {
