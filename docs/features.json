@@ -565,7 +565,7 @@
         "Tests for each role on a protected action"
       ],
       "evidence": "",
-      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004."
+      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004. 2026-10-30: being re-scoped by map W-001 (single owner, in-app auth, public deployment)."
     },
     {
       "id": "Q-003",
@@ -582,6 +582,94 @@
       ],
       "evidence": "2026-10-15: lint, 47 unit tests, build and 5 e2e tests pass on build/prettier-eslint; ESLint clean with type-aware rules",
       "notes": "TypeScript downgraded 7 -> 6 because typescript-eslint supports TS <6.1 only. Revisit when typescript-eslint adds TS 7 (issue 10940)."
+    },
+    {
+      "id": "W-001",
+      "title": "Map: in-app auth for a public single-user deployment",
+      "epic": "E",
+      "priority": 23,
+      "status": "in_progress",
+      "depends_on": [],
+      "labels": [
+        "wayfinder:map"
+      ],
+      "acceptance": [
+        "Frontier empty; E-002 re-scoped and ready to build"
+      ],
+      "evidence": "",
+      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR: (none yet)\nNOT YET SPECIFIED: login brute-force limiting; session cookie/CSRF behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
+    },
+    {
+      "id": "W-002",
+      "title": "Research: Auth.js v5 fit for this stack, and minimal alternatives",
+      "epic": "E",
+      "priority": 23,
+      "status": "todo",
+      "depends_on": [],
+      "parent": "W-001",
+      "labels": [
+        "wayfinder:research"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-001 Decisions so far"
+      ],
+      "evidence": "",
+      "notes": "QUESTION: Does Auth.js v5 fit this repo's Next.js version (middleware/proxy, JWT sessions with no DB adapter, standalone Docker build, known CVEs)? What would a minimal signed-cookie single-user gate cost by comparison? Findings go in the research/auth-fit branch."
+    },
+    {
+      "id": "W-003",
+      "title": "Auth mechanism for a single owner",
+      "epic": "E",
+      "priority": 23,
+      "status": "todo",
+      "depends_on": [
+        "W-002"
+      ],
+      "parent": "W-001",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-001 Decisions so far"
+      ],
+      "evidence": "",
+      "notes": "QUESTION: GitHub OAuth with a one-login allow-list, password/passkey, or generic OIDC? How is the owner identity configured via env()?"
+    },
+    {
+      "id": "W-004",
+      "title": "Enforcement boundary: which surfaces are gated and where",
+      "epic": "E",
+      "priority": 23,
+      "status": "todo",
+      "depends_on": [],
+      "parent": "W-001",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-001 Decisions so far"
+      ],
+      "evidence": "",
+      "notes": "QUESTION: Which of pages, GET /api/v1/*, health and static assets require a session? Enforced in middleware or in src/server/? Fail-closed in production like UPLOAD_TOKENS, or off by default as E-002 states? Upload POST stays bearer-token."
+    },
+    {
+      "id": "W-005",
+      "title": "Roles: collapse viewer/maintainer/admin to a single owner?",
+      "epic": "E",
+      "priority": 23,
+      "status": "todo",
+      "depends_on": [
+        "W-003"
+      ],
+      "parent": "W-001",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-001 Decisions so far"
+      ],
+      "evidence": "",
+      "notes": "QUESTION: With one user, are roles dead weight? Re-scope E-002 acceptance criteria accordingly."
     }
   ]
 }
