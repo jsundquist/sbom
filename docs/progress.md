@@ -8,6 +8,10 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-10-31: Retro tickets queued
+- Done: turned the retro of the owner-auth session into tickets Q-004 (self-provisioning e2e script plus e2e in done), Q-005 (exclude agent worktrees), Q-006 (stale `.next`), Q-007 (CODING_STANDARDS.md), Q-008 (implementer contract, blocked by Q-005), Q-009 (progress.md order check). All at priority 24.5 so they run after E-003 (the owner-auth deploy checklist, priority 24) and before D-004.
+- Next: E-003 (HITL: OAuth app registration, live sign-in), then Q-004, Q-005, Q-006.
+
 ## 2026-10-30: Owner-auth review fixes
 - Done (branch `fix/owner-auth-review`, on top of `feat/owner-auth`): secret must be >= 32 chars and `NEXTAUTH_URL` http(s), else auth counts as not configured (503 in production); `/api/auth/*` has its own rate-limit bucket (`AUTH_RATE_LIMIT`, default 60) so it cannot exhaust uploads/deletes; `/api/healthz` returns `{ok:false}` and logs the detail server-side; layout metadata is neutral for gated viewers; `Authorization: Bearer` is ignored for sessions (cookie only); jwt callback sets `token.sub` from `String(profile.id)` explicitly; one `denial()` mapping shared by `requireOwner`, `proxy()` (and `requireOwnerPage` via `ownerState(Headers)`); `FetchFn` single definition in `src/lib/fetch.ts`.
 - Gotchas: the older E-004 note below about passing `new NextRequest(req)` to `getToken` is superseded: wrapping throws in the Next runtime, so `ownerState` hands `getToken` a plain cookie record and empty headers. With `TRUST_PROXY` off all clients still share one bucket per scope, so an anonymous flood of `/api/auth/*` can still rate-limit sign-in itself (not uploads); set `TRUST_PROXY=true` behind a proxy for per-client limits. v4's github provider already maps `sub` to `profile.id.toString()`; the explicit set is hardening, not a bug fix.

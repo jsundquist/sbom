@@ -785,6 +785,122 @@
       ],
       "evidence": "2026-10-30: pnpm run lint clean; pnpm test 211 passed (14 files); pnpm run build ok; pnpm run test:e2e 13 passed (9 chromium with auth off + ALLOW_OPEN_READS, 4 authed with forged next-auth session cookies) against a throwaway postgres:18 container. The e2e run found two defects the unit tests missed, both fixed: requireOwner() wrapped the request in a NextRequest, which throws in the Next runtime (owner got 500); and the existing chromium server, which runs `next start` in production, needed ALLOW_OPEN_READS=true. Live GitHub sign-in not run (E-003).",
       "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Needs Postgres for e2e."
+    },
+    {
+      "id": "Q-004",
+      "title": "Self-provisioning e2e script, used by init.sh, and e2e required in done for route-touching tickets",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "One command starts a throwaway Postgres on a free port, builds, runs both Playwright projects, and tears everything down, with no credentials or DATABASE_URL needed",
+        "scripts/init.sh runs it by default instead of skipping e2e (keep an opt-out for machines without Docker)",
+        "docs/WORKFLOW.md definition of done says a ticket that changes route or page behaviour must pass the e2e script before it is marked done, and tracer-bullet breakdowns do not defer e2e to a later slice",
+        "AGENTS.md command table lists the script; pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: the owner got a 500 in the real Next runtime (new NextRequest(req) throws there) while all unit tests passed; only the first e2e run caught it, and the local Postgres rejected the default sbom:sbom credentials. Also `next start` is production, so e2e servers need ALLOW_OPEN_READS=true (already in playwright.config.ts)."
+    },
+    {
+      "id": "Q-005",
+      "title": "Exclude agent worktrees from lint, typecheck and git",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "pnpm run lint is green while a worktree exists under .claude/worktrees inside the repo (Prettier, ESLint, tsc all skip it)",
+        ".claude/worktrees is gitignored",
+        "Verified by creating a worktree, running pnpm run lint, and removing it"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: lint failed three times on worktree files and every implementer prompt carried the workaround `prettier --check . '!.claude'`."
+    },
+    {
+      "id": "Q-006",
+      "title": "Clear stale build output before the baseline typecheck",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "Session-start baseline no longer fails on a leftover .next/ from another branch (tsconfig excludes .next, or init.sh clears it before tsc)",
+        "pnpm run build and next dev still work; pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: tsc read .next/types/validator.ts for routes from feat/trend-charts, so the baseline was red on untouched code."
+    },
+    {
+      "id": "Q-007",
+      "title": "Short CODING_STANDARDS.md of judgement calls for reviewers",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "CODING_STANDARDS.md exists at the repo root with only judgement calls, each in one or two lines; mechanical rules stay in ESLint/CI, not here",
+        "Includes: a value that gates access fails closed when missing or weak, with minimum strength validated in Zod; one place maps a domain state to a response; no duplicated denial or message literals across proxy and server",
+        "AGENTS.md or docs/WORKFLOW.md has a one-line pointer saying reviews read it; docs/agents/domain.md or the review skill config unaffected"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: the repo had no standards file, so review fell back on AGENTS.md (written for implementers). Review still found a fail-open (any non-empty NEXTAUTH_SECRET counted as configured) and the same denial mapping copied three times."
+    },
+    {
+      "id": "Q-008",
+      "title": "Ticket implementer contract in docs/WORKFLOW.md",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [
+        "Q-005"
+      ],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "One section covers: confirm the worktree base is the integration tip and `git reset --hard` it if not (agent worktrees start from a stale base), merge the integration tip before reporting, never push, evidence format, red-first TDD, the commit trailer",
+        "The `prettier --check . '!.claude'` workaround is not mentioned, since the exclude-worktrees ticket removed the need",
+        "AGENTS.md or WORKFLOW.md has a pointer so subagent prompts can say 'follow the implementer contract' instead of repeating it"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: five near-identical implementer prompts repeated the same contract, and three of four worktrees started on a stale base."
+    },
+    {
+      "id": "Q-009",
+      "title": "Check docs/progress.md stays newest-first and archive old entries",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "A check run by scripts/init.sh (or a unit test) fails when the dated progress.md headings are not in descending order",
+        "Entries older than the current epic move to docs/progress-archive.md; progress.md keeps Current state and recent entries",
+        "pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: agents appended the E-007 entries at the bottom despite the 'Newest first' header, and the file has grown to 160+ lines."
     }
   ]
 }
