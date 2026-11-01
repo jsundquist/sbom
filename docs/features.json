@@ -832,7 +832,7 @@
       "epic": "Q",
       "size": "S",
       "priority": 24.5,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "labels": [
         "ready-for-agent"
@@ -842,7 +842,7 @@
         ".claude/worktrees is gitignored",
         "Verified by creating a worktree, running pnpm run lint, and removing it"
       ],
-      "evidence": "",
+      "evidence": "2026-11-01: with two worktrees present under .claude/worktrees, pnpm run lint (tsc, ESLint, Prettier) is green. ESLint and tsc already skipped them; Prettier needed `.claude` in .prettierignore. .claude/worktrees/ added to .gitignore.",
       "notes": "Source: retro of the owner-auth session (2026-10-31). Why: lint failed three times on worktree files and every implementer prompt carried the workaround `prettier --check . '!.claude'`."
     },
     {

@@ -11,3 +11,6 @@ next-env.d.ts
 # Prose and agent-maintained data: kept out of the formatter to avoid churn.
 *.md
 docs/features.json
+
+# Agent worktrees inside the repo
+.claude
