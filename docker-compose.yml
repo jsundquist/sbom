@@ -60,7 +60,8 @@ services:
   worker:
     <<: *hardened
     build: .
-    command: ['npm', 'run', 'worker']
+    # Not `npm run worker`: npm and tsx do not relay SIGTERM, so the worker would be killed mid-run on `docker stop`.
+    command: ['node', '--import', 'tsx', 'src/worker/main.ts']
     environment: *env
     depends_on:
       migrate: { condition: service_completed_successfully }
