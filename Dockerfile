@@ -21,7 +21,8 @@ COPY --from=build /app/.next ./.next
 COPY --from=build /app/src ./src
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/drizzle ./drizzle
-USER node
+# Numeric so Kubernetes runAsNonRoot can verify it (the node image's node user is 1000:1000).
+USER 1000:1000
 EXPOSE 3000
 # pnpm is only needed to install/build; the runtime stage runs scripts with the npm bundled in node.
 CMD ["npm", "start"]
