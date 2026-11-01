@@ -1,0 +1,29 @@
+name: SBOM
+# Dogfooding: runs this repo's own action (./) to upload an SBOM of main to the production dashboard.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Runs the action code from this exact commit, not a moving ref. zizmor prefers the `$/` form, but the pinned
+      # actionlint rejects it; switch once actionlint supports it.
+      - uses: ./ # zizmor: ignore[self-repository]
+        with:
+          dashboard-url: https://sbom.digital-portfolio.net
+          api-token: ${{ secrets.SBOM_DASHBOARD_TOKEN }}

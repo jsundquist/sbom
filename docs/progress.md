@@ -8,6 +8,12 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-01: Dogfood SBOM upload
+- Done (branch `ci/dogfood-sbom`): `.github/workflows/sbom.yml` runs this repo's own action (`uses: ./`) on push to main and manual dispatch, uploading to https://sbom.digital-portfolio.net.
+- Verified: actionlint and zizmor clean, Prettier clean. Not verified: a real run (needs the secret below and a push to main).
+- Next: add Actions secret `SBOM_DASHBOARD_TOKEN` (one of the server's `UPLOAD_TOKENS`), then run the workflow once via workflow_dispatch.
+- Gotchas: zizmor wants `$/` for same-repo actions but the pinned actionlint rejects it, so `./` carries an inline `zizmor: ignore[self-repository]`; switch when actionlint supports `$/`.
+
 ## 2026-11-01: E-008 Kubernetes readiness
 - Done (branch `chore/k8s-readiness`, off `feat/owner-auth`): numeric `USER 1000:1000`; `GET /api/livez` (no DB) beside `/api/healthz` (readiness); worker waits up to 25 s for the in-flight enrichment run on SIGTERM and closes its LISTEN client; web `CMD` and the compose worker `command` run node directly; `.github/workflows/release.yml` (build amd64, Trivy, push `ghcr.io/jsundquist/sbom:<short-sha>-<run_number>`); `docs/kubernetes.md`.
 - Verified: typecheck, eslint and `pnpm test` (224) green; under compose with read-only rootfs and `cap_drop: ALL`: livez 200 / healthz 503 with Postgres stopped, worker SIGTERM mid-run exits 0 after logging its result, two concurrent `db:migrate` runs both exit 0, bad password exits 1; actionlint and zizmor clean on `release.yml`.
