@@ -13,6 +13,7 @@ import { GET as getVuln } from '@/app/api/v1/vulnerabilities/[id]/route';
 import { GET as getSummary } from '@/app/api/v1/summary/route';
 import { GET as getSbom } from '@/app/api/v1/sboms/[id]/route';
 import { GET as healthz } from '@/app/api/healthz/route';
+import { GET as livez } from '@/app/api/livez/route';
 import { createTestDb } from './helpers';
 
 const SECRET = 'test-secret-test-secret-test-secret';
@@ -100,6 +101,16 @@ test('summary accepts a NextRequest from the owner', async () => {
 test('healthz stays open with auth configured', async () => {
   configure();
   expect((await healthz()).status).toBe(200);
+});
+
+test('livez answers without touching the database', async () => {
+  configure();
+  const execute = vi.fn(() => Promise.reject(new Error('database is down')));
+  setDb({ execute } as never);
+  const res = await livez();
+  expect(res.status).toBe(200);
+  expect(await res.json()).toEqual({ ok: true });
+  expect(execute).not.toHaveBeenCalled();
 });
 
 test('healthz failure returns a generic body, never the driver error', async () => {

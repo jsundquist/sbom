@@ -144,7 +144,8 @@ describe('guard coverage', () => {
   // Routes that are deliberately not owner-gated, each with the reason.
   const ALLOW: Record<string, string> = {
     'api/auth/[...nextauth]/route.ts': 'next-auth endpoints',
-    'api/healthz/route.ts': 'liveness probe',
+    'api/healthz/route.ts': 'readiness probe (database ping)',
+    'api/livez/route.ts': 'liveness probe (no database)',
     'api/v1/sboms/route.ts': 'bearer-token upload (POST only)',
   };
 

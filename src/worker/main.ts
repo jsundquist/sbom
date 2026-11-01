@@ -9,16 +9,28 @@ import { enrich } from './enrich';
 const config = env();
 const db = getDb();
 
+/** Kubernetes sends SIGKILL after terminationGracePeriodSeconds (default 30s); finish or give up before that. */
+const SHUTDOWN_GRACE_MS = 25_000;
+
 let running = false;
 let rerun = false;
 let stopping = false;
+let current: Promise<void> | undefined;
+let listener: Client | undefined;
 
-async function run() {
+function run() {
+  if (stopping) {
+    return;
+  }
   if (running) {
     rerun = true;
     return;
   }
   running = true;
+  current = runLoop();
+}
+
+async function runLoop() {
   try {
     do {
       rerun = false;
@@ -47,6 +59,7 @@ async function run() {
 
 async function listen() {
   const client = new Client({ connectionString: config.DATABASE_URL });
+  listener = client;
   client.on('error', (err) => {
     console.error('[worker] listener connection lost:', err.message);
     if (!stopping) {
@@ -56,7 +69,7 @@ async function listen() {
   try {
     await client.connect();
     await client.query(`LISTEN ${SBOM_UPLOADED_CHANNEL}`);
-    client.on('notification', () => void run());
+    client.on('notification', () => run());
     console.info(`[worker] listening for uploads on "${SBOM_UPLOADED_CHANNEL}"`);
   } catch (err) {
     console.error('[worker] could not LISTEN, relying on polling:', (err as Error).message);
@@ -67,13 +80,24 @@ async function listen() {
 }
 
 await listen();
-void run();
+run();
 console.info(`[worker] polling every ${config.WORKER_POLL_SECONDS}s`);
-const timer = setInterval(() => void run(), config.WORKER_POLL_SECONDS * 1000);
+const timer = setInterval(() => run(), config.WORKER_POLL_SECONDS * 1000);
 
 async function shutdown() {
+  if (stopping) {
+    return;
+  }
   stopping = true;
   clearInterval(timer);
+  await listener?.end().catch(() => {});
+  if (current) {
+    console.info('[worker] shutting down, waiting for the current enrichment run');
+    const grace = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), SHUTDOWN_GRACE_MS).unref());
+    if ((await Promise.race([current, grace])) === 'timeout') {
+      console.warn('[worker] enrichment still running after the grace period, exiting anyway');
+    }
+  }
   await closeDb();
   process.exit(0);
 }

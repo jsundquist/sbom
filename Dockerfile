@@ -12,6 +12,8 @@ RUN pnpm run build && pnpm prune --prod
 
 FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
 WORKDIR /app
+# Links the GHCR package to this repo.
+LABEL org.opencontainers.image.source="https://github.com/jsundquist/sbom"
 # The pinned base image lags Debian security fixes (Trivy flags perl-base); pull patched packages at build time.
 RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade perl-base && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
@@ -21,7 +23,9 @@ COPY --from=build /app/.next ./.next
 COPY --from=build /app/src ./src
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/drizzle ./drizzle
-USER node
+# Numeric so Kubernetes runAsNonRoot can verify it (the node image's node user is 1000:1000).
+USER 1000:1000
 EXPOSE 3000
-# pnpm is only needed to install/build; the runtime stage runs scripts with the npm bundled in node.
-CMD ["npm", "start"]
+# Run next directly (same as `npm start`): npm and its sh wrapper do not relay SIGTERM, so the server would be killed
+# instead of draining. pnpm is only needed to install/build.
+CMD ["node", "node_modules/next/dist/bin/next", "start"]
