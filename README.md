@@ -172,7 +172,8 @@ Outside production, with none of these set, reads stay open so local development
 | `GET` | `/api/v1/packages` | Packages across all applications |
 | `GET` | `/api/v1/packages/:key` | One package (key such as `npm%3Alodash`) |
 | `GET` | `/api/v1/vulnerabilities[/:id]` | Vulnerabilities affecting the latest SBOMs |
-| `GET` | `/api/healthz` | Health check (includes a database ping) |
+| `GET` | `/api/healthz` | Readiness check (includes a database ping) |
+| `GET` | `/api/livez` | Liveness check (no database access) |
 
 ## How the data is derived
 

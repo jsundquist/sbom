@@ -5,6 +5,7 @@ import { denial, deny, ownerState } from '@/server/auth';
 function isOpenPath(path: string): boolean {
   return (
     path === '/api/healthz' ||
+    path === '/api/livez' ||
     path === '/api/auth' ||
     path.startsWith('/api/auth/') ||
     path.startsWith('/_next/static/') ||

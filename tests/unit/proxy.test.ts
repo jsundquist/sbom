@@ -138,6 +138,7 @@ describe('proxy: unconfigured auth', () => {
     vi.stubEnv('NODE_ENV', 'production');
     resetEnv();
     expect(passedThrough(await proxy(req('/api/healthz')))).toBe(true);
+    expect(passedThrough(await proxy(req('/api/livez')))).toBe(true);
     expect(passedThrough(await proxy(req('/api/v1/sboms', { method: 'POST' })))).toBe(true);
   });
 
@@ -191,6 +192,7 @@ describe('proxy: open paths (no session needed)', () => {
     ['GET', '/api/auth/session'],
     ['POST', '/api/auth/signin/github'],
     ['GET', '/api/healthz'],
+    ['GET', '/api/livez'],
     ['GET', '/_next/static/chunks/app.js'],
     ['GET', '/_next/image'],
     ['GET', '/icon.svg'],
@@ -210,6 +212,7 @@ describe('proxy: open paths (no session needed)', () => {
     ['DELETE', '/api/v1/projects/12/dependencies'],
     ['DELETE', '/api/v1/sboms/1'],
     ['GET', '/api/healthz/extra'],
+    ['GET', '/api/livez/extra'],
     ['GET', '/api/authx'],
     ['GET', '/_next/data/build/index.json'],
     ['GET', '/icon.svg.map'],
