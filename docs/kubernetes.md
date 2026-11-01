@@ -189,7 +189,26 @@ large upload.
 - **X-Forwarded-For caveat.** With `TRUST_PROXY=true` the client IP is the leftmost `X-Forwarded-For` value. That is
   trustworthy only if Traefik replaces (not appends to) an inbound header and the real client address reaches Traefik; k3s
   ServiceLB can SNAT it (see Behind Traefik). With `TRUST_PROXY=false` all clients share one bucket.
+- **No image retention.** Old `ghcr.io/jsundquist/sbom` versions are never pruned. Only pushes to `main` build an image, so
+  they accumulate slowly; delete old versions by hand in GHCR if it matters. If a prune job is added, it must protect the
+  tag pinned in `apps/sbom/kustomization.yaml` of `jsundquist/k8s-gitops`.
 - The live GitHub OAuth round trip has not been verified yet (E-003).
+
+## Deploy bump and GITOPS_TOKEN
+
+After the image is pushed, the `bump` job in `release.yml` checks out `jsundquist/k8s-gitops`, sets `.images[0].newTag` in
+`apps/sbom/kustomization.yaml` and pushes `chore(sbom): deploy <tag>` to its default branch; Argo CD syncs from there. It
+retries the push 3 times and does nothing if that tag is already pinned.
+
+`GITOPS_TOKEN` (repository secret on this repo) is a **fine-grained personal access token** with:
+
+- Repository access: **only** `jsundquist/k8s-gitops`
+- Permissions: **Contents: read and write**, nothing else
+
+When it expires or is revoked, `bump` fails at checkout (the image is still published, but the cluster keeps running the
+old tag), and `token-expiry` fails. That job runs on every release, calls the GitHub API with the token and fails on a 401
+or when fewer than 14 days remain. Fix: create a new PAT with the same scope and replace the secret. Then re-run the
+failed `bump` job, or the next push to `main` pins its newer tag anyway.
 
 ## Surprises
 
