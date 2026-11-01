@@ -11,7 +11,8 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 ## 2026-11-01: E-008 Kubernetes readiness
 - Done (branch `chore/k8s-readiness`, off `feat/owner-auth`): numeric `USER 1000:1000`; `GET /api/livez` (no DB) beside `/api/healthz` (readiness); worker waits up to 25 s for the in-flight enrichment run on SIGTERM and closes its LISTEN client; web `CMD` and the compose worker `command` run node directly; `.github/workflows/release.yml` (build amd64, Trivy, push `ghcr.io/jsundquist/sbom:<short-sha>-<run_number>`); `docs/kubernetes.md`.
 - Verified: typecheck, eslint and `pnpm test` (224) green; under compose with read-only rootfs and `cap_drop: ALL`: livez 200 / healthz 503 with Postgres stopped, worker SIGTERM mid-run exits 0 after logging its result, two concurrent `db:migrate` runs both exit 0, bad password exits 1; actionlint and zizmor clean on `release.yml`.
-- Not verified: `pnpm run test:e2e` (no Postgres in this session), the release workflow itself (runs on push to main), amd64 memory (measured on arm64).
+- Also verified: `pnpm run test:e2e` 13 passed against a throwaway Postgres 16; image scanned for secrets (no `.env`, keys, ARGs or credential patterns); label `org.opencontainers.image.source` present; `.dockerignore` now excludes every `.env.*` and `.claude`; Q-005 fixed (`.claude` in `.prettierignore`, `.claude/worktrees/` gitignored).
+- Not verified: the release workflow itself (runs on push to main), amd64 memory (measured on arm64).
 - Next: Kubernetes manifests live in the GitOps repo; E-003 still needs the live OAuth round trip.
 - Gotchas: `npm start` and `npm run worker` go through `sh -c` and never relay SIGTERM (exit 1, run lost), so use node directly in pod commands. `next start` exits 143 on SIGTERM without draining. `pnpm run lint` fails while untracked `.claude/worktrees/*` exist (Q-005).
 

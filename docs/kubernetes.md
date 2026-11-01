@@ -4,7 +4,18 @@ Handoff for whoever writes the manifests. One image runs three workloads. No sec
 value below is a placeholder.
 
 Image: `ghcr.io/jsundquist/sbom:<short-sha>-<run_number>`, linux/amd64, published by `.github/workflows/release.yml` on every push
-to main (Trivy HIGH/CRITICAL gate first). The package is private until you make it public in the GHCR package settings.
+to main (Trivy HIGH/CRITICAL gate first). The Dockerfile carries `org.opencontainers.image.source`, which links the package to
+this repo.
+
+**Manual step after the first push:** a new GHCR package is private, and no API or workflow can change that. Open
+github.com -> your profile -> Packages -> `sbom` -> Package settings -> Danger Zone -> Change visibility -> Public. Until
+then the cluster cannot pull it (no pull secret is configured). This is a one-time step; later tags inherit it.
+
+Image contents (checked before going public): the final stage copies only `package.json`, `tsconfig.json`,
+`next.config.ts`, `node_modules`, `.next`, `src`, `scripts` and `drizzle`. There are no `ARG`s and the only `ENV`s are
+`NODE_ENV`, `NEXT_TELEMETRY_DISABLED` and `PORT`. `.dockerignore` excludes `.env`, every `.env.*` (except `.env.example`),
+`.git` and `.claude`. A scan of the built image found no `.env`, key, `.npmrc` or `.git` files and no token, private-key or
+credential-bearing connection-string patterns in the app files (the only matches were help text and dev scripts).
 
 ## Workloads
 
@@ -18,8 +29,12 @@ enrichment run lost). The image `CMD` is already the direct form for web.
 | web | Deployment, port 3000 | image default, i.e. `["node", "node_modules/next/dist/bin/next", "start"]` | DB, auth, upload, rate-limit vars |
 | worker | Deployment, no port | `["node", "--import", "tsx", "src/worker/main.ts"]` | DB and worker vars; egress to the hosts below |
 
-Working directory is `/app` in all three. Set `terminationGracePeriodSeconds: 30` (the worker waits up to 25 s for the
-current enrichment run). Keep web at **1 replica**: the rate limiter is in memory per pod.
+Working directory is `/app` in all three. Keep web at **1 replica** (see Known limitations). Grace periods are under
+Known limitations.
+
+The migrate Job needs **only `DATABASE_URL`**. `scripts/migrate.ts` reads the shared env schema, but every other variable
+has a default, and the concurrent-migration test above ran with `DATABASE_URL` alone. Give it no auth, upload or worker
+values; ideally a Secret holding only that key (or a database role with just the DDL rights it needs).
 
 Worker egress (HTTPS 443): `api.osv.dev`, `api.deps.dev`, `www.cisa.gov`, `api.first.org`. Web egress: `github.com` and
 `api.github.com` only, for sign-in (ADR 0001). The web app never calls the worker or the reverse.
@@ -53,7 +68,19 @@ Fail-closed defaults in production (`NODE_ENV=production`): reads return 503 unl
 (or `ALLOW_OPEN_READS=true`), and uploads are rejected when `UPLOAD_TOKENS` is empty (unless `ALLOW_OPEN_UPLOADS=true`).
 A pod that starts "healthy" but answers 503 to everything usually has a missing or short auth value.
 
-Do not set `AUTH_TRUST_HOST`; next-auth v4 does not use it and the code deliberately leaves it unset.
+### Exact values for https://sbom.digital-portfolio.net
+
+```
+NEXTAUTH_URL=https://sbom.digital-portfolio.net
+TRUST_PROXY=true
+```
+
+Do **not** set `AUTH_TRUST_HOST` (or `VERCEL`). next-auth v4 has no `trustHost` option, and in the installed 4.24.15
+`detectOrigin` returns `NEXTAUTH_URL` first and only falls back to `X-Forwarded-Host` when `AUTH_TRUST_HOST` is set and
+`NEXTAUTH_URL` is not. So with `NEXTAUTH_URL` set, a proxy that rewrites `Host` cannot change the OAuth redirect or cookie
+settings, and no extra header config is needed. The one place that does read forwarded headers is `src/server/origin.ts`
+(the absolute `url` returned by an upload); Traefik sets `X-Forwarded-Host` and `X-Forwarded-Proto` by default, and a
+rewritten `Host` only affects that link, not authentication.
 
 ## Health endpoints
 
@@ -63,6 +90,20 @@ Both are open (no session), JSON, and exempt from the owner gate in `src/proxy.t
 |---|---|---|---|
 | liveness | `GET /api/livez` | no | `200 {"ok":true}` |
 | readiness | `GET /api/healthz` | yes (`select 1`) | `200 {"ok":true}`, or `503 {"ok":false}` (detail only in the pod log) |
+
+Recommended probes (the server is ready in well under a second; each endpoint answers in a few milliseconds):
+
+| Workload | Probe | Path | Period | Timeout | Other |
+|---|---|---|---|---|---|
+| web | `startupProbe` | `/api/livez` | 2 s | 2 s | `failureThreshold: 15` (30 s to start) |
+| web | `livenessProbe` | `/api/livez` | 20 s | 3 s | `failureThreshold: 3` |
+| web | `readinessProbe` | `/api/healthz` | 10 s | 3 s | `failureThreshold: 3`, `successThreshold: 1` |
+| worker | none needed | | | | see below |
+
+Worker: it serves no HTTP, so there is nothing to probe over the network and none is needed. It exits when it hits a
+fatal error and Kubernetes restarts it; a dropped Postgres listener connection is retried every 5 s inside the process,
+and enrichment errors are logged and retried on the next poll. An exec probe could not tell a healthy worker from a stuck
+one without new code, so don't add one.
 
 Verified: with Postgres stopped, `livez` stays 200 and `healthz` returns 503 in about 20 ms. Use `livez` for
 `livenessProbe` so a database outage never restarts web pods. There is no HTTP endpoint for the worker; if you want a
@@ -133,13 +174,27 @@ Suggested starting points (the 50 MB upload cap is parsed in memory, so web gets
 Not measured: a worst-case 50 MB SBOM upload, or thousands of packages. Revisit the web limit if it gets OOM-killed on a
 large upload.
 
+## Known limitations
+
+- **No web drain on SIGTERM.** `next start` exits immediately (143), so in-flight requests, such as a long upload, are cut
+  off during a rollout. Accepted; no wrapper. Suggested `terminationGracePeriodSeconds: 15` for web (30, the default, also works, since it exits
+  at once).
+- **Worker drain.** It waits up to 25 s for the current enrichment run, then closes its connections. Suggested
+  `terminationGracePeriodSeconds: 40` (25 s drain plus about 15 s margin for pool shutdown and scheduling). A run that
+  outlasts the drain is abandoned; the next poll or upload re-enriches, so nothing is corrupted.
+- **Migrate has no advisory lock.** Run exactly one migrate Job at a time (Argo CD PreSync gives that). Two concurrent runs
+  against an empty database both succeeded in testing, but that is not guaranteed for every migration.
+- **In-memory rate limiter.** Upload, delete and `/api/auth/*` limits live in each web pod's memory, so web must stay at 1
+  replica; with more, the limits multiply and reset on every restart.
+- **X-Forwarded-For caveat.** With `TRUST_PROXY=true` the client IP is the leftmost `X-Forwarded-For` value. That is
+  trustworthy only if Traefik replaces (not appends to) an inbound header and the real client address reaches Traefik; k3s
+  ServiceLB can SNAT it (see Behind Traefik). With `TRUST_PROXY=false` all clients share one bucket.
+- The live GitHub OAuth round trip has not been verified yet (E-003).
+
 ## Surprises
 
 - `npm start`, `npm run worker` and `npm run db:migrate` all run through `sh -c`; only the last is safe to use in a pod
   (see Workloads). The compose worker uses the direct command for the same reason.
-- `next start` exits 143 on SIGTERM (it has no draining handler): in-flight web requests are not waited on. A normal
-  rolling update with a readiness probe is unaffected; a long upload in progress during a rollout is cut off.
 - `/api/healthz` was the only health endpoint before this change and doubles as the compose healthcheck, which is
   why a Postgres outage marks the web container unhealthy there.
-- The app's first sign-in requires a real GitHub OAuth app; the live round trip has not been verified yet (E-003).
 - The image is built and scanned in CI, but a push only happens from `main`; branches build nothing publishable.

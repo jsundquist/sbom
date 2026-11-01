@@ -803,7 +803,7 @@
         "release.yml builds linux/amd64, Trivy-scans, and pushes ghcr.io/jsundquist/sbom:<short-sha>-<run_number> with GITHUB_TOKEN only",
         "docs/kubernetes.md covers env vars, commands, probes, writable paths, resources, proxy/OAuth notes"
       ],
-      "evidence": "2026-11-01: pnpm run typecheck, eslint and pnpm test (224) green; compose run with read_only/cap_drop: livez 200 and healthz 503 with db stopped, worker SIGTERM mid-run logged its result and exited 0, web stops in 0.4s, concurrent migrate runs both exit 0; actionlint and zizmor clean on release.yml. e2e not run. Not verified: the release workflow on GitHub (needs a push to main).",
+      "evidence": "2026-11-01: pnpm run typecheck, eslint and pnpm test (224) green; compose run with read_only/cap_drop: livez 200 and healthz 503 with db stopped, worker SIGTERM mid-run logged its result and exited 0, web stops in 0.4s, concurrent migrate runs both exit 0; actionlint and zizmor clean on release.yml. e2e: 13 passed (throwaway Postgres 16); image secret audit clean. Not verified: the release workflow on GitHub (needs a push to main).",
       "notes": "No GitOps bump step on purpose; see docs/kubernetes.md."
     },
     {
