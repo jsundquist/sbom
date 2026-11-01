@@ -24,5 +24,6 @@ COPY --from=build /app/drizzle ./drizzle
 # Numeric so Kubernetes runAsNonRoot can verify it (the node image's node user is 1000:1000).
 USER 1000:1000
 EXPOSE 3000
-# pnpm is only needed to install/build; the runtime stage runs scripts with the npm bundled in node.
-CMD ["npm", "start"]
+# Run next directly (same as `npm start`): npm and its sh wrapper do not relay SIGTERM, so the server would be killed
+# instead of draining. pnpm is only needed to install/build.
+CMD ["node", "node_modules/next/dist/bin/next", "start"]
