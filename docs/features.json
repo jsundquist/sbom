@@ -513,7 +513,8 @@
         "Counts exclude accepted risks; they remain listed",
         "Expiry job re-opens findings"
       ],
-      "evidence": ""
+      "evidence": "",
+      "notes": "2026-10-30: E-002 is now owner-only (no roles); 'author' is the owner."
     },
     {
       "id": "D-005",
@@ -552,20 +553,23 @@
     },
     {
       "id": "E-002",
-      "title": "Authentication and roles: Auth.js with GitHub sign-in, viewer/maintainer/admin, protect write actions. Supersedes S-004",
+      "title": "Owner-only authentication: next-auth v4 GitHub sign-in, proxy + requireOwner() on all reads, fail-closed in production. Supersedes S-004",
       "epic": "E",
-      "size": "M-L",
+      "size": "M",
       "priority": 24,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
-        "Design decision (single tenant vs per-user/team visibility) recorded in ARCHITECTURE.md before implementation",
-        "Design recorded in ARCHITECTURE.md before code",
-        "Off by default so local use is unchanged",
-        "Tests for each role on a protected action"
+        "Design is already decided: see map W-001 notes, W-003/W-004 notes and docs/adr/0001; record it in ARCHITECTURE.md#security before or with the code",
+        "next-auth v4 pinned exactly; GitHub client id/secret, session secret, owner id and NEXTAUTH_URL read via env() (assign process.env.NEXTAUTH_URL from env(); never set AUTH_TRUST_HOST); session.maxAge and jwt.maxAge both 604800",
+        "Only the owner's numeric GitHub id (env, compared as a string, empty = nobody) sees pages and GET /api/v1/*; re-checked on every request in proxy() and requireOwner(); others get an Access denied page (API 403), signed-out gets a sign-in page (API 401)",
+        "POST /api/v1/sboms and DELETE /api/v1/projects/[id] keep bearer-token auth and pass through the proxy by method+path; /api/auth/*, /api/healthz and static assets stay open",
+        "In production with auth not fully configured reads return 503 unless ALLOW_OPEN_READS=true; off by default in dev/test so local use is unchanged",
+        "Existing in-memory rate limiter applied to auth routes; GitHub egress confined to the auth module via injectable FetchFn (ADR 0001)",
+        "Test enumerates every route.ts and page.tsx and fails if one lacks requireOwner() or an allow-list entry; unit tests for owner, non-owner, no session; one Playwright spec with auth enabled using a forged session cookie"
       ],
-      "evidence": "",
-      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004."
+      "evidence": "2026-10-30: E-004, E-005, E-006, E-007 done. 2026-10-30: pnpm run lint clean; pnpm test 211 passed (14 files); pnpm run build ok; pnpm run test:e2e 13 passed (9 chromium with auth off + ALLOW_OPEN_READS, 4 authed with forged next-auth session cookies) against a throwaway postgres:18 container. The e2e run found two defects the unit tests missed, both fixed: requireOwner() wrapped the request in a NextRequest, which throws in the Next runtime (owner got 500); and the existing chromium server, which runs `next start` in production, needed ALLOW_OPEN_READS=true. Live GitHub sign-in not run (E-003).",
+      "notes": "The dashboard is a standalone tool, so authentication is required. Decide the visibility model first: single tenant, or each project owned by a user or team so viewers only see what they are allowed to (needed if it is ever hosted for several users). Supersedes S-004. 2026-10-30: being re-scoped by map W-001 (single owner, in-app auth, public deployment). 2026-10-30: re-scoped by map W-001: roles dropped (single owner), ops work split into E-003. Split into child tickets E-004, E-005, E-006, E-007; E-002 is done when all four are done."
     },
     {
       "id": "Q-003",
@@ -582,6 +586,430 @@
       ],
       "evidence": "2026-10-15: lint, 47 unit tests, build and 5 e2e tests pass on build/prettier-eslint; ESLint clean with type-aware rules",
       "notes": "TypeScript downgraded 7 -> 6 because typescript-eslint supports TS <6.1 only. Revisit when typescript-eslint adds TS 7 (issue 10940)."
+    },
+    {
+      "id": "W-001",
+      "title": "Map: in-app auth for a public single-user deployment",
+      "epic": "E",
+      "priority": 23,
+      "status": "done",
+      "depends_on": [],
+      "labels": [
+        "wayfinder:map"
+      ],
+      "acceptance": [
+        "Frontier empty; E-002 re-scoped and ready to build"
+      ],
+      "evidence": "2026-10-30: frontier empty; E-002 re-scoped, E-003 added.",
+      "notes": "DESTINATION: Auth approach for a public single-user deployment decided, and E-002 re-scoped to match so it is ready to build.\nNOTES: Audience is the owner only. Auth must be in-app (a network gate such as Tailscale/Cloudflare Access was ruled out). Uploads keep their separate bearer-token surface. Consult ARCHITECTURE.md#security and E-002.\nDECISIONS SO FAR:\n- W-002 Research: Auth.js v5 fit for this stack, and minimal alternatives: Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Detail in W-002 notes.\n- W-003 Auth mechanism for a single owner: GitHub OAuth via next-auth v4, one owner id, others see nothing, 7-day cookie; see ADR 0001.\n- W-004 Enforcement boundary: gate all pages + GET /api/v1/*, proxy plus requireOwner() with a coverage test, 503 fail-closed in production (ALLOW_OPEN_READS opt-out).\n- W-005 Roles: none; single owner, others denied; E-002 re-scoped and split, ops moved to E-003.\nNOT YET SPECIFIED (cleared; now steps in E-003): live GitHub OAuth round trip and behaviour under compose read_only; how long next-auth v4 gets security patches; NEXTAUTH_URL/cookie-name handling behind TRUST_PROXY; test strategy (unit + e2e) for authed pages; public-deploy hardening checklist (TLS, worker SSRF audit, rate limit across replicas); how E-002 splits into build vs ops.\nOUT OF SCOPE: multi-user/team visibility and roles; DORA metrics (C-006)."
+    },
+    {
+      "id": "W-002",
+      "title": "Research: Auth.js v5 fit for this stack, and minimal alternatives",
+      "epic": "E",
+      "priority": 23,
+      "status": "done",
+      "depends_on": [],
+      "parent": "W-001",
+      "labels": [
+        "wayfinder:research"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-001 Decisions so far"
+      ],
+      "evidence": "2026-10-30: research subagent findings pushed to branch research/auth-fit (docs/research/auth-fit.md); no PR, not merged.",
+      "notes": "QUESTION: Does Auth.js v5 fit this repo's Next.js version (middleware/proxy, JWT sessions with no DB adapter, standalone Docker build, known CVEs)? What would a minimal signed-cookie single-user gate cost by comparison? Findings go in the research/auth-fit branch. ANSWER (2026-10-30): Auth.js v5 (beta.32 exact pin) fits Next 16.4.1 technically, but it reads process.env.AUTH_* (clashes with env() rule), GitHub OAuth needs outbound HTTP from the web app (clashes with 'external HTTP only from src/worker/', needs ADR/exception), JWT sessions can't be revoked, and CVE-2026-73421 is fail-open (gate on auth?.user). A hand-rolled jose gate is Next's documented pattern (~150-300 lines est.). Proxy matcher must cover pages and GET /api/v1/*, not upload POSTs. Full findings: docs/research/auth-fit.md on branch research/auth-fit."
+    },
+    {
+      "id": "W-003",
+      "title": "Auth mechanism for a single owner",
+      "epic": "E",
+      "priority": 23,
+      "status": "done",
+      "depends_on": [
+        "W-002"
+      ],
+      "parent": "W-001",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-001 Decisions so far"
+      ],
+      "evidence": "2026-10-30: decided with the user in session; research on branch research/next-auth-v4 (smoke app, no live GitHub round trip).",
+      "notes": "QUESTION: GitHub OAuth with a one-login allow-list, password/passkey, or generic OIDC? How is the owner identity configured via env()? ANSWER (2026-10-30): GitHub OAuth via next-auth v4 (stable latest), pinned exactly; config from env() (public URL assigned to NEXTAUTH_URL from env(); never set AUTH_TRUST_HOST). Owner = one numeric GitHub id in env, compared as a string, re-checked on every request in proxy and requireOwner(); empty = nobody. Others can sign in but get a plain 'Access denied' page (their login + sign-out link), nothing stored. isAllowed() is the seam for future grants. Session: 7-day cookie, set BOTH session.maxAge and jwt.maxAge to 604800 (jwt default is 30d); revoke by changing the owner id or rotating NEXTAUTH_SECRET. Reuse the existing in-memory rate limiter on auth routes. Proxy: custom proxy() with getToken, JSON 401 for /api/*, gate everything except upload POSTs (branch on method inside the proxy). GitHub egress exception recorded in docs/adr/0001-github-oauth-egress-from-web-app.md. Detail: docs/research/next-auth-v4.md on branch research/next-auth-v4.",
+      "assignee": "jsundquist"
+    },
+    {
+      "id": "W-004",
+      "title": "Enforcement boundary: which surfaces are gated and where",
+      "epic": "E",
+      "priority": 23,
+      "status": "done",
+      "depends_on": [],
+      "parent": "W-001",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-001 Decisions so far"
+      ],
+      "evidence": "2026-10-30: decided with the user in session after listing routes in src/app.",
+      "notes": "QUESTION: Which of pages, GET /api/v1/*, health and static assets require a session? Enforced in middleware or in src/server/? Fail-closed in production like UPLOAD_TOKENS, or off by default as E-002 states? Upload POST stays bearer-token. ANSWER (2026-10-30): Gated: every page and every GET /api/v1/*. Open: /api/auth/*, /api/healthz, static assets (/_next/*, icon), and the two bearer-token routes (POST /api/v1/sboms, DELETE /api/v1/projects/[id]) which the proxy passes through by method+path to their existing UPLOAD_TOKENS check. Two layers: proxy (cheap token check; pages redirect to sign-in, /api/* JSON 401; unknown paths gated too) plus requireOwner() in src/server/auth.ts called at the top of every GET handler and page; a test enumerates all route.ts/page.tsx and fails if one lacks the guard or an allow-list entry. Not put in inventory.ts read functions (signature churn). Fail-closed: in production with auth not fully configured (owner id, secret, GitHub client id/secret, NEXTAUTH_URL) reads return 503; ALLOW_OPEN_READS=true opts out (mirrors ALLOW_OPEN_UPLOADS); dev/test off by default. Signed-out: minimal sign-in page with one GitHub button, no auto-redirect; non-owner sees Access denied page; API 401 without session, 403 for non-owner.",
+      "assignee": "jsundquist"
+    },
+    {
+      "id": "W-005",
+      "title": "Roles: collapse viewer/maintainer/admin to a single owner?",
+      "epic": "E",
+      "priority": 23,
+      "status": "done",
+      "depends_on": [
+        "W-003"
+      ],
+      "parent": "W-001",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-001 Decisions so far"
+      ],
+      "evidence": "2026-10-30: decided with the user in session.",
+      "notes": "QUESTION: With one user, are roles dead weight? Re-scope E-002 acceptance criteria accordingly. ANSWER (2026-10-30): No roles; single owner, everyone else denied. E-002 re-scoped to the owner-only build and split: ops/public-deploy checklist moved to E-003. Auth tests: unit mocks plus one Playwright spec with a forged next-auth/jwt session cookie. No decisions remain; map complete.",
+      "assignee": "jsundquist"
+    },
+    {
+      "id": "E-003",
+      "title": "Public-deploy checklist for owner-only auth: GitHub OAuth app, NEXTAUTH_URL and secrets, TLS, live sign-in, read-only compose run, worker SSRF audit",
+      "epic": "E",
+      "size": "S",
+      "priority": 24,
+      "status": "todo",
+      "depends_on": [
+        "E-002"
+      ],
+      "acceptance": [
+        "GitHub OAuth app registered with the production callback URL; client id/secret, session secret, owner id and NEXTAUTH_URL set via secrets, not committed",
+        "Live GitHub sign-in verified: owner sees data, a second GitHub account sees Access denied, signed-out API gets 401",
+        "Works under compose read_only: true; session cookie name correct behind TLS and TRUST_PROXY",
+        "Worker external HTTP (configurable API URLs) audited for SSRF; findings recorded in ARCHITECTURE.md#security",
+        "Rate limit not shared across replicas and next-auth v4 patch horizon recorded as known limits; evidence recorded"
+      ],
+      "evidence": "",
+      "notes": "Created by map W-001. Manual steps (OAuth app registration) are HITL."
+    },
+    {
+      "id": "E-004",
+      "title": "Owner-gated read API: next-auth v4 config, requireOwner(), 401/403/503 on every GET /api/v1/*",
+      "epic": "E",
+      "size": "M",
+      "priority": 24,
+      "status": "done",
+      "depends_on": [],
+      "parent": "E-002",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "next-auth v4 pinned exactly; owner id, secrets, GitHub creds, NEXTAUTH_URL and ALLOW_OPEN_READS read via env() with Zod; session.maxAge and jwt.maxAge 604800",
+        "signIn callback admits any GitHub account with an id (so a non-owner reaches the Access denied page); the owner's numeric GitHub id (string compare, empty = nobody) is checked on every request and everyone else gets 401/403",
+        "Every GET /api/v1/* route calls requireOwner(): no session 401, non-owner 403, owner 200; production without full auth config 503 unless ALLOW_OPEN_READS=true; dev/test open by default",
+        "Route-handler tests with forged sessions for each case; pnpm run lint && pnpm test green"
+      ],
+      "evidence": "2026-10-30: `pnpm run lint` (tsc, eslint, prettier) green; `pnpm test` green: 130 tests in 12 files (49 new: 20 in auth.test.ts, 29 in api-auth.test.ts). New tests: tests/unit/auth.test.ts (requireOwner 401/403/503/open, owner re-check, __Secure- cookie, maxAge, signIn owner-only, FetchFn egress) and tests/unit/api-auth.test.ts (each GET /api/v1 route: dev open, 401/403/owner, production 503, ALLOW_OPEN_READS).",
+      "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Tracer bullet. GitHub egress only via injectable FetchFn."
+    },
+    {
+      "id": "E-005",
+      "title": "Gated pages with sign-in and Access denied pages, plus route/page guard coverage test",
+      "epic": "E",
+      "size": "M",
+      "priority": 24,
+      "status": "done",
+      "depends_on": [
+        "E-004"
+      ],
+      "parent": "E-002",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "All pages call requireOwner(); signed-out sees a bare sign-in page with one Sign in with GitHub button (no auto-redirect); non-owner sees Access denied with their login and a sign-out link",
+        "A test enumerates every route.ts and page.tsx and fails if one lacks requireOwner() or an explicit allow-list entry (auth routes, healthz, bearer routes)",
+        "pnpm run lint && pnpm test green"
+      ],
+      "evidence": "2026-10-30: pnpm run typecheck, pnpm run lint:eslint, npx prettier --check . '!.claude' all clean; pnpm test 172 passed (13 files; new tests/unit/page-auth.test.ts, auth.test.ts updated); pnpm run build ok. Not run: pnpm run lint (worktree .claude Prettier warning), e2e (later ticket), live GitHub round trip. Deviations: signIn now admits any GitHub account (needed so a non-owner reaches Access denied) and a jwt callback stores login; 7 pages, not 6; layout hides NavBar when gated.",
+      "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. "
+    },
+    {
+      "id": "E-006",
+      "title": "Proxy first line: gate by default, bearer-route pass-through, rate-limited auth routes",
+      "epic": "E",
+      "size": "S",
+      "priority": 24,
+      "status": "done",
+      "depends_on": [
+        "E-005"
+      ],
+      "parent": "E-002",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "proxy gates everything except /api/auth/*, /api/healthz, static assets, and POST /api/v1/sboms + DELETE /api/v1/projects/[id] (pass-through by method+path); pages redirect to sign-in, /api/* gets JSON 401",
+        "A GET carrying a bearer header gains nothing; unknown paths are gated",
+        "Existing in-memory rate limiter applied to auth routes",
+        "Tests call proxy() directly with a NextRequest; pnpm run lint && pnpm test green"
+      ],
+      "evidence": "2026-10-30: typecheck, eslint, prettier --check, pnpm test (210 tests, 38 new in tests/unit/proxy.test.ts) and pnpm run build (lists Proxy (Middleware)) pass. No e2e, no live GitHub round trip. Branch feat/E-006-proxy-gate.",
+      "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. "
+    },
+    {
+      "id": "E-007",
+      "title": "Authed Playwright spec and security docs",
+      "epic": "E",
+      "size": "S",
+      "priority": 24,
+      "status": "done",
+      "depends_on": [
+        "E-006"
+      ],
+      "parent": "E-002",
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "Separate Playwright project starts the server with auth enabled and forges a next-auth/jwt session cookie; asserts owner, non-owner and signed-out behaviour; existing spec still runs with auth off",
+        "ARCHITECTURE.md#security and README setup notes document the owner-only gate and env vars; AGENTS.md exception for GitHub egress noted",
+        "pnpm run lint && pnpm test && pnpm run test:e2e green"
+      ],
+      "evidence": "2026-10-30: pnpm run lint clean; pnpm test 211 passed (14 files); pnpm run build ok; pnpm run test:e2e 13 passed (9 chromium with auth off + ALLOW_OPEN_READS, 4 authed with forged next-auth session cookies) against a throwaway postgres:18 container. The e2e run found two defects the unit tests missed, both fixed: requireOwner() wrapped the request in a NextRequest, which throws in the Next runtime (owner got 500); and the existing chromium server, which runs `next start` in production, needed ALLOW_OPEN_READS=true. Live GitHub sign-in not run (E-003).",
+      "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Needs Postgres for e2e."
+    },
+    {
+      "id": "Q-004",
+      "title": "Self-provisioning e2e script, used by init.sh, and e2e required in done for route-touching tickets",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "One command starts a throwaway Postgres on a free port, builds, runs both Playwright projects, and tears everything down, with no credentials or DATABASE_URL needed",
+        "scripts/init.sh runs it by default instead of skipping e2e (keep an opt-out for machines without Docker)",
+        "docs/WORKFLOW.md definition of done says a ticket that changes route or page behaviour must pass the e2e script before it is marked done, and tracer-bullet breakdowns do not defer e2e to a later slice",
+        "AGENTS.md command table lists the script; pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: the owner got a 500 in the real Next runtime (new NextRequest(req) throws there) while all unit tests passed; only the first e2e run caught it, and the local Postgres rejected the default sbom:sbom credentials. Also `next start` is production, so e2e servers need ALLOW_OPEN_READS=true (already in playwright.config.ts)."
+    },
+    {
+      "id": "Q-005",
+      "title": "Exclude agent worktrees from lint, typecheck and git",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "pnpm run lint is green while a worktree exists under .claude/worktrees inside the repo (Prettier, ESLint, tsc all skip it)",
+        ".claude/worktrees is gitignored",
+        "Verified by creating a worktree, running pnpm run lint, and removing it"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: lint failed three times on worktree files and every implementer prompt carried the workaround `prettier --check . '!.claude'`."
+    },
+    {
+      "id": "Q-006",
+      "title": "Clear stale build output before the baseline typecheck",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "Session-start baseline no longer fails on a leftover .next/ from another branch (tsconfig excludes .next, or init.sh clears it before tsc)",
+        "pnpm run build and next dev still work; pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: tsc read .next/types/validator.ts for routes from feat/trend-charts, so the baseline was red on untouched code."
+    },
+    {
+      "id": "Q-007",
+      "title": "Short CODING_STANDARDS.md of judgement calls for reviewers",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "CODING_STANDARDS.md exists at the repo root with only judgement calls, each in one or two lines; mechanical rules stay in ESLint/CI, not here",
+        "Includes: a value that gates access fails closed when missing or weak, with minimum strength validated in Zod; one place maps a domain state to a response; no duplicated denial or message literals across proxy and server",
+        "AGENTS.md or docs/WORKFLOW.md has a one-line pointer saying reviews read it; docs/agents/domain.md or the review skill config unaffected"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: the repo had no standards file, so review fell back on AGENTS.md (written for implementers). Review still found a fail-open (any non-empty NEXTAUTH_SECRET counted as configured) and the same denial mapping copied three times."
+    },
+    {
+      "id": "Q-008",
+      "title": "Ticket implementer contract in docs/WORKFLOW.md",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [
+        "Q-005"
+      ],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "One section covers: confirm the worktree base is the integration tip and `git reset --hard` it if not (agent worktrees start from a stale base), merge the integration tip before reporting, never push, evidence format, red-first TDD, the commit trailer",
+        "The `prettier --check . '!.claude'` workaround is not mentioned, since the exclude-worktrees ticket removed the need",
+        "AGENTS.md or WORKFLOW.md has a pointer so subagent prompts can say 'follow the implementer contract' instead of repeating it"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: five near-identical implementer prompts repeated the same contract, and three of four worktrees started on a stale base."
+    },
+    {
+      "id": "Q-009",
+      "title": "Check docs/progress.md stays newest-first and archive old entries",
+      "epic": "Q",
+      "size": "S",
+      "priority": 24.5,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "ready-for-agent"
+      ],
+      "acceptance": [
+        "A check run by scripts/init.sh (or a unit test) fails when the dated progress.md headings are not in descending order",
+        "Entries older than the current epic move to docs/progress-archive.md; progress.md keeps Current state and recent entries",
+        "pnpm run lint && pnpm test green"
+      ],
+      "evidence": "",
+      "notes": "Source: retro of the owner-auth session (2026-10-31). Why: agents appended the E-007 entries at the bottom despite the 'Newest first' header, and the file has grown to 160+ lines."
+    },
+    {
+      "id": "W-006",
+      "title": "Map: monitor the underlying k3s/Ubuntu host from the dashboard",
+      "epic": "W",
+      "priority": 36,
+      "status": "todo",
+      "depends_on": [],
+      "labels": [
+        "wayfinder:map"
+      ],
+      "acceptance": [
+        "Frontier empty; host-monitoring work broken into buildable features in features.json"
+      ],
+      "evidence": "",
+      "notes": "DESTINATION: A decided design for showing the freshness and vulnerability posture of the Ubuntu droplet running k3s in this dashboard, broken into buildable features in features.json.\nNOTES: Read-only reporting; no metrics, uptime or remediation. The droplet pushes data in (systemd timer and/or k3s CronJob with an upload token); the dashboard holds no credentials into the server and the app never reaches out (only src/worker does external HTTP via FetchFn). One droplet today, but each host is named in the data (project of kind host, e.g. host:<name>). Reuse and depend on B-004 (image scans), C-001 (generic report upload) and B-001 (EOL) instead of building a parallel pipeline; map only host-specific deltas. Consult ARCHITECTURE.md and CONTEXT.md.\nDECISIONS SO FAR:\n- W-007 Research: OSV and Ubuntu package data for host CVEs: feasible via OSV, but the worker must query by source package + release ecosystem and needs a dpkg version comparator; deps.dev is useless for deb, so 'latest' comes from apt. Three items unverified (see W-007).\n- W-008 Research: signals for host and k3s freshness: collector reads apt-get -s upgrade (security by origin suite), reboot-required with mtime, Pro/ESM status, os-release; worker fetches Ubuntu EOL from endoflife.date and k3s latest patch per minor from update.k3s.io channels; k3s minor EOL has no source (upstream kubernetes as proxy); Pro-less LTS past support is a false all-clear risk.\nNOT YET SPECIFIED:\n- Silence detection: how a stopped collector shows as stale (heartbeat / last-reported age and thresholds) and whether it needs D-002 notifications.\n- Cluster workload inventory: which images are actually running in k3s (vs. images declared in repos) and how they link to B-004/B-005.\n- Stale/red thresholds for pending security updates, kernel age, reboot-required, k3s patch lag.\n- Per-host upload tokens vs. the single shared token.\n- UI surface: host in the projects list vs. a dedicated Hosts view and overview tiles.\n- Build order against B-001/B-004/C-001 once the data shape is known.\nOUT OF SCOPE: metrics/uptime/alerting on resource use (Prometheus territory); automated patching or any remediation; the dashboard having SSH/kubeconfig access; fleet management beyond naming hosts."
+    },
+    {
+      "id": "W-007",
+      "title": "Research: OSV and Ubuntu package data for host CVEs",
+      "epic": "W",
+      "priority": 36,
+      "status": "done",
+      "depends_on": [],
+      "parent": "W-006",
+      "labels": [
+        "wayfinder:research"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-006 Decisions so far"
+      ],
+      "evidence": "2026-10-31: findings on branch research/host-osv-ubuntu (docs/research/host-osv-ubuntu.md), no PR.",
+      "notes": "QUESTION: What does OSV.dev expose for Ubuntu/Debian packages (ecosystem names per release, e.g. Ubuntu:22.04:LTS; USN/UBUNTU-CVE ids), how does Syft emit dpkg purls (pkg:deb/ubuntu/...?distro=), what version-comparison does dpkg need versus src/lib/version.ts, and is deps.dev useless for deb (so 'latest version' must come from apt's pending upgrades instead)? Findings only; cite primary sources.\nANSWER (2026-10-31): Feasible via OSV, but the worker must change. Ecosystems are per release (Ubuntu:22.04:LTS, Ubuntu:Pro:18.04:LTS); ids UBUNTU-CVE-*, USN-*, LSN-*. affected[].package.name is the SOURCE package (binaries in ecosystem_specific.binaries); USNs carry no severity (take it from the linked UBUNTU-CVE). Syft purl: pkg:deb/ubuntu/<bin>@<ver>?arch&upstream=<src>@<srcver>&distro=; only emitted when the distro is detected. Current toQuery in src/worker/osv.ts sends the binary name with no release, so libssl3 vs openssl would silently return nothing (looks clean when not). src/lib/version.ts is wrong for dpkg (strips +, no epoch, no ~); needs a Debian-policy comparator chosen by purl type. deps.dev has no deb support, so 'latest version' must come from apt --upgradable (agent's suggestion, not researched; W-008 covers it). Needed changes: store the host's Ubuntu release; query by source name/version + release ecosystem; dpkg comparator for fixedVersions and sorting; filter affected by release; group UBUNTU-CVE/USN/CVE ids. UNVERIFIED: whether OSV matches a bare Ubuntu ecosystem against suffixed ones; exact distro= value Syft emits on Ubuntu; purl spec deb section (URLs 404'd). Detail on branch research/host-osv-ubuntu."
+    },
+    {
+      "id": "W-008",
+      "title": "Research: signals for host and k3s freshness",
+      "epic": "W",
+      "priority": 36,
+      "status": "done",
+      "depends_on": [],
+      "parent": "W-006",
+      "labels": [
+        "wayfinder:research"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-006 Decisions so far"
+      ],
+      "evidence": "2026-10-31: findings on branch research/host-freshness-signals (docs/research/host-freshness-signals.md), no PR.",
+      "notes": "QUESTION: Which facts can a collector read to answer 'is this server up to date', and where does the 'latest' reference come from? Cover: apt pending upgrades split security/other (apt-get -s upgrade, apt list --upgradable, esm), /var/run/reboot-required and running vs installed kernel, unattended-upgrades state, Ubuntu release EOL (endoflife.date and its API), and k3s latest patch in the node's minor line (update.k3s.io release channels / GitHub releases) plus k3s minor EOL. Findings only; cite primary sources.\nANSWER (2026-10-31): HOST (collector) reads: pending upgrades via apt-get -s upgrade (read-only, no root; prefer apt-get over apt in scripts), classify each Inst line by origin suite (-security or esm = security); held-back and phased packages are not necessarily stale (security updates are never phased). Ubuntu Pro: pro security-status/status --format json; without Pro attached, '0 pending security' on an LTS past standard support is a false all-clear. Reboot: /var/run/reboot-required plus reboot-required.pkgs, push the flag's mtime too (auto-reboot defaults off). unattended-upgrades: 20auto-upgrades, 50unattended-upgrades, logs in /var/log/unattended-upgrades/; default origins security only. Also apt package-list age, /etc/os-release, k3s version string. WORKER (public reference) fetches: Ubuntu EOL from endoflife.date GET /api/v1/products/ubuntu/releases/<ver> (eolFrom, eoesFrom, isEol; sends etag, max-age=0, use conditional requests; no documented rate limit). k3s latest patch per minor from GET https://update.k3s.io/v1-release/channels (JSON shape observed live, not documented; GitHub releases API fallback, 60/h unauthenticated). endoflife.date has no k3s product; upstream kubernetes product is the practical EOL proxy (agent inference, k3s publishes no EOL policy). UNVERIFIED: Inst origin format, running-vs-installed kernel comparison, apt stamp file paths, exact unattended-upgrades log names, k3s version command, Livepatch; several Ubuntu Pro doc links 404. Open: verify on real 22.04/24.04 droplet; choose k3s EOL source (upstream vs SUSE support matrix, not fetched). Detail on branch research/host-freshness-signals."
+    },
+    {
+      "id": "W-009",
+      "title": "Data shape for host facts: SBOM, report, or both",
+      "epic": "W",
+      "priority": 36,
+      "status": "todo",
+      "depends_on": [
+        "W-007",
+        "W-008"
+      ],
+      "parent": "W-006",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-006 Decisions so far"
+      ],
+      "evidence": "",
+      "notes": "QUESTION: Host packages fit the existing SBOM pipeline (Syft dpkg scan uploaded as a host project), but pending upgrades, reboot-required, kernel age, OS release and k3s version are facts, not components. Do facts ride on C-001's generic report upload, as a new table, or as SBOM metadata? What identifies a host (project kind, naming) and how do its facts relate to snapshots? Informed by W-007 and W-008."
+    },
+    {
+      "id": "W-010",
+      "title": "Collector form and trust boundary",
+      "epic": "W",
+      "priority": 36,
+      "status": "todo",
+      "depends_on": [
+        "W-009"
+      ],
+      "parent": "W-006",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-006 Decisions so far"
+      ],
+      "evidence": "",
+      "notes": "QUESTION: What runs on the droplet: a shell script on a systemd timer, a k3s CronJob/DaemonSet, or both (host facts need host access; image facts need the cluster)? Which tools does it need (Syft, apt, kubectl), how is it installed and updated, what token does it use and what can that token do, and what happens if the host is compromised? Informed by W-009."
+    },
+    {
+      "id": "W-011",
+      "title": "Build order against the existing backlog",
+      "epic": "W",
+      "priority": 36,
+      "status": "todo",
+      "depends_on": [
+        "W-009",
+        "W-010"
+      ],
+      "parent": "W-006",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "acceptance": [
+        "Answer recorded in notes and gist appended to W-006 Decisions so far"
+      ],
+      "evidence": "",
+      "notes": "QUESTION: Given the data shape, which of B-001, B-004, B-005, C-001, D-002 must land first, which need re-scoping for hosts, and what are the host-only features (collector, deb ecosystem mapping in the worker, k3s version check, host view)? Output: the list of features to add to features.json with depends_on."
     }
   ]
 }

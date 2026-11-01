@@ -179,7 +179,7 @@ describe('enrichment and inventory', () => {
     expect(lodash.vulns[0]).toMatchObject({ cve: 'CVE-2020-8203', score: 7.4 });
     expect(detail.components.find((c) => c.name === 'internal-thing')!.vulnStatus).toBe('unsupported');
 
-    const packages = await (await listPackagesRoute()).json();
+    const packages = await (await listPackagesRoute(new Request(`${BASE}/api/v1/packages`))).json();
     expect(packages.find((p: { key: string }) => p.key === 'npm:lodash')).toMatchObject({ projectCount: 2, vulnCount: 1 });
 
     const pkg = await (await getPackage(new Request(BASE), params({ key: 'npm%3Alodash' }))).json();
@@ -190,7 +190,7 @@ describe('enrichment and inventory', () => {
     expect(vuln.affected[0].fixVersion).toBe('4.17.19');
     expect(vuln.projects.map((p: { name: string }) => p.name).sort()).toEqual(['api-service', 'web-app']);
 
-    const summary = await (await getSummary()).json();
+    const summary = await (await getSummary(new Request(`${BASE}/api/v1/summary`))).json();
     expect(summary).toMatchObject({ projectCount: 2, vulnerablePackages: 1 });
     expect(summary.recentUploads).toHaveLength(2);
 
@@ -236,7 +236,7 @@ describe('history and deletion', () => {
     expect((await project(second.projectId, detail.history[1].id)).components).toHaveLength(5);
 
     // Packages only referenced by older SBOMs drop out of the cross-project view.
-    const packages = await (await listPackagesRoute()).json();
+    const packages = await (await listPackagesRoute(new Request(`${BASE}/api/v1/packages`))).json();
     expect(packages.map((p: { name: string }) => p.name)).toEqual(['lodash']);
 
     const del = await deleteProject(

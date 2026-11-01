@@ -99,7 +99,8 @@ All env vars are declared and validated in `src/lib/env.ts` (Zod) and documented
 |---|---|---|
 | Pure logic | `tests/unit/lib.test.ts` | Vitest, no DB |
 | Ingest, inventory, enrichment, API routes | `tests/unit/api.test.ts` | Vitest + in-process Postgres (PGlite) via `createTestDb()`; `fakeFetch()` stands in for OSV/deps.dev; routes called as functions |
-| UI journeys | `tests/e2e/dashboard.spec.ts` | Playwright against a built app and real Postgres, seeded in `global-setup.ts` |
+| UI journeys | `tests/e2e/dashboard.spec.ts` | Playwright against a built app and real Postgres, seeded in `global-setup.ts` (auth off) |
+| Owner-only gate | `tests/e2e/auth.spec.ts` | Playwright `authed` project: second server with auth on, forged session cookie |
 
 Fixtures in `tests/fixtures/`. Tests never touch the network.
 
@@ -114,7 +115,19 @@ external input; compose requires `POSTGRES_PASSWORD`, binds Postgres to loopback
 permissions with SHA-pinned actions; Dependabot; gitleaks; `pnpm audit`; actionlint, zizmor, dependency-review (PRs) and a
 Trivy image scan (HIGH/CRITICAL, npm's bundled modules skipped).
 
-Known open items (do not silently "fix" unrelated to a task; track in `docs/features.json`): reads are unauthenticated (E-002);
+Owner-only reads (E-004; ADR 0001): `src/server/auth.ts` holds the next-auth v4 options (pinned 4.24.15, JWT, `session.maxAge` and
+`jwt.maxAge` both 604800, `NEXTAUTH_URL` assigned to `process.env` from `env()`, `AUTH_TRUST_HOST` never set) and `requireOwner(req)`,
+called first in every `GET /api/v1/*` handler: 401 no session, 403 non-owner (numeric GitHub id compared as a string against
+`OWNER_GITHUB_ID`, re-checked per request), 503 in production without full auth config unless `ALLOW_OPEN_READS=true`; open in
+dev/test when auth is unconfigured. GitHub egress only through the injectable `FetchFn` in that module. Pages (E-005): every `page.tsx` starts with `requireOwnerPage()` (same `ownerState()` decision) and renders `AccessGate` (sign-in button, Access denied with login and sign-out link, or reads-disabled) in place; `tests/unit/page-auth.test.ts` fails if a page or route lacks the guard or an allow-list entry. Proxy (E-006, `src/proxy.ts`): first line, same `ownerState()`; open only `/api/auth/*`, `/api/healthz`, `/_next/static/*`, `/_next/image`, `/icon.svg` and, by method+exact path, `POST /api/v1/sboms` and `DELETE /api/v1/projects/[id]`; everything else (unknown paths included) is gated. Machine paths get JSON 401/403/503; page URLs other than `/` redirect to `/` (query dropped; `/` passes through so the in-place gate renders and nothing loops); production without config answers 503 to all gated requests. Auth routes are rate-limited by the `[...nextauth]` handler only (the proxy does not count), in their own bucket (`AUTH_RATE_LIMIT`, default 60 per window) separate from the write bucket, so `/api/auth/*` traffic can never exhaust uploads or deletes. Hardening from review: `NEXTAUTH_SECRET` must be at least 32 characters and `NEXTAUTH_URL` an http(s) URL, otherwise auth counts as not configured (503 in production unless `ALLOW_OPEN_READS=true`), because the owner id is public; sessions are read from the cookie only (`Authorization: Bearer` is ignored); the jwt callback sets `sub` from the GitHub id explicitly; `/api/healthz` returns a generic body and logs failures server-side; page metadata is neutral for gated viewers; `OwnerState` maps to HTTP via one `denial()` function.
+
+Owner-only gate summary (E-002, fail-closed): reads (pages and `GET /api/v1/*`) require the single owner's GitHub session; uploads and
+deletes stay on bearer tokens; production without full auth config answers 503 unless `ALLOW_OPEN_READS=true`. GitHub egress from the web
+app (token exchange, `/user`) is a documented exception to "external HTTP only from the worker" (ADR 0001), confined to `src/server/auth.ts`
+behind `FetchFn`. Covered end to end (E-007) by the `authed` Playwright project (`tests/e2e/auth.spec.ts`): a second server on its own port
+with dummy GitHub credentials and a session cookie forged with `next-auth/jwt`, so nothing contacts GitHub. Setup: README "Owner-only sign-in".
+
+Known open items (do not silently "fix" unrelated to a task; track in `docs/features.json`): the live GitHub OAuth round trip is untested (E-003);
 the worker's external HTTP (SSRF via configurable API URLs) is not audited; no image signing/provenance; the rate limit is
 not shared across replicas.
 

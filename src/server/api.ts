@@ -41,7 +41,14 @@ export function resetRateLimits() {
   windows.clear();
 }
 
-function clientKey(req: Request) {
+/** Which budget a request spends. Auth traffic has its own bucket so unauthenticated /api/auth/* calls cannot starve uploads. */
+export type RateScope = 'write' | 'auth';
+
+function clientKey(req: Request, scope: RateScope) {
+  return `${scope}:${clientAddress(req)}`;
+}
+
+function clientAddress(req: Request) {
   if (env().TRUST_PROXY) {
     const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
     return forwarded || req.headers.get('x-real-ip') || 'unknown';
@@ -54,12 +61,13 @@ function clientKey(req: Request) {
  * Fixed-window, in-memory limit per client for write requests. Runs before the token check so
  * token guessing is throttled too. State is per process; run one web replica or limit at the proxy.
  */
-export function checkRateLimit(req: Request, now = Date.now()): NextResponse | null {
-  const { WRITE_RATE_LIMIT: max, WRITE_RATE_WINDOW_SECONDS: seconds } = env();
+export function checkRateLimit(req: Request, now = Date.now(), scope: RateScope = 'write'): NextResponse | null {
+  const { WRITE_RATE_LIMIT, AUTH_RATE_LIMIT, WRITE_RATE_WINDOW_SECONDS: seconds } = env();
+  const max = scope === 'auth' ? AUTH_RATE_LIMIT : WRITE_RATE_LIMIT;
   if (!max) {
     return null;
   }
-  const key = clientKey(req);
+  const key = clientKey(req, scope);
   const windowMs = seconds * 1000;
   let entry = windows.get(key);
   if (!entry || now - entry.start >= windowMs) {

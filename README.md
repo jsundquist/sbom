@@ -129,6 +129,7 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | `ALLOW_OPEN_UPLOADS` | `false` | Set `true` to allow open uploads in production (e.g. `docker compose` on localhost) |
 | `MAX_UPLOAD_BYTES` | 52428800 | Maximum SBOM size; larger bodies are cut off while streaming and get 413 |
 | `WRITE_RATE_LIMIT` | 60 | Uploads/deletes allowed per client per window (429 with `Retry-After` beyond it); `0` disables. In-memory, per web process |
+| `AUTH_RATE_LIMIT` | 60 | `/api/auth/*` requests allowed per client per window, in a bucket separate from uploads/deletes; `0` disables |
 | `WRITE_RATE_WINDOW_SECONDS` | 60 | Length of the rate-limit window |
 | `TRUST_PROXY` | `false` | Key the limit on `X-Forwarded-For`/`X-Real-IP`; only set behind a proxy that overwrites them. When `false`, all clients share one bucket |
 | `SBOM_HISTORY_LIMIT` | 20 | Uploads kept per application (older ones are pruned) |
@@ -141,7 +142,21 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | `KEV_URL` | CISA JSON feed | Override for mirrors or testing |
 | `OSV_API_URL` / `DEPS_DEV_API_URL` | public APIs | Override for mirrors or testing |
 
-The dashboard itself has no login yet; put it behind your network or a reverse proxy if needed.
+### Owner-only sign-in
+
+The dashboard and `GET /api/v1/*` are readable only by one GitHub account (the owner). Set all five variables below to enable it;
+anyone else gets a sign-in page (API 401) or Access denied (API 403). Uploads and deletes keep their separate bearer tokens, and
+`/api/healthz` stays open. Registering the GitHub OAuth app is covered in E-003 (`docs/features.json`).
+
+| Variable | Default | Description |
+|---|---|---|
+| `OWNER_GITHUB_ID` | empty | Numeric GitHub user id allowed to read (not the login). Empty means nobody |
+| `NEXTAUTH_SECRET` | empty | Secret that signs the session cookie, at least 32 characters (`openssl rand -base64 32`); shorter counts as auth not configured; rotating it signs everyone out |
+| `NEXTAUTH_URL` | empty | Public URL of the dashboard; `https://` gives the cookie a `__Secure-` prefix |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | empty | Credentials of the GitHub OAuth app |
+| `ALLOW_OPEN_READS` | `false` | In production, reads are refused (503) unless all of the above are set; `true` opts out for local use |
+
+Outside production, with none of these set, reads stay open so local development is unchanged. In production they fail closed.
 
 ## API
 

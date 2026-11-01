@@ -32,6 +32,12 @@ services:
       DATABASE_URL: postgres://sbom:${POSTGRES_PASSWORD}@db:5432/sbom
       UPLOAD_TOKENS: ${UPLOAD_TOKENS:-}
       ALLOW_OPEN_UPLOADS: ${ALLOW_OPEN_UPLOADS:-false}
+      OWNER_GITHUB_ID: ${OWNER_GITHUB_ID:-}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      ALLOW_OPEN_READS: ${ALLOW_OPEN_READS:-false}
     depends_on:
       db: { condition: service_healthy }
 

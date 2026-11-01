@@ -3,6 +3,8 @@ import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import { getDb } from '@/db';
+import { requireOwnerPage } from '@/server/auth';
+import { AccessGate } from '@/components/AccessGate';
 import { getPackage } from '@/server/inventory';
 import { OutdatedChip, SeverityCounts } from '@/components/chips';
 import { PackageVersionsTable } from '@/components/PackageVersionsTable';
@@ -14,6 +16,10 @@ import { emptySeverityCounts } from '@/server/inventory';
 export const dynamic = 'force-dynamic';
 
 export default async function PackagePage({ params }: { params: Promise<{ key: string }> }) {
+  const gate = await requireOwnerPage();
+  if (gate) {
+    return <AccessGate gate={gate} />;
+  }
   const pkg = await getPackage(getDb(), decodeURIComponent((await params).key));
   if (!pkg) {
     notFound();

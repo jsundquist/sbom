@@ -3,6 +3,9 @@ import { z } from 'zod';
 /** Lowest poll interval the worker honors, so a misconfigured value cannot hammer OSV, deps.dev, CISA or FIRST. */
 export const MIN_WORKER_POLL_SECONDS = 300;
 
+/** Shortest NEXTAUTH_SECRET accepted; the owner id is public, so a weak secret would let anyone forge a session. */
+export const MIN_AUTH_SECRET_LENGTH = 32;
+
 const csv = z
   .string()
   .default('')
@@ -22,6 +25,19 @@ const schema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((v) => v === 'true'),
+  /** Owner-only sign-in (next-auth v4, GitHub). Reads are gated only when all five are set, the secret is at least
+   *  MIN_AUTH_SECRET_LENGTH characters and the URL is http(s); otherwise auth counts as not configured. */
+  OWNER_GITHUB_ID: z.string().trim().default(''),
+  NEXTAUTH_SECRET: z.string().default(''),
+  /** Canonical public URL; also decides the session cookie name (https -> __Secure-). */
+  NEXTAUTH_URL: z.string().default(''),
+  GITHUB_CLIENT_ID: z.string().default(''),
+  GITHUB_CLIENT_SECRET: z.string().default(''),
+  /** In production, reads return 503 when auth is not fully configured unless this is "true". */
+  ALLOW_OPEN_READS: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   NODE_ENV: z.string().default('development'),
   MAX_UPLOAD_BYTES: z.coerce
     .number()
@@ -30,6 +46,8 @@ const schema = z.object({
     .default(50 * 1024 * 1024),
   /** Write requests (uploads, deletes) allowed per client per window; 0 disables the limit. */
   WRITE_RATE_LIMIT: z.coerce.number().int().nonnegative().default(60),
+  /** Requests to /api/auth/* allowed per client per window, in a bucket separate from writes; 0 disables the limit. */
+  AUTH_RATE_LIMIT: z.coerce.number().int().nonnegative().default(60),
   WRITE_RATE_WINDOW_SECONDS: z.coerce.number().positive().default(60),
   /** Trust X-Forwarded-For / X-Real-IP for the client address; only enable behind a proxy that sets them. */
   TRUST_PROXY: z
