@@ -1,6 +1,6 @@
 name: Release image
 # Builds the single runtime image (web, worker and migrate all run from it), scans it, and publishes it to GHCR.
-# The tag is <short-sha>-<run_number>; deploy tooling picks it up from there. Nothing else is written or bumped.
+# The tag is <short-sha>-<run_number>. The bump job then pins it in jsundquist/k8s-gitops, which Argo CD syncs.
 on:
   push:
     branches: [main]
@@ -21,6 +21,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,3 +59,98 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.value }}
         run: docker push "${IMAGE}:${TAG}"
+
+  bump:
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    env:
+      GITOPS_REPO: jsundquist/k8s-gitops
+    steps:
+      # The bump step pushes with the persisted token, so credentials stay on purpose.
+      - name: Checkout GitOps repo # zizmor: ignore[artipacked]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.GITOPS_REPO }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+
+      - name: Pin new image tag and push
+        env:
+          NEW_TAG: ${{ needs.image.outputs.tag }}
+          FILE: apps/sbom/kustomization.yaml
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Returns 1 when the file already pins NEW_TAG (nothing to commit)
+          pin_and_commit() {
+            yq -i '.images[0].newTag = strenv(NEW_TAG)' "$FILE"
+            if git diff --quiet; then
+              return 1
+            fi
+            git commit -qam "chore(sbom): deploy $NEW_TAG"
+          }
+
+          if ! pin_and_commit; then
+            echo "$FILE already pins $NEW_TAG, nothing to do"
+            exit 0
+          fi
+
+          branch=$(git rev-parse --abbrev-ref HEAD)
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if git pull --rebase origin "$branch" && git push origin "HEAD:$branch"; then
+              exit 0
+            fi
+            echo "::warning::Push attempt $attempt/$attempts failed"
+            git rebase --abort 2>/dev/null || true
+            if [ "$attempt" -eq "$attempts" ]; then
+              break
+            fi
+            sleep $((attempt * 5))
+            # A rebase conflict means a human edited the same line; start over from upstream
+            git fetch -q origin "$branch"
+            git reset -q --hard "origin/$branch"
+            if ! pin_and_commit; then
+              echo "$FILE already pins $NEW_TAG, nothing to do"
+              exit 0
+            fi
+          done
+          echo "::error::Could not push $NEW_TAG to $GITOPS_REPO after $attempts attempts; this deploy was skipped"
+          exit 1
+
+  token-expiry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    env:
+      GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+      WARN_DAYS: 14
+    steps:
+      - name: Check GITOPS_TOKEN expiry
+        run: |
+          set -euo pipefail
+          headers=$(mktemp)
+          code=$(curl -sS -o /dev/null -D "$headers" -w '%{http_code}' \
+            -H "Authorization: Bearer $GITOPS_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/rate_limit)
+          if [ "$code" != "200" ]; then
+            echo "::error::GITOPS_TOKEN was rejected by the GitHub API (HTTP $code). It has probably expired or been revoked; the deploy bump will fail until it is replaced."
+            exit 1
+          fi
+
+          expiry=$(grep -i '^github-authentication-token-expiration:' "$headers" | cut -d' ' -f2- | tr -d '\r' || true)
+          if [ -z "$expiry" ]; then
+            echo "::notice::No token expiration header returned; GITOPS_TOKEN does not appear to expire"
+            exit 0
+          fi
+
+          days=$(( ($(date -u -d "$expiry" +%s) - $(date -u +%s)) / 86400 ))
+          if [ "$days" -lt "$WARN_DAYS" ]; then
+            echo "::error::GITOPS_TOKEN expires in $days day(s) ($expiry). Create a new fine-grained PAT for jsundquist/k8s-gitops (Contents: read/write) and update the GITOPS_TOKEN secret before then."
+            exit 1
+          fi
+          echo "GITOPS_TOKEN valid for $days more days"
