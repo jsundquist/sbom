@@ -8,6 +8,13 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-01: E-008 Kubernetes readiness
+- Done (branch `chore/k8s-readiness`, off `feat/owner-auth`): numeric `USER 1000:1000`; `GET /api/livez` (no DB) beside `/api/healthz` (readiness); worker waits up to 25 s for the in-flight enrichment run on SIGTERM and closes its LISTEN client; web `CMD` and the compose worker `command` run node directly; `.github/workflows/release.yml` (build amd64, Trivy, push `ghcr.io/jsundquist/sbom:<short-sha>-<run_number>`); `docs/kubernetes.md`.
+- Verified: typecheck, eslint and `pnpm test` (224) green; under compose with read-only rootfs and `cap_drop: ALL`: livez 200 / healthz 503 with Postgres stopped, worker SIGTERM mid-run exits 0 after logging its result, two concurrent `db:migrate` runs both exit 0, bad password exits 1; actionlint and zizmor clean on `release.yml`.
+- Not verified: `pnpm run test:e2e` (no Postgres in this session), the release workflow itself (runs on push to main), amd64 memory (measured on arm64).
+- Next: Kubernetes manifests live in the GitOps repo; E-003 still needs the live OAuth round trip.
+- Gotchas: `npm start` and `npm run worker` go through `sh -c` and never relay SIGTERM (exit 1, run lost), so use node directly in pod commands. `next start` exits 143 on SIGTERM without draining. `pnpm run lint` fails while untracked `.claude/worktrees/*` exist (Q-005).
+
 ## 2026-10-31: Retro tickets queued
 - Done: turned the retro of the owner-auth session into tickets Q-004 (self-provisioning e2e script plus e2e in done), Q-005 (exclude agent worktrees), Q-006 (stale `.next`), Q-007 (CODING_STANDARDS.md), Q-008 (implementer contract, blocked by Q-005), Q-009 (progress.md order check). All at priority 24.5 so they run after E-003 (the owner-auth deploy checklist, priority 24) and before D-004.
 - Next: E-003 (HITL: OAuth app registration, live sign-in), then Q-004, Q-005, Q-006.

@@ -787,6 +787,26 @@
       "notes": "Context: E-002 acceptance, map W-001 notes, tickets W-003/W-004 notes, docs/adr/0001, docs/research/next-auth-v4.md (branch research/next-auth-v4). Use tdd. Needs Postgres for e2e."
     },
     {
+      "id": "E-008",
+      "title": "Kubernetes readiness: numeric USER, /api/livez, graceful worker SIGTERM, direct node commands, GHCR release workflow, handoff doc",
+      "epic": "E",
+      "size": "M",
+      "priority": 24.1,
+      "status": "done",
+      "depends_on": [
+        "E-002"
+      ],
+      "acceptance": [
+        "Runtime user is numeric (1000:1000)",
+        "Liveness endpoint without a database check; /api/healthz stays the readiness check",
+        "Worker finishes the in-flight enrichment run on SIGTERM; web and worker receive SIGTERM (no npm/sh wrapper)",
+        "release.yml builds linux/amd64, Trivy-scans, and pushes ghcr.io/jsundquist/sbom:<short-sha>-<run_number> with GITHUB_TOKEN only",
+        "docs/kubernetes.md covers env vars, commands, probes, writable paths, resources, proxy/OAuth notes"
+      ],
+      "evidence": "2026-11-01: pnpm run typecheck, eslint and pnpm test (224) green; compose run with read_only/cap_drop: livez 200 and healthz 503 with db stopped, worker SIGTERM mid-run logged its result and exited 0, web stops in 0.4s, concurrent migrate runs both exit 0; actionlint and zizmor clean on release.yml. e2e not run. Not verified: the release workflow on GitHub (needs a push to main).",
+      "notes": "No GitOps bump step on purpose; see docs/kubernetes.md."
+    },
+    {
       "id": "Q-004",
       "title": "Self-provisioning e2e script, used by init.sh, and e2e required in done for route-touching tickets",
       "epic": "Q",
