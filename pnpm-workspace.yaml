@@ -27,6 +27,12 @@ minimumReleaseAgeExclude:
   - 'react-is@19.3.1'
   - 'react@19.3.1'
 
+# GHSA-67mh-4wv8-2f99: drizzle-kit's deprecated @esbuild-kit loader pins esbuild 0.18.20 (dev server request leak, <= 0.24.2).
+# Use the 0.25.x drizzle-kit already ships; dev-only, nothing here reaches the production image. Drop once drizzle-kit
+# stops depending on @esbuild-kit.
+overrides:
+  esbuild@0.18.20: 0.25.12
+
 # Accepted audit findings. Keep each entry narrow and say why.
 auditConfig:
   ignoreGhsas:
