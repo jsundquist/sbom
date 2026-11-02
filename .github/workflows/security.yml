@@ -88,10 +88,20 @@ jobs:
         with:
           persist-credentials: false
       - name: Build image
-        run: docker build -t sbom-dashboard:scan .
+        run: |
+          docker build --target web -t sbom-dashboard:scan .
+          docker build --target worker -t sbom-dashboard-worker:scan .
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: sbom-dashboard:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          # npm's own bundled modules ship with the base image and are not used at runtime beyond `npm start`.
+          skip-dirs: usr/local/lib/node_modules/npm
+          exit-code: '1'
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: sbom-dashboard-worker:scan
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           # npm's own bundled modules ship with the base image and are not used at runtime beyond `npm start`.

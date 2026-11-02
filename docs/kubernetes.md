@@ -1,9 +1,9 @@
 # Running on Kubernetes (k3s, Argo CD)
 
-Handoff for whoever writes the manifests. One image runs three workloads. No secret values live in this repo; every
+Handoff for whoever writes the manifests. Two images run three workloads (web; worker and migrate share one). No secret values live in this repo; every
 value below is a placeholder.
 
-Image: `ghcr.io/jsundquist/sbom:<short-sha>-<run_number>`, linux/amd64, published by `.github/workflows/release.yml` on every push
+Images: `ghcr.io/jsundquist/sbom:<short-sha>-<run_number>` (web, Next standalone) and `ghcr.io/jsundquist/sbom-worker:<same tag>` (worker and migrate), linux/amd64, published by `.github/workflows/release.yml` on every push
 to main (Trivy HIGH/CRITICAL gate first). The Dockerfile carries `org.opencontainers.image.source`, which links the package to
 this repo.
 
@@ -21,13 +21,13 @@ credential-bearing connection-string patterns in the app files (the only matches
 
 Run node directly in the container `command`, **not** `npm start` / `npm run worker`. npm launches `sh -c`, which does not
 relay SIGTERM, so on pod termination the process is killed instead of shutting down (measured: exit 1 and an in-flight
-enrichment run lost). The image `CMD` is already the direct form for web.
+enrichment run lost). The image `CMD` is already the direct form for both images.
 
 | Workload | Kind | `command` (exec form) | Needs |
 |---|---|---|---|
-| migrate | Job, Argo CD PreSync hook | `["node", "--import", "tsx", "scripts/migrate.ts"]` (same as `npm run db:migrate`; short-lived, so `npm run db:migrate` also works) | `DATABASE_URL` only |
-| web | Deployment, port 3000 | image default, i.e. `["node", "node_modules/next/dist/bin/next", "start"]` | DB, auth, upload, rate-limit vars |
-| worker | Deployment, no port | `["node", "--import", "tsx", "src/worker/main.ts"]` | DB and worker vars; egress to the hosts below |
+| migrate (`sbom-worker` image) | Job, Argo CD PreSync hook | `["node", "--import", "tsx", "scripts/migrate.ts"]` (same as `npm run db:migrate`; short-lived, so `npm run db:migrate` also works) | `DATABASE_URL` only |
+| web (`sbom` image) | Deployment, port 3000 | image default, i.e. `["node", "server.js"]` | DB, auth, upload, rate-limit vars |
+| worker (`sbom-worker` image) | Deployment, no port | `["node", "--import", "tsx", "src/worker/main.ts"]` | DB and worker vars; egress to the hosts below |
 
 Working directory is `/app` in all three. Keep web at **1 replica** (see Known limitations). Grace periods are under
 Known limitations.

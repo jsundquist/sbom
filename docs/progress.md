@@ -177,3 +177,12 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Next: A-003 (see `features.json`).
 - Gotchas: Dockerfile/compose intentionally run scripts with `npm` in the runtime stage; that is not a leftover from the pnpm
   migration. Do not commit `pnpm-lock.yaml` churn unrelated to a dependency change.
+
+## 2026-11-02: Ship only needed Next files (build/next-standalone-image)
+- Done: `output: 'standalone'`; Dockerfile split into `web` (standalone, `node server.js`) and `worker` (prod node_modules without
+  `next`, runs worker and migrate); compose, release.yml and security.yml build/scan both; docs/kubernetes.md updated.
+- Verified: `pnpm run build`; both targets build; web image has 54 `next/dist/compiled` entries (was 146), worker has no `next`;
+  web serves `/icon.svg`, SIGTERM exits 143 like `next start` (same handler).
+- Blocked before merge: `jsundquist/k8s-gitops` must point worker and migrate at `ghcr.io/jsundquist/sbom-worker` (add an
+  `images` entry; the bump job updates it by name once present) and web's command is now `node server.js`. Merging first breaks the cluster worker.
+- Gotcha: worker target removes `next` with `rm -rf node_modules/next node_modules/.pnpm/next@*`; revisit if pnpm layout changes.

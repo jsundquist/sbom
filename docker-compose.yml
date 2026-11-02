@@ -26,7 +26,7 @@ services:
 
   migrate:
     <<: *hardened
-    build: .
+    build: { context: ., target: worker }
     command: ['npm', 'run', 'db:migrate']
     environment: &env
       DATABASE_URL: postgres://sbom:${POSTGRES_PASSWORD}@db:5432/sbom
@@ -43,7 +43,7 @@ services:
 
   web:
     <<: *hardened
-    build: .
+    build: { context: ., target: web }
     environment: *env
     ports: ['3000:3000']
     healthcheck:
@@ -59,7 +59,7 @@ services:
 
   worker:
     <<: *hardened
-    build: .
+    build: { context: ., target: worker }
     # Not `npm run worker`: npm and tsx do not relay SIGTERM, so the worker would be killed mid-run on `docker stop`.
     command: ['node', '--import', 'tsx', 'src/worker/main.ts']
     environment: *env
