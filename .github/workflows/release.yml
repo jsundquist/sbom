@@ -230,6 +230,79 @@ jobs:
           echo "::error::Could not push $NEW_TAG to $GITOPS_REPO after $attempts attempts; this deploy was skipped"
           exit 1
 
+  # Keeps the newest KEEP image versions per package and deletes older ones together with their cosign signature tags
+  # (sha256-<digest>.sig). Untagged versions (attestations and SBOMs pushed as referrers) are never deleted, so nothing a
+  # kept image references can be removed. Dry run unless the repo variable GHCR_PRUNE_ENABLED is 'true'. Deleting needs
+  # this repository to have Admin on each package ("Manage Actions access").
+  prune:
+    needs: [image, bump]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [sbom, sbom-worker]
+    env:
+      GITOPS_REPO: jsundquist/k8s-gitops
+      KEEP: 10
+      OWNER: ${{ github.repository_owner }}
+      PACKAGE: ${{ matrix.package }}
+      NEW_TAG: ${{ needs.image.outputs.tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DRY_RUN: ${{ vars.GHCR_PRUNE_ENABLED == 'true' && 'false' || 'true' }}
+    steps:
+      - name: Prune old image versions
+        run: |
+          set -euo pipefail
+
+          # Never delete what the GitOps repo currently pins (covers manual rollbacks too)
+          deployed=$(curl -fsSL "https://raw.githubusercontent.com/$GITOPS_REPO/HEAD/apps/sbom/kustomization.yaml" \
+            | NAME="ghcr.io/$OWNER/$PACKAGE" yq '.images[] | select(.name == strenv(NAME)) | .newTag')
+          if [ -z "$deployed" ] || [ "$deployed" = "null" ]; then
+            echo "::error::Could not read the deployed tag for $PACKAGE from $GITOPS_REPO; refusing to prune"
+            exit 1
+          fi
+          protected=$(jq -nc --arg a "$NEW_TAG" --arg b "$deployed" '[$a, $b]')
+          echo "Protected tags: $protected (dry run: $DRY_RUN)"
+
+          gh api --paginate "/users/$OWNER/packages/container/$PACKAGE/versions?per_page=100" | jq -s 'add' > versions.json
+
+          # Image versions are those with a tag that is not a sha256-<digest>.<suffix> signature tag. Keep the newest KEEP
+          # of them plus the protected tags; delete the rest and the signature tags that point at the deleted digests.
+          jq -c --argjson keep "$KEEP" --argjson prot "$protected" '
+            def tags: .metadata.container.tags // [];
+            def itags: tags | map(select(startswith("sha256-") | not));
+            sort_by(.created_at) | reverse as $all
+            | ($all | map(select(itags | length > 0))) as $images
+            | ($images[:$keep] + ($images | map(select(itags | any(.[]; IN($prot[])))))) as $kept
+            | ($kept | map(.name)) as $keptDigests
+            | ($images | map(select(. as $v | ($keptDigests | index($v.name)) == null))) as $drop
+            | ($drop | map("sha256-" + (.name | ltrimstr("sha256:")))) as $sigPrefixes
+            | ($drop[] | {id, created_at, tags: tags}),
+              ($all[] | select((itags | length) == 0 and (tags | length) > 0
+                  and (tags | any(.[]; . as $t | $sigPrefixes | any(. as $p | $t | startswith($p + ".")))))
+                | {id, created_at, tags: tags})
+          ' versions.json > delete.jsonl
+
+          echo "Total versions: $(jq length versions.json), to delete: $(wc -l < delete.jsonl | tr -d ' ')"
+          cat delete.jsonl
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run, nothing deleted"
+            exit 0
+          fi
+
+          failed=0
+          while read -r id; do
+            gh api -X DELETE "/users/$OWNER/packages/container/$PACKAGE/versions/$id" || failed=$((failed + 1))
+          done < <(jq -r '.id' delete.jsonl)
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::$failed version(s) could not be deleted"
+            exit 1
+          fi
+
   token-expiry:
     runs-on: ubuntu-latest
     timeout-minutes: 2
