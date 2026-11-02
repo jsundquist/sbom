@@ -1,6 +1,6 @@
 # Two runtime targets from one build: `web` (Next standalone, traced files only) and `worker` (worker + migrations).
 # Build with `--target web` or `--target worker` (see docker-compose.yml).
-FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392 AS deps
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS deps
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -15,12 +15,10 @@ RUN pnpm run build
 FROM build AS worker-modules
 RUN pnpm prune --prod && rm -rf node_modules/next node_modules/.pnpm/next@*
 
-FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392 AS base
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS base
 WORKDIR /app
 # Links the GHCR package to this repo.
 LABEL org.opencontainers.image.source="https://github.com/jsundquist/sbom"
-# The pinned base image lags Debian security fixes (Trivy flags perl-base); pull patched packages at build time.
-RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade perl-base && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 # Numeric so Kubernetes runAsNonRoot can verify it (the node image's node user is 1000:1000).
 USER 1000:1000
