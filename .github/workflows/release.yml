@@ -1,5 +1,5 @@
 name: Release image
-# Builds the single runtime image (web, worker and migrate all run from it), scans it, and publishes it to GHCR.
+# Builds the two runtime images (web; worker, which also runs migrate), scans them, and publishes them to GHCR.
 # The tag is <short-sha>-<run_number>. The bump job then pins it in jsundquist/k8s-gitops, which Argo CD syncs.
 on:
   push:
@@ -13,6 +13,7 @@ concurrency:
 
 env:
   IMAGE: ghcr.io/jsundquist/sbom
+  WORKER_IMAGE: ghcr.io/jsundquist/sbom-worker
 
 jobs:
   image:
@@ -38,16 +39,32 @@ jobs:
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
+          target: web
           platforms: linux/amd64
           load: true
           push: false
           tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: worker
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ env.WORKER_IMAGE }}:${{ steps.tag.outputs.value }}
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           # Same exclusion as security.yml: npm's own bundled modules ship with the base image.
+          skip-dirs: usr/local/lib/node_modules/npm
+          exit-code: '1'
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.WORKER_IMAGE }}:${{ steps.tag.outputs.value }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
           skip-dirs: usr/local/lib/node_modules/npm
           exit-code: '1'
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
@@ -58,7 +75,9 @@ jobs:
       - name: Push
         env:
           TAG: ${{ steps.tag.outputs.value }}
-        run: docker push "${IMAGE}:${TAG}"
+        run: |
+          docker push "${IMAGE}:${TAG}"
+          docker push "${WORKER_IMAGE}:${TAG}"
 
   bump:
     needs: image
@@ -87,6 +106,8 @@ jobs:
           # Returns 1 when the file already pins NEW_TAG (nothing to commit)
           pin_and_commit() {
             yq -i '.images[0].newTag = strenv(NEW_TAG)' "$FILE"
+            # No-op until k8s-gitops lists the worker image.
+            yq -i '(.images[] | select(.name == "ghcr.io/jsundquist/sbom-worker") | .newTag) = strenv(NEW_TAG)' "$FILE"
             if git diff --quiet; then
               return 1
             fi

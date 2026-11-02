@@ -2,6 +2,8 @@ import type { NextConfig } from 'next';
 import { securityHeaders } from './src/lib/security-headers';
 
 const nextConfig: NextConfig = {
+  // Traces only the files the server needs into .next/standalone, leaving out next/dist/compiled build tooling.
+  output: 'standalone',
   serverExternalPackages: ['pg'],
   poweredByHeader: false,
   // `next dev` otherwise rewrites a managed block into AGENTS.md; project instructions are maintained by hand.
