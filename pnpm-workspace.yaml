@@ -32,6 +32,10 @@ minimumReleaseAgeExclude:
 # stops depending on @esbuild-kit.
 overrides:
   esbuild@0.18.20: 0.25.12
+  # GHSA-g3hv-75wg-m249: minimatch < 11.0.1 (DoS via globparts amplification). eslint 9, typescript-eslint and
+  # eslint-plugin-import still ask for 3.x/10.x, which have no patch; 11.x works with them (lint, tests and build pass).
+  # Dev-only, nothing here reaches the production image. Drop once eslint and its plugins depend on minimatch >= 11.0.1.
+  'minimatch@<11.0.1': 11.0.3
 
 # Accepted audit findings. Keep each entry narrow and say why.
 auditConfig:
