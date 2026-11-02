@@ -1,6 +1,8 @@
 name: Release image
 # Builds the two runtime images (web; worker, which also runs migrate), scans them, and publishes them to GHCR.
 # The tag is <short-sha>-<run_number>. The bump job then pins it in jsundquist/k8s-gitops, which Argo CD syncs.
+# Assumes the ruleset on main (reviewed PRs, required CI and security checks, no bypass actors): this workflow runs on
+# every push to main independently of those workflows, so only merged, checked code reaches the build.
 on:
   push:
     branches: [main]
@@ -24,6 +26,8 @@ jobs:
       packages: write
     outputs:
       tag: ${{ steps.tag.outputs.value }}
+      web_digest: ${{ steps.digests.outputs.web }}
+      worker_digest: ${{ steps.digests.outputs.worker }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -79,8 +83,92 @@ jobs:
           docker push "${IMAGE}:${TAG}"
           docker push "${WORKER_IMAGE}:${TAG}"
 
-  bump:
+      - name: Resolve pushed digests
+        id: digests
+        env:
+          TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          set -euo pipefail
+          echo "web=$(docker buildx imagetools inspect "${IMAGE}:${TAG}" --format '{{.Manifest.Digest}}')" >> "$GITHUB_OUTPUT"
+          echo "worker=$(docker buildx imagetools inspect "${WORKER_IMAGE}:${TAG}" --format '{{.Manifest.Digest}}')" >> "$GITHUB_OUTPUT"
+
+  # Separate job so only it gets id-token and attestations: write. Everything here addresses the images by digest.
+  sign:
     needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Sign images (keyless)
+        env:
+          WEB_DIGEST: ${{ needs.image.outputs.web_digest }}
+          WORKER_DIGEST: ${{ needs.image.outputs.worker_digest }}
+        run: |
+          cosign sign --yes "${IMAGE}@${WEB_DIGEST}"
+          cosign sign --yes "${WORKER_IMAGE}@${WORKER_DIGEST}"
+      # actions/attest-build-provenance v4 is a thin wrapper over actions/attest, which new workflows should use.
+      # create-storage-record is off because it needs artifact-metadata: write, beyond the permissions this job is allowed.
+      - name: Attest build provenance (web)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ needs.image.outputs.web_digest }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Attest build provenance (worker)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.WORKER_IMAGE }}
+          subject-digest: ${{ needs.image.outputs.worker_digest }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Generate image SBOM (web)
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ${{ env.IMAGE }}@${{ needs.image.outputs.web_digest }}
+          format: cyclonedx-json
+          output-file: ${{ runner.temp }}/web.cdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Generate image SBOM (worker)
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ${{ env.WORKER_IMAGE }}@${{ needs.image.outputs.worker_digest }}
+          format: cyclonedx-json
+          output-file: ${{ runner.temp }}/worker.cdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Attest SBOM (web)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ needs.image.outputs.web_digest }}
+          sbom-path: ${{ runner.temp }}/web.cdx.json
+          push-to-registry: true
+          create-storage-record: false
+      - name: Attest SBOM (worker)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.WORKER_IMAGE }}
+          subject-digest: ${{ needs.image.outputs.worker_digest }}
+          sbom-path: ${{ runner.temp }}/worker.cdx.json
+          push-to-registry: true
+          create-storage-record: false
+
+  # bump still pins by tag. Pinning by digest (needs.image.outputs.web_digest / worker_digest) changes the contract with
+  # k8s-gitops, so it is a separate change.
+  bump:
+    needs: [image, sign]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
