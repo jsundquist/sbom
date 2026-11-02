@@ -165,8 +165,8 @@ jobs:
           push-to-registry: true
           create-storage-record: false
 
-  # bump still pins by tag. Pinning by digest (needs.image.outputs.web_digest / worker_digest) changes the contract with
-  # k8s-gitops, so it is a separate change.
+  # bump writes the tag and the signed image digest together (kustomize renders name:tag@sha256:...), so the cluster
+  # runs exactly the image that was scanned, signed and attested, not whatever the tag points to later.
   bump:
     needs: [image, sign]
     runs-on: ubuntu-latest
@@ -185,17 +185,33 @@ jobs:
       - name: Pin new image tag and push
         env:
           NEW_TAG: ${{ needs.image.outputs.tag }}
+          WEB_DIGEST: ${{ needs.image.outputs.web_digest }}
+          WORKER_DIGEST: ${{ needs.image.outputs.worker_digest }}
           FILE: apps/sbom/kustomization.yaml
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Returns 1 when the file already pins NEW_TAG (nothing to commit)
+          # Never write a tag without a valid digest for it
+          for d in "$WEB_DIGEST" "$WORKER_DIGEST"; do
+            [[ "$d" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::Not a valid image digest: '${d}'"; exit 1; }
+          done
+
+          # Returns 1 when the file already pins NEW_TAG and both digests (nothing to commit).
+          # Tag and digest are written together and read back. The explicit "|| exit 1" matters: set -e is off inside
+          # a function that is called from an if, so a failed check would otherwise be ignored.
           pin_and_commit() {
-            yq -i '.images[0].newTag = strenv(NEW_TAG)' "$FILE"
-            # No-op until k8s-gitops lists the worker image.
-            yq -i '(.images[] | select(.name == "ghcr.io/jsundquist/sbom-worker") | .newTag) = strenv(NEW_TAG)' "$FILE"
+            yq -i '
+              (.images[] | select(.name == "ghcr.io/jsundquist/sbom") | .newTag) = strenv(NEW_TAG) |
+              (.images[] | select(.name == "ghcr.io/jsundquist/sbom") | .digest) = strenv(WEB_DIGEST) |
+              (.images[] | select(.name == "ghcr.io/jsundquist/sbom-worker") | .newTag) = strenv(NEW_TAG) |
+              (.images[] | select(.name == "ghcr.io/jsundquist/sbom-worker") | .digest) = strenv(WORKER_DIGEST)
+            ' "$FILE" || exit 1
+            yq -e '[.images[] | select(.name == "ghcr.io/jsundquist/sbom" and .newTag == strenv(NEW_TAG) and .digest == strenv(WEB_DIGEST))] | length == 1' "$FILE" >/dev/null \
+              || { echo "::error::${FILE} does not pin the web image after the update"; exit 1; }
+            yq -e '[.images[] | select(.name == "ghcr.io/jsundquist/sbom-worker" and .newTag == strenv(NEW_TAG) and .digest == strenv(WORKER_DIGEST))] | length == 1' "$FILE" >/dev/null \
+              || { echo "::error::${FILE} does not pin the worker image after the update"; exit 1; }
             if git diff --quiet; then
               return 1
             fi
