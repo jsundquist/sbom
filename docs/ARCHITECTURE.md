@@ -79,8 +79,11 @@ dashboard URL. Parse/ingest errors are 400.
    in batches of 50. Runs after the vulnerability scan so new CVEs are scored in the same run. Same opt-in rule (`epssUrl`).
 
 **Read**: pages and `GET /api/v1/*` both call `src/server/inventory.ts` (`listProjects`, `getProject`, `listPackages`,
-`getPackage`, `listVulnerabilities`, `getVulnerability`, `getOverview`, `getSbomDocument`). `loadComponents()` is the core
-join; aggregation (`aggregatePackages`, `aggregateVulnerabilities`, `summarize`) is pure and done in TypeScript.
+`getPackage`, `listVulnerabilities`, `getVulnerability`, `getOverview`, `getSbomDocument`). `loadComponents(db, scope)` is the
+core join; `scope` (`sbomIds`, `packageKey`, `vulnerabilityId`) narrows it in SQL, so detail reads do not load the whole
+inventory. KEV and EPSS come from `src/server/exploit-signals.ts` (`loadExploitSignals`); the CVE-alias rule is
+`src/lib/cve.ts`, and what counts as scannable or version-checkable (and the `pending`/`unsupported` statuses) is
+`src/lib/coverage.ts`, used by both the worker's due queries and the read model. Aggregation (`aggregatePackages`, `aggregateVulnerabilities`, `summarize`) is pure and done in TypeScript.
 Pages use `export const dynamic = 'force-dynamic'`.
 
 ## API surface (`/api/v1`)
