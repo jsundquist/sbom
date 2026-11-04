@@ -12,7 +12,7 @@ import {
   vulnerabilities,
 } from '@/db/schema';
 import { cveOf } from '@/lib/cve';
-import { depsDevSystem, OSV_TYPES } from '@/lib/ecosystems';
+import { versionStatus, vulnStatus, type VersionStatus, type VulnStatus } from '@/lib/coverage';
 import { compareVersions, UPDATE_RANK, updateType, type UpdateType } from '@/lib/version';
 import { comparePriority } from '@/lib/priority';
 import { loadExploitSignals, type ExploitSignals } from './exploit-signals';
@@ -46,8 +46,8 @@ export interface InventoryComponent {
   vulns: ComponentVuln[];
   maxSeverity: Severity | null;
   fixVersion: string | null;
-  vulnStatus: 'scanned' | 'pending' | 'unsupported';
-  versionStatus: 'checked' | 'pending' | 'unsupported';
+  vulnStatus: VulnStatus;
+  versionStatus: VersionStatus;
 }
 
 export type SeverityCounts = Record<Severity, number>;
@@ -148,8 +148,6 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
     const vulns = (vulnsByVersion.get(`${r.packageKey}@${r.version}`) ?? []).sort(
       (a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || (b.score ?? 0) - (a.score ?? 0),
     );
-    const scannable = !!(r.ecosystem && OSV_TYPES.has(r.ecosystem) && r.version);
-    const versionCheckable = !!(r.ecosystem && depsDevSystem(r.ecosystem));
     return {
       id: r.id,
       sbomId: r.sbomId,
@@ -167,8 +165,8 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
       vulns,
       maxSeverity: maxSeverity(vulns.map((v) => v.severity)),
       fixVersion: recommendedFix(r.version, vulns),
-      vulnStatus: !scannable ? 'unsupported' : r.vulnsCheckedAt ? 'scanned' : 'pending',
-      versionStatus: !versionCheckable ? 'unsupported' : r.latestCheckedAt ? 'checked' : 'pending',
+      vulnStatus: vulnStatus(r.ecosystem, r.version, r.vulnsCheckedAt),
+      versionStatus: versionStatus(r.ecosystem, r.latestCheckedAt),
     };
   });
 }
