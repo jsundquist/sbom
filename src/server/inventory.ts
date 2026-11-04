@@ -1,5 +1,5 @@
 // Read model: joins SBOM components with vulnerability and latest-version data.
-import { and, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, exists, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import {
   componentEdges,
@@ -67,19 +67,52 @@ export interface Stats {
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 
 /** Package identity used for grouping; falls back to the name when there is no purl. */
-export const groupKey = (c: Pick<InventoryComponent, 'packageKey' | 'name'>) => c.packageKey ?? `name:${c.name}`;
+const NAME_KEY_PREFIX = 'name:';
+export const groupKey = (c: Pick<InventoryComponent, 'packageKey' | 'name'>) => c.packageKey ?? `${NAME_KEY_PREFIX}${c.name}`;
 
 async function latestSbomIds(db: Db): Promise<number[]> {
   const rows = await db.select({ id: projects.latestSbomId }).from(projects).where(isNotNull(projects.latestSbomId));
   return rows.map((r) => r.id!);
 }
 
-/** Enriched components for the given SBOMs (defaults to every project's latest SBOM). */
-export async function loadComponents(db: Db, sbomIds?: number[]): Promise<InventoryComponent[]> {
-  const ids = sbomIds ?? (await latestSbomIds(db));
+/** What to load. SBOMs default to every project's latest; the other fields narrow that set in SQL. */
+export interface ComponentScope {
+  sbomIds?: number[];
+  /** A `groupKey` value: a package key, or `name:<name>` for components without a purl. */
+  packageKey?: string;
+  /** Only components affected by this vulnerability (their other vulnerabilities are still loaded). */
+  vulnerabilityId?: string;
+}
+
+/** Enriched components for the given scope (defaults to every project's latest SBOM). */
+export async function loadComponents(db: Db, scope: ComponentScope = {}): Promise<InventoryComponent[]> {
+  const ids = scope.sbomIds ?? (await latestSbomIds(db));
   if (!ids.length) {
     return [];
   }
+  const { packageKey, vulnerabilityId } = scope;
+  const inScope = and(
+    inArray(components.sbomId, ids),
+    packageKey === undefined
+      ? undefined
+      : packageKey.startsWith(NAME_KEY_PREFIX)
+        ? and(isNull(components.packageKey), eq(components.name, packageKey.slice(NAME_KEY_PREFIX.length)))
+        : eq(components.packageKey, packageKey),
+    vulnerabilityId === undefined
+      ? undefined
+      : exists(
+          db
+            .select({ one: sql`1` })
+            .from(versionVulnerabilities)
+            .where(
+              and(
+                eq(versionVulnerabilities.packageKey, components.packageKey),
+                eq(versionVulnerabilities.version, components.version),
+                eq(versionVulnerabilities.vulnerabilityId, vulnerabilityId),
+              ),
+            ),
+        ),
+  );
 
   const rows = await db
     .select({
@@ -103,7 +136,7 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
     .innerJoin(projects, eq(projects.id, sboms.projectId))
     .leftJoin(packages, eq(packages.key, components.packageKey))
     .leftJoin(packageVersions, and(eq(packageVersions.packageKey, components.packageKey), eq(packageVersions.version, components.version)))
-    .where(inArray(components.sbomId, ids));
+    .where(inScope);
 
   const vulnRows = await db
     .selectDistinct({
@@ -123,7 +156,7 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
       components,
       and(eq(components.packageKey, versionVulnerabilities.packageKey), eq(components.version, versionVulnerabilities.version)),
     )
-    .where(inArray(components.sbomId, ids));
+    .where(inScope);
 
   const signals = await loadExploitSignals(db, vulnRows);
   const vulnsByVersion = new Map<string, ComponentVuln[]>();
@@ -331,7 +364,7 @@ export async function getProject(db: Db, id: number, sbomId?: number): Promise<P
   if (selected && !history.some((h) => h.id === selected)) {
     return null;
   }
-  const list = selected ? await loadComponents(db, [selected]) : [];
+  const list = selected ? await loadComponents(db, { sbomIds: [selected] }) : [];
   return {
     ...toProject(row, summarize(list)),
     history: history.map((h) => toSbomInfo(h)!),
@@ -368,7 +401,7 @@ export async function getDependencyGraph(db: Db, projectId: number, sbomId?: num
     return null;
   }
   const [list, rows] = await Promise.all([
-    loadComponents(db, [selected]),
+    loadComponents(db, { sbomIds: [selected] }),
     db
       .select({ parentId: componentEdges.parentId, childId: componentEdges.childId })
       .from(componentEdges)
@@ -532,7 +565,7 @@ export async function listPackages(db: Db) {
 }
 
 export async function getPackage(db: Db, key: string) {
-  const list = (await loadComponents(db)).filter((c) => groupKey(c) === key);
+  const list = await loadComponents(db, { packageKey: key });
   if (!list.length) {
     return null;
   }
@@ -557,7 +590,7 @@ export async function getVulnerability(db: Db, id: string): Promise<Vulnerabilit
     return null;
   }
   const { kev, epss } = (await loadExploitSignals(db, [v]))(v.id, v.aliases);
-  const usage = (await listVulnerabilities(db)).find((u) => u.id === v.id);
+  const usage = aggregateVulnerabilities(await loadComponents(db, { vulnerabilityId: v.id })).find((u) => u.id === v.id);
   return {
     id: v.id,
     cve: cveOf(v.id, v.aliases),
