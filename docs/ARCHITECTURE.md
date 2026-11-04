@@ -130,9 +130,16 @@ app (token exchange, `/user`) is a documented exception to "external HTTP only f
 behind `FetchFn`. Covered end to end (E-007) by the `authed` Playwright project (`tests/e2e/auth.spec.ts`): a second server on its own port
 with dummy GitHub credentials and a session cookie forged with `next-auth/jwt`, so nothing contacts GitHub. Setup: README "Owner-only sign-in".
 
-Known open items (do not silently "fix" unrelated to a task; track in `docs/features.json`): the live GitHub OAuth round trip is untested (E-003);
-the worker's external HTTP (SSRF via configurable API URLs) is not audited; no image signing/provenance; the rate limit is
-not shared across replicas.
+Worker SSRF audit (E-003, 2026-11-04): the worker's only outbound hosts are `OSV_API_URL`, `DEPS_DEV_API_URL`, `KEV_URL` and
+`EPSS_API_URL`, all operator-set via `env()` (Zod `.url()`); nothing a request or an SBOM can supply chooses the host. Uploaded
+data only reaches URL paths and queries behind those fixed hosts: package names are `encodeURIComponent`-encoded (deps.dev), OSV ids
+likewise, and EPSS CVE ids are now encoded too. Residual risk was redirect-following (a compromised upstream steering the worker at
+internal addresses such as the metadata service or the k8s API); `fetchJson` now sets `redirect: 'error'` (none of the four default
+endpoints redirect). Remaining: a misconfigured env URL is trusted, so keep those vars out of untrusted hands; NetworkPolicy egress
+limits for the worker pod belong in the GitOps repo.
+
+Known limits: the rate limit is in-memory and not shared across replicas; next-auth is v4 (pinned 4.24.15) because v5 is still beta,
+so watch for v4 security releases and revisit when v5 is stable. Image signing and provenance are covered in SECURITY.md.
 
 ## Decisions that constrain future work
 

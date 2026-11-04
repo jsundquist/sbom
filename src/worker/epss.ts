@@ -61,7 +61,7 @@ export async function syncEpss(db: Db, { fetchImpl, url, ttlHours, force }: Epss
   try {
     for (let i = 0; i < due.length; i += EPSS_BATCH_SIZE) {
       const batch = due.slice(i, i + EPSS_BATCH_SIZE);
-      const res = await fetchJson(fetchImpl, `${url}?cve=${batch.join(',')}`, epssResponse);
+      const res = await fetchJson(fetchImpl, `${url}?cve=${batch.map(encodeURIComponent).join(',')}`, epssResponse);
       if (!res) {
         throw new Error(`EPSS API returned 404 for ${url}`);
       }

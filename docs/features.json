@@ -684,7 +684,7 @@
       "epic": "E",
       "size": "S",
       "priority": 24,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "E-002"
       ],
@@ -695,7 +695,7 @@
         "Worker external HTTP (configurable API URLs) audited for SSRF; findings recorded in ARCHITECTURE.md#security",
         "Rate limit not shared across replicas and next-auth v4 patch horizon recorded as known limits; evidence recorded"
       ],
-      "evidence": "",
+      "evidence": "2026-11-04: deployed at https://sbom.digital-portfolio.net (k3s on a DigitalOcean droplet) with GitHub OAuth; owner confirmed that a second GitHub account gets Access denied (user-reported). Probed live without a session: GET /api/v1/projects 401, /api/healthz 200. Worker SSRF audit recorded in ARCHITECTURE.md#security; fetchJson now refuses redirects and EPSS ids are URL-encoded (tests/unit/lib.test.ts). Rate-limit and next-auth v4 limits recorded. Not independently verified by the agent: owner sees data after sign-in, session cookie name behind TLS, read-only rootfs on the droplet (compose read_only was verified under E-008).",
       "notes": "Created by map W-001. Manual steps (OAuth app registration) are HITL."
     },
     {
