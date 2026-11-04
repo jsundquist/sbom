@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { cveIdsOf, cveOf } from '@/lib/cve';
 import { basePurl, displayName, packageKey, parsePurl } from '@/lib/purl';
 import { compareVersions, isPrerelease, updateType } from '@/lib/version';
 import { cvss3Score } from '@/lib/severity';
@@ -120,5 +121,18 @@ describe('parseSbom', () => {
   test('rejects unknown and malformed documents', () => {
     expect(() => parseSbom({ hello: 'world' })).toThrow(SbomParseError);
     expect(() => parseSbom({ bomFormat: 'CycloneDX', components: 'nope' })).toThrow(/components/);
+  });
+});
+
+describe('cve ids', () => {
+  test('collects the id and aliases that are CVEs', () => {
+    expect(cveIdsOf('GHSA-1', ['CVE-2024-1', 'PYSEC-2'])).toEqual(['CVE-2024-1']);
+    expect(cveIdsOf('CVE-2024-2', ['CVE-2024-3'])).toEqual(['CVE-2024-2', 'CVE-2024-3']);
+  });
+
+  test('prefers the own id as primary CVE, then the first alias', () => {
+    expect(cveOf('CVE-2024-2', ['CVE-2024-3'])).toBe('CVE-2024-2');
+    expect(cveOf('GHSA-1', ['x', 'CVE-2024-1'])).toBe('CVE-2024-1');
+    expect(cveOf('GHSA-1', [])).toBeNull();
   });
 });
