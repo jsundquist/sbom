@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import { versionStatus, vulnStatus } from '@/lib/coverage';
+import { cveIdsOf, cveOf } from '@/lib/cve';
 import { basePurl, displayName, packageKey, parsePurl } from '@/lib/purl';
 import { compareVersions, isPrerelease, updateType } from '@/lib/version';
 import { cvss3Score } from '@/lib/severity';
@@ -122,6 +124,38 @@ describe('parseSbom', () => {
   test('rejects unknown and malformed documents', () => {
     expect(() => parseSbom({ hello: 'world' })).toThrow(SbomParseError);
     expect(() => parseSbom({ bomFormat: 'CycloneDX', components: 'nope' })).toThrow(/components/);
+  });
+});
+
+describe('cve ids', () => {
+  test('collects the id and aliases that are CVEs', () => {
+    expect(cveIdsOf('GHSA-1', ['CVE-2024-1', 'PYSEC-2'])).toEqual(['CVE-2024-1']);
+    expect(cveIdsOf('CVE-2024-2', ['CVE-2024-3'])).toEqual(['CVE-2024-2', 'CVE-2024-3']);
+  });
+
+  test('prefers the own id as primary CVE, then the first alias', () => {
+    expect(cveOf('CVE-2024-2', ['CVE-2024-3'])).toBe('CVE-2024-2');
+    expect(cveOf('GHSA-1', ['x', 'CVE-2024-1'])).toBe('CVE-2024-1');
+    expect(cveOf('GHSA-1', [])).toBeNull();
+  });
+});
+
+describe('enrichment coverage', () => {
+  const at = new Date();
+
+  test('vulnerability status needs a supported ecosystem and a version', () => {
+    expect(vulnStatus('npm', '1.0.0', null)).toBe('pending');
+    expect(vulnStatus('npm', '1.0.0', at)).toBe('scanned');
+    expect(vulnStatus('npm', null, null)).toBe('unsupported');
+    expect(vulnStatus('docker', '1', null)).toBe('unsupported');
+    expect(vulnStatus(null, '1', null)).toBe('unsupported');
+  });
+
+  test('version status follows deps.dev support, not OSV support', () => {
+    expect(versionStatus('npm', null)).toBe('pending');
+    expect(versionStatus('npm', at)).toBe('checked');
+    expect(versionStatus('deb', at)).toBe('unsupported');
+    expect(versionStatus(null, at)).toBe('unsupported');
   });
 });
 

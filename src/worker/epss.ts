@@ -2,6 +2,7 @@
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '@/db';
+import { cveIdsOf } from '@/lib/cve';
 import { epssScores, vulnerabilities } from '@/db/schema';
 import { feedIsCurrent, recordFeedFailure, recordFeedSuccess } from './feeds';
 import { fetchJson, type FetchFn } from './http';
@@ -37,7 +38,7 @@ export async function syncEpss(db: Db, { fetchImpl, url, ttlHours, force }: Epss
   }
 
   const tracked = await db.select({ id: vulnerabilities.id, aliases: vulnerabilities.aliases }).from(vulnerabilities);
-  const cves = [...new Set(tracked.flatMap((v) => [v.id, ...v.aliases]).filter((id) => id.startsWith('CVE-')))];
+  const cves = [...new Set(tracked.flatMap((v) => cveIdsOf(v.id, v.aliases)))];
   if (!cves.length) {
     return 0;
   }

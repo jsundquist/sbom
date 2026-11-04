@@ -13,7 +13,7 @@ import HourglassIcon from '@mui/icons-material/HourglassEmpty';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import type { Severity } from '@/lib/severity';
 import type { UpdateType } from '@/lib/version';
-import type { KevInfo } from '@/server/inventory';
+import type { KevInfo } from '@/server/exploit-signals';
 
 const SEVERITY_ICON: Record<Severity, React.ReactElement> = {
   CRITICAL: <ReportIcon />,

@@ -1,11 +1,9 @@
 // Read model: joins SBOM components with vulnerability and latest-version data.
-import { and, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, exists, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import {
   componentEdges,
   components,
-  epssScores,
-  kevEntries,
   packages,
   packageVersions,
   projects,
@@ -13,25 +11,14 @@ import {
   versionVulnerabilities,
   vulnerabilities,
 } from '@/db/schema';
-import { depsDevSystem, OSV_TYPES } from '@/lib/ecosystems';
+import { cveOf } from '@/lib/cve';
+import { versionStatus, vulnStatus, type VersionStatus, type VulnStatus } from '@/lib/coverage';
 import { compareVersions, UPDATE_RANK, updateType, type UpdateType } from '@/lib/version';
 import { comparePriority } from '@/lib/priority';
+import { loadExploitSignals, type ExploitSignals } from './exploit-signals';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';
 
-/** CISA Known Exploited Vulnerabilities entry for a vulnerability. */
-export interface KevInfo {
-  dateAdded: string;
-  dueDate: string | null;
-  ransomware: boolean;
-}
-
-/** FIRST EPSS: probability (0..1) of exploitation activity in the next 30 days, and its percentile among all CVEs. */
-export interface EpssInfo {
-  score: number;
-  percentile: number;
-}
-
-export interface ComponentVuln {
+export interface ComponentVuln extends ExploitSignals {
   id: string;
   cve: string | null;
   aliases: string[];
@@ -40,10 +27,6 @@ export interface ComponentVuln {
   score: number | null;
   published: string | null;
   fixedVersions: string[];
-  /** Set when the vulnerability (or one of its CVE aliases) is in the CISA KEV catalog. */
-  kev: KevInfo | null;
-  /** Highest EPSS among the vulnerability's CVE ids; null when unscored. */
-  epss: EpssInfo | null;
 }
 
 export interface InventoryComponent {
@@ -63,8 +46,8 @@ export interface InventoryComponent {
   vulns: ComponentVuln[];
   maxSeverity: Severity | null;
   fixVersion: string | null;
-  vulnStatus: 'scanned' | 'pending' | 'unsupported';
-  versionStatus: 'checked' | 'pending' | 'unsupported';
+  vulnStatus: VulnStatus;
+  versionStatus: VersionStatus;
 }
 
 export type SeverityCounts = Record<Severity, number>;
@@ -83,67 +66,53 @@ export interface Stats {
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 
-export function cveOf(id: string, aliases: string[]): string | null {
-  return id.startsWith('CVE-') ? id : (aliases.find((a) => a.startsWith('CVE-')) ?? null);
-}
-
-const cveIds = (id: string, aliases: string[]) => [id, ...aliases].filter((x) => x.startsWith('CVE-'));
-
-/** KEV entries for the CVE ids of the given vulnerabilities, keyed by CVE id. */
-export async function loadKev(db: Db, vulns: { id: string; aliases: string[] }[]): Promise<Map<string, KevInfo>> {
-  const ids = [...new Set(vulns.flatMap((v) => cveIds(v.id, v.aliases)))];
-  if (!ids.length) {
-    return new Map();
-  }
-  const rows = await db.select().from(kevEntries).where(inArray(kevEntries.cveId, ids));
-  return new Map(rows.map((r) => [r.cveId, { dateAdded: r.dateAdded, dueDate: r.dueDate, ransomware: r.knownRansomwareUse }]));
-}
-
-export function kevFor(kev: Map<string, KevInfo>, id: string, aliases: string[]): KevInfo | null {
-  for (const cve of cveIds(id, aliases)) {
-    const hit = kev.get(cve);
-    if (hit) {
-      return hit;
-    }
-  }
-  return null;
-}
-
-/** EPSS scores for the CVE ids of the given vulnerabilities, keyed by CVE id. */
-export async function loadEpss(db: Db, vulns: { id: string; aliases: string[] }[]): Promise<Map<string, EpssInfo>> {
-  const ids = [...new Set(vulns.flatMap((v) => cveIds(v.id, v.aliases)))];
-  if (!ids.length) {
-    return new Map();
-  }
-  const rows = await db.select().from(epssScores).where(inArray(epssScores.cveId, ids));
-  return new Map(rows.flatMap((r) => (r.score === null ? [] : [[r.cveId, { score: r.score, percentile: r.percentile ?? 0 }] as const])));
-}
-
-export function epssFor(epss: Map<string, EpssInfo>, id: string, aliases: string[]): EpssInfo | null {
-  let best: EpssInfo | null = null;
-  for (const cve of cveIds(id, aliases)) {
-    const hit = epss.get(cve);
-    if (hit && (!best || hit.score > best.score)) {
-      best = hit;
-    }
-  }
-  return best;
-}
-
 /** Package identity used for grouping; falls back to the name when there is no purl. */
-export const groupKey = (c: Pick<InventoryComponent, 'packageKey' | 'name'>) => c.packageKey ?? `name:${c.name}`;
+const NAME_KEY_PREFIX = 'name:';
+export const groupKey = (c: Pick<InventoryComponent, 'packageKey' | 'name'>) => c.packageKey ?? `${NAME_KEY_PREFIX}${c.name}`;
 
 async function latestSbomIds(db: Db): Promise<number[]> {
   const rows = await db.select({ id: projects.latestSbomId }).from(projects).where(isNotNull(projects.latestSbomId));
   return rows.map((r) => r.id!);
 }
 
-/** Enriched components for the given SBOMs (defaults to every project's latest SBOM). */
-export async function loadComponents(db: Db, sbomIds?: number[]): Promise<InventoryComponent[]> {
-  const ids = sbomIds ?? (await latestSbomIds(db));
+/** What to load. SBOMs default to every project's latest; the other fields narrow that set in SQL. */
+export interface ComponentScope {
+  sbomIds?: number[];
+  /** A `groupKey` value: a package key, or `name:<name>` for components without a purl. */
+  packageKey?: string;
+  /** Only components affected by this vulnerability (their other vulnerabilities are still loaded). */
+  vulnerabilityId?: string;
+}
+
+/** Enriched components for the given scope (defaults to every project's latest SBOM). */
+export async function loadComponents(db: Db, scope: ComponentScope = {}): Promise<InventoryComponent[]> {
+  const ids = scope.sbomIds ?? (await latestSbomIds(db));
   if (!ids.length) {
     return [];
   }
+  const { packageKey, vulnerabilityId } = scope;
+  const inScope = and(
+    inArray(components.sbomId, ids),
+    packageKey === undefined
+      ? undefined
+      : packageKey.startsWith(NAME_KEY_PREFIX)
+        ? and(isNull(components.packageKey), eq(components.name, packageKey.slice(NAME_KEY_PREFIX.length)))
+        : eq(components.packageKey, packageKey),
+    vulnerabilityId === undefined
+      ? undefined
+      : exists(
+          db
+            .select({ one: sql`1` })
+            .from(versionVulnerabilities)
+            .where(
+              and(
+                eq(versionVulnerabilities.packageKey, components.packageKey),
+                eq(versionVulnerabilities.version, components.version),
+                eq(versionVulnerabilities.vulnerabilityId, vulnerabilityId),
+              ),
+            ),
+        ),
+  );
 
   const rows = await db
     .select({
@@ -167,7 +136,7 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
     .innerJoin(projects, eq(projects.id, sboms.projectId))
     .leftJoin(packages, eq(packages.key, components.packageKey))
     .leftJoin(packageVersions, and(eq(packageVersions.packageKey, components.packageKey), eq(packageVersions.version, components.version)))
-    .where(inArray(components.sbomId, ids));
+    .where(inScope);
 
   const vulnRows = await db
     .selectDistinct({
@@ -187,10 +156,9 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
       components,
       and(eq(components.packageKey, versionVulnerabilities.packageKey), eq(components.version, versionVulnerabilities.version)),
     )
-    .where(inArray(components.sbomId, ids));
+    .where(inScope);
 
-  const kev = await loadKev(db, vulnRows);
-  const epss = await loadEpss(db, vulnRows);
+  const signals = await loadExploitSignals(db, vulnRows);
   const vulnsByVersion = new Map<string, ComponentVuln[]>();
   for (const r of vulnRows) {
     const key = `${r.packageKey}@${r.version}`;
@@ -204,8 +172,7 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
       score: r.score,
       published: iso(r.published),
       fixedVersions: r.fixedVersions,
-      kev: kevFor(kev, r.id, r.aliases),
-      epss: epssFor(epss, r.id, r.aliases),
+      ...signals(r.id, r.aliases),
     });
     vulnsByVersion.set(key, list);
   }
@@ -214,8 +181,6 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
     const vulns = (vulnsByVersion.get(`${r.packageKey}@${r.version}`) ?? []).sort(
       (a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || (b.score ?? 0) - (a.score ?? 0),
     );
-    const scannable = !!(r.ecosystem && OSV_TYPES.has(r.ecosystem) && r.version);
-    const versionCheckable = !!(r.ecosystem && depsDevSystem(r.ecosystem));
     return {
       id: r.id,
       sbomId: r.sbomId,
@@ -233,8 +198,8 @@ export async function loadComponents(db: Db, sbomIds?: number[]): Promise<Invent
       vulns,
       maxSeverity: maxSeverity(vulns.map((v) => v.severity)),
       fixVersion: recommendedFix(r.version, vulns),
-      vulnStatus: !scannable ? 'unsupported' : r.vulnsCheckedAt ? 'scanned' : 'pending',
-      versionStatus: !versionCheckable ? 'unsupported' : r.latestCheckedAt ? 'checked' : 'pending',
+      vulnStatus: vulnStatus(r.ecosystem, r.version, r.vulnsCheckedAt),
+      versionStatus: versionStatus(r.ecosystem, r.latestCheckedAt),
     };
   });
 }
@@ -399,7 +364,7 @@ export async function getProject(db: Db, id: number, sbomId?: number): Promise<P
   if (selected && !history.some((h) => h.id === selected)) {
     return null;
   }
-  const list = selected ? await loadComponents(db, [selected]) : [];
+  const list = selected ? await loadComponents(db, { sbomIds: [selected] }) : [];
   return {
     ...toProject(row, summarize(list)),
     history: history.map((h) => toSbomInfo(h)!),
@@ -436,7 +401,7 @@ export async function getDependencyGraph(db: Db, projectId: number, sbomId?: num
     return null;
   }
   const [list, rows] = await Promise.all([
-    loadComponents(db, [selected]),
+    loadComponents(db, { sbomIds: [selected] }),
     db
       .select({ parentId: componentEdges.parentId, childId: componentEdges.childId })
       .from(componentEdges)
@@ -600,7 +565,7 @@ export async function listPackages(db: Db) {
 }
 
 export async function getPackage(db: Db, key: string) {
-  const list = (await loadComponents(db)).filter((c) => groupKey(c) === key);
+  const list = await loadComponents(db, { packageKey: key });
   if (!list.length) {
     return null;
   }
@@ -624,9 +589,8 @@ export async function getVulnerability(db: Db, id: string): Promise<Vulnerabilit
   if (!v) {
     return null;
   }
-  const kev = kevFor(await loadKev(db, [v]), v.id, v.aliases);
-  const epss = epssFor(await loadEpss(db, [v]), v.id, v.aliases);
-  const usage = (await listVulnerabilities(db)).find((u) => u.id === v.id);
+  const { kev, epss } = (await loadExploitSignals(db, [v]))(v.id, v.aliases);
+  const usage = aggregateVulnerabilities(await loadComponents(db, { vulnerabilityId: v.id })).find((u) => u.id === v.id);
   return {
     id: v.id,
     cve: cveOf(v.id, v.aliases),
