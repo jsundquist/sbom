@@ -8,6 +8,12 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-04: Inventory deepening refactor
+- Done (branch `refactor/inventory-depth`, one commit each): (1) `src/server/exploit-signals.ts` replaces the loadKev/loadEpss/kevFor/epssFor twins, and `src/lib/cve.ts` holds the CVE-alias rule shared with the EPSS worker; (2) `src/lib/coverage.ts` owns scannable/version-checkable and the vuln/version status, used by `loadComponents` and the worker due queries; (3) `loadComponents(db, scope)` takes `sbomIds`/`packageKey`/`vulnerabilityId`, so `getPackage` and `getVulnerability` no longer load the whole inventory.
+- Verified: `pnpm run lint` and `pnpm test` (233, incl. new `inventory-scope.test.ts`) green after each commit. Not run: `pnpm run test:e2e` (no UI or route changes).
+- Not done (review candidates 4 and 5): extract the vuln-scan persistence step from `scanVulnerabilities`; share feed-sync scaffolding between KEV and EPSS.
+- Gotchas: `KevInfo`/`EpssInfo` now live in `exploit-signals.ts`, not `inventory.ts`.
+
 ## 2026-11-01: Dogfood SBOM upload
 - Done (branch `ci/dogfood-sbom`): `.github/workflows/sbom.yml` runs this repo's own action (`uses: ./`) on push to main and manual dispatch, uploading to https://sbom.digital-portfolio.net.
 - Verified: actionlint and zizmor clean, Prettier clean. Not verified: a real run (needs the secret below and a push to main).

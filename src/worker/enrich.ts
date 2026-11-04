@@ -3,7 +3,7 @@
 import { and, asc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { packages, packageVersions, versionVulnerabilities, vulnerabilities } from '@/db/schema';
-import { depsDevSystem, OSV_TYPES } from '@/lib/ecosystems';
+import { isVersionCheckable, SCANNABLE_ECOSYSTEMS } from '@/lib/coverage';
 import { latestVersion } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
 import { syncEpss } from './epss';
@@ -104,7 +104,7 @@ async function scanVulnerabilities(db: Db, opts: EnrichOptions, stats: EnrichSta
     .innerJoin(packages, eq(packages.key, packageVersions.packageKey))
     .where(
       and(
-        inArray(packages.ecosystem, [...OSV_TYPES]),
+        inArray(packages.ecosystem, SCANNABLE_ECOSYSTEMS as string[]),
         or(isNull(packageVersions.vulnsCheckedAt), lt(packageVersions.vulnsCheckedAt, before)),
       ),
     )
@@ -210,7 +210,7 @@ async function checkLatestVersions(db: Db, opts: EnrichOptions, stats: EnrichSta
       .from(packages)
       .where(or(isNull(packages.latestCheckedAt), lt(packages.latestCheckedAt, before)))
       .orderBy(asc(packages.key))
-  ).filter((p) => depsDevSystem(p.type));
+  ).filter((p) => isVersionCheckable(p.type));
 
   await mapLimit(due, 8, async (p) => {
     let latest: string | null = null;
