@@ -25,7 +25,7 @@ enrichment run lost). The image `CMD` is already the direct form for both images
 
 | Workload | Kind | `command` (exec form) | Needs |
 |---|---|---|---|
-| migrate (`sbom-worker` image) | Job, Argo CD PreSync hook | `["node", "--import", "tsx", "scripts/migrate.ts"]` (same as `npm run db:migrate`; short-lived, so `npm run db:migrate` also works) | `DATABASE_URL` only |
+| migrate (`sbom-worker` image) | Job, Argo CD PreSync hook | `["node", "--import", "tsx", "scripts/migrate.ts"]` (the runtime image is distroless, so there is no `npm`) | `DATABASE_URL` only |
 | web (`sbom` image) | Deployment, port 3000 | image default, i.e. `["node", "server.js"]` | DB, auth, upload, rate-limit vars |
 | worker (`sbom-worker` image) | Deployment, no port | `["node", "--import", "tsx", "src/worker/main.ts"]` | DB and worker vars; egress to the hosts below |
 
