@@ -5,6 +5,8 @@ import { cvss3Score } from '@/lib/severity';
 import { pickLatest } from '@/worker/depsdev';
 import { fixedVersions, osvSeverity, osvVulnSchema } from '@/worker/osv';
 import { parseSbom, SbomParseError } from '@/sbom/parse';
+import { z } from 'zod';
+import { fetchJson, type FetchFn } from '@/worker/http';
 import { fixture, LODASH_VULN } from './helpers';
 
 describe('purl', () => {
@@ -120,5 +122,17 @@ describe('parseSbom', () => {
   test('rejects unknown and malformed documents', () => {
     expect(() => parseSbom({ hello: 'world' })).toThrow(SbomParseError);
     expect(() => parseSbom({ bomFormat: 'CycloneDX', components: 'nope' })).toThrow(/components/);
+  });
+});
+
+describe('worker http', () => {
+  test('refuses redirects so an upstream cannot steer the worker', async () => {
+    let init: RequestInit | undefined;
+    const fake = (async (_url: string, i?: RequestInit) => {
+      init = i;
+      return new Response('{}');
+    }) as unknown as FetchFn;
+    await fetchJson(fake, 'https://x.test/a', z.object({}));
+    expect(init?.redirect).toBe('error');
   });
 });

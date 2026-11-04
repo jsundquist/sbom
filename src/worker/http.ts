@@ -28,6 +28,8 @@ export async function fetchJson<T>(
         method,
         headers: { accept: 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
         body: body ? JSON.stringify(body) : undefined,
+        // The configured API hosts do not redirect; refusing redirects stops a compromised upstream from steering the worker at internal addresses.
+        redirect: 'error',
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (err) {
