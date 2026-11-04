@@ -15,12 +15,23 @@ RUN pnpm run build
 FROM build AS worker-modules
 RUN pnpm prune --prod && rm -rf node_modules/next node_modules/.pnpm/next@*
 
-FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS base
+# Runtime base is distroless: no shell, apt, dpkg, util-linux, gzip, tar or bundled npm/corepack, so the CVEs those
+# carry (and the stock node image's npm node_modules) never ship. Pinned by digest.
+FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:8ad9cc935b7843c4024b7e1487b5ef472c354ea847b97c667023e2618552607e AS distroless
+
+# Distroless keeps node at /nodejs/bin/node, off PATH. Manifests run `node` by name, so add a symlink for it.
+FROM deps AS node-link
+RUN mkdir -p /out/usr/local/bin && ln -s /nodejs/bin/node /out/usr/local/bin/node
+
+FROM distroless AS base
 WORKDIR /app
 # Links the GHCR package to this repo.
 LABEL org.opencontainers.image.source="https://github.com/jsundquist/sbom"
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
-# Numeric so Kubernetes runAsNonRoot can verify it (the node image's node user is 1000:1000).
+COPY --from=node-link /out/ /
+# Distroless sets ENTRYPOINT to node; clear it so CMD and compose/k8s `command: ["node", ...]` behave as before.
+ENTRYPOINT []
+# Numeric so Kubernetes runAsNonRoot can verify it.
 USER 1000:1000
 
 FROM base AS web
@@ -30,7 +41,7 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 EXPOSE 3000
 # Run node directly: npm and its sh wrapper do not relay SIGTERM, so the server would be killed instead of draining.
-CMD ["node", "server.js"]
+CMD ["/nodejs/bin/node", "server.js"]
 
 FROM base AS worker
 COPY --from=build /app/package.json /app/tsconfig.json ./
@@ -38,4 +49,4 @@ COPY --from=worker-modules /app/node_modules ./node_modules
 COPY --from=build /app/src ./src
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/drizzle ./drizzle
-CMD ["node", "--import", "tsx", "src/worker/main.ts"]
+CMD ["/nodejs/bin/node", "--import", "tsx", "src/worker/main.ts"]
