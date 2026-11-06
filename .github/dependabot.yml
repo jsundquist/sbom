@@ -52,6 +52,11 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: 'build(docker)'
+    ignore:
+      # Node 25+ no longer ships corepack, which the Dockerfile uses to get pnpm, and the distroless
+      # runtime image must stay on the same major. Cap at 24 until the Dockerfile is migrated.
+      - dependency-name: node
+        versions: ['>=25']
 
   - package-ecosystem: docker-compose
     directory: /
