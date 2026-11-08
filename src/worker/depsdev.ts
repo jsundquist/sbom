@@ -72,5 +72,8 @@ export async function projectScorecard(fetchImpl: FetchFn, baseUrl: string, repo
   if (card?.overallScore == null) {
     return null;
   }
-  return { score: card.overallScore, checks: (card.checks ?? []).map((c) => ({ name: c.name, score: c.score ?? -1, reason: c.reason ?? null })) };
+  return {
+    score: card.overallScore,
+    checks: (card.checks ?? []).map((c) => ({ name: c.name, score: c.score ?? -1, reason: c.reason ?? null })),
+  };
 }

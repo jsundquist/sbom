@@ -297,7 +297,13 @@ async function checkScorecards(db: Db, opts: EnrichOptions, stats: EnrichStats) 
         // reporting a transient error as "unsupported" for a whole TTL.
         ...(error
           ? { scorecardError: error }
-          : { sourceRepo: repo, scorecardScore: card?.score ?? null, scorecardChecks: card?.checks ?? null, scorecardCheckedAt: new Date(), scorecardError: null }),
+          : {
+              sourceRepo: repo,
+              scorecardScore: card?.score ?? null,
+              scorecardChecks: card?.checks ?? null,
+              scorecardCheckedAt: new Date(),
+              scorecardError: null,
+            }),
       })
       .where(eq(packages.key, p.key));
   });
