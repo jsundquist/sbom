@@ -8,6 +8,19 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-08: A-006 Trend charts
+- Done (branch `feat/a-006-trend-charts`, stacked on `feat/a-005-daily-snapshots`): `getProjectTrend` / `getSummaryTrend` in `src/server/trends.ts`, routes `GET /api/v1/projects/[id]/trends` and `/summary/trends`, `VulnerabilityTrendChart` on the overview and application pages.
+- Verified: `pnpm run lint`, `pnpm test`, `pnpm run test:e2e` (14: populated via the seeded worker run, empty via an API upload) green.
+- Decisions: the summary carries each project's last snapshot forward, so a day the worker missed one project does not drop it from the total. `?days` is a window ending today, default 90, clamped to 1..365. Lines, not stacked areas, so a single day still shows as dots.
+- Not done: outdated/libyears charts (snapshots store the counts, nothing plots them yet).
+
+## 2026-11-08: A-005 Daily snapshots
+- Done (branch `feat/a-005-daily-snapshots`, off main): `project_snapshots` (unique project + UTC day; components, vulnerable components, distinct vulnerabilities by severity, outdated total and major); `snapshotCounts()` in `src/lib/snapshot.ts`; `writeSnapshots()` in `src/worker/snapshots.ts` runs last in every `enrich()`.
+- Verified: `pnpm run lint` and `pnpm test` (239, new `snapshots.test.ts`) green. Not run: e2e (no page or route change).
+- Decisions: built without A-004, so no libyears column. Keyed by project, not SBOM, so pruning cannot delete it. "On upload" is the NOTIFY-woken enrich run; with the worker down no snapshot is written.
+- Not done: KEV/exploited count, backfill (not required), any read API (A-006).
+- Gotchas: migration is `0006` (after B-003's `0004` and B-002's `0005`); a new `0004`-numbered file would clash with the journal.
+
 ## 2026-11-08: B-002 Deprecated and abandoned packages
 - Done (branch `feat/b-002-abandoned-packages`, off main): `packages` gains `latest_released_at`, `deprecated`, `deprecated_reason`, filled by the existing latest-version job from the same deps.dev call (`publishedAt`, `isDeprecated`, `deprecatedReason`); `maintenanceFlags()` in `src/lib/maintenance.ts` derives `abandoned` at read time from `ABANDONED_AFTER_YEARS` (2); `MaintenanceChip` on the packages grid (sortable column) and package page.
 - Verified: `pnpm run lint`, `pnpm test` (238), `pnpm run test:e2e` (13) green; deps.dev fields checked live (`request` is deprecated, with a reason).

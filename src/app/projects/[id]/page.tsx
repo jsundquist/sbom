@@ -3,13 +3,17 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import DownloadIcon from '@mui/icons-material/Download';
 import { getDb } from '@/db';
 import { requireOwnerPage } from '@/server/auth';
 import { AccessGate } from '@/components/AccessGate';
 import { parseIdOrNull } from '@/lib/params';
 import { getDependencyGraph, getProject } from '@/server/inventory';
+import { getProjectTrend } from '@/server/trends';
+import { VulnerabilityTrendChart } from '@/components/charts';
 import { ComponentsGrid } from '@/components/ComponentsGrid';
 import { PendingChip, SeverityCounts } from '@/components/chips';
 import { DateTime } from '@/components/DateTime';
@@ -44,6 +48,7 @@ export default async function ProjectPage({
   const graph = activeTab === 'dependencies' && project.sbomId ? await getDependencyGraph(getDb(), project.id, project.sbomId) : null;
   const sbom = project.history.find((h) => h.id === project.sbomId);
   const { stats } = project;
+  const trend = (await getProjectTrend(getDb(), project.id, 90)) ?? [];
   return (
     <>
       <PageHeader
@@ -110,6 +115,12 @@ export default async function ProjectPage({
           </StatTile>
         </Grid>
       </Grid>
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" component="h2" gutterBottom>
+          Vulnerabilities over time
+        </Typography>
+        <VulnerabilityTrendChart points={trend} />
+      </Paper>
       <ProjectTabs value={activeTab} />
       {activeTab === 'dependencies' ? (
         graph ? (

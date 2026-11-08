@@ -2,8 +2,9 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { type Palette, useColorScheme, useTheme } from '@mui/material/styles';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { ProjectSummary, SeverityCounts } from '@/server/inventory';
+import type { TrendPoint } from '@/server/trends';
 import { SEVERITIES, type Severity } from '@/lib/severity';
 import { severityLabel } from './chips';
 
@@ -102,6 +103,53 @@ export function ProjectRiskChart({ projects, limit = 8 }: { projects: ProjectSum
             <Bar key={s} dataKey={s} name={severityLabel(s)} stackId="sev" fill={c.severity[s]} stroke={c.surface} strokeWidth={2} />
           ))}
         </BarChart>
+      </ResponsiveContainer>
+    </Box>
+  );
+}
+
+const TREND_SERIES = [
+  ['CRITICAL', 'critical'],
+  ['HIGH', 'high'],
+  ['MEDIUM', 'medium'],
+  ['LOW', 'low'],
+] as const satisfies readonly (readonly [Severity, keyof TrendPoint])[];
+
+/** Distinct vulnerabilities per severity over time, one line each, from the daily snapshots. */
+export function VulnerabilityTrendChart({ points }: { points: TrendPoint[] }) {
+  const c = useChartColors();
+  if (!points.length) {
+    return (
+      <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+        No trend data yet. A point is added each day the worker runs.
+      </Typography>
+    );
+  }
+  const last = points[points.length - 1];
+  const label = `Vulnerabilities over time, latest ${last.day}: ${TREND_SERIES.map(([s, k]) => `${severityLabel(s)} ${last[k]}`).join(', ')}`;
+  return (
+    <Box sx={{ height: 240 }} role="img" aria-label={label}>
+      <ResponsiveContainer>
+        <LineChart data={points} margin={{ top: 16, right: 8, left: -16, bottom: 0 }}>
+          <CartesianGrid vertical={false} stroke={c.grid} />
+          <XAxis dataKey="day" tick={{ fill: c.axis, fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={24} />
+          <YAxis allowDecimals={false} tick={{ fill: c.axis, fontSize: 12 }} axisLine={false} tickLine={false} />
+          <Tooltip {...tooltipStyle(c)} />
+          <Legend />
+          {TREND_SERIES.map(([severity, key]) => (
+            <Line
+              key={key}
+              type="monotone"
+              dataKey={key}
+              name={severityLabel(severity)}
+              stroke={c.severity[severity]}
+              strokeWidth={2}
+              // A single day draws no line, so show the point itself.
+              dot={points.length < 3}
+              isAnimationActive={false}
+            />
+          ))}
+        </LineChart>
       </ResponsiveContainer>
     </Box>
   );

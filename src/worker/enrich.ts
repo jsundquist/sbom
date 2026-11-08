@@ -10,6 +10,7 @@ import { latestRelease, projectScorecard, sourceRepo } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
 import { syncEpss } from './epss';
 import { syncKev } from './kev';
+import { writeSnapshots } from './snapshots';
 import { fetchVuln, fixedVersions, queryBatch, vulnRecord, type OsvVuln, type VersionQuery } from './osv';
 
 export interface EnrichOptions {
@@ -20,6 +21,8 @@ export interface EnrichOptions {
   latestTtlHours: number;
   /** Scorecard results are refreshed weekly upstream, so a week is the default. */
   scorecardTtlHours?: number;
+  /** Clock for the daily snapshot; tests pin it. */
+  now?: Date;
   /** CISA KEV catalog; the job is skipped when `kevUrl` is not set. */
   kevUrl?: string;
   kevTtlHours?: number;
@@ -72,6 +75,7 @@ export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> 
     ['Scorecard check', checkScorecards],
     ['KEV sync', syncKevFeed],
     ['EPSS sync', syncEpssScores],
+    ['snapshots', snapshotProjects],
   ] as const) {
     try {
       await job(db, opts, stats);
@@ -315,4 +319,9 @@ async function checkScorecards(db: Db, opts: EnrichOptions, stats: EnrichStats) 
       })
       .where(eq(packages.key, p.key));
   });
+}
+
+async function snapshotProjects(db: Db, opts: EnrichOptions) {
+  // Last, so today's row reflects what this run just learned. Uploads wake the worker, which covers the upload-time snapshot.
+  await writeSnapshots(db, opts.now);
 }

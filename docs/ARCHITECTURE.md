@@ -52,6 +52,7 @@ blocks in `eslint.config.mjs`); `components/` may import only types from `db/` a
 | `version_vulnerabilities` | Which version is hit, plus `fixed_versions` | FK to `package_versions` and `vulnerabilities` |
 | `kev_entries` | CISA Known Exploited Vulnerabilities catalog, keyed by CVE id | Replaced wholesale on each sync; matched to vulns by id or CVE alias |
 | `epss_scores` | FIRST EPSS score and percentile per CVE | Only CVEs we track; null score = looked up, none yet; fresh per CVE via `fetched_at` |
+| `project_snapshots` | One row per project per UTC day: component, vulnerability (by severity) and outdated counts | Upserted by the worker; keyed by project, not SBOM, so it survives history pruning. Not backfilled |
 | `feed_syncs` | One row per feed: `synced_at`, `attempted_at`, `error` | TTL and retry backoff via `src/worker/feeds.ts` (KEV uses both; EPSS only the backoff) |
 
 Invariants:
@@ -78,6 +79,8 @@ dashboard URL. Parse/ingest errors are 400.
    `kev_entries`. Skipped when `kevUrl` is not passed to `enrich()` (tests opt in). Failures keep old data and retry after 15 min.
 4. EPSS sync (`src/worker/epss.ts`): CVEs of stored vulnerabilities with no score or one older than `EPSS_TTL_HOURS` are looked up
    in batches of 50. Runs after the vulnerability scan so new CVEs are scored in the same run. Same opt-in rule (`epssUrl`).
+5. Snapshots (`src/worker/snapshots.ts`): last job of every run; upserts today's `project_snapshots` row for each project's latest
+   SBOM. An upload wakes the worker, so the upload-time snapshot is this job running; if the worker is down, none is written.
 
 **Read**: pages and `GET /api/v1/*` both call `src/server/inventory.ts` (`listProjects`, `getProject`, `listPackages`,
 `getPackage`, `listVulnerabilities`, `getVulnerability`, `getOverview`, `getSbomDocument`). `loadComponents(db, scope)` is the
@@ -90,7 +93,7 @@ Pages use `export const dynamic = 'force-dynamic'`.
 ## API surface (`/api/v1`)
 
 `POST sboms` (auth), `GET sboms/[id]`, `GET projects[/id]`, `DELETE projects/[id]` (auth), `GET packages[/key]`,
-`GET vulnerabilities[/id]`, `GET summary`, `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database). Errors are `{ "error": string }` via `jsonError`.
+`GET vulnerabilities[/id]`, `GET summary`, `GET summary/trends`, `GET projects/[id]/trends` (both read `project_snapshots` via `src/server/trends.ts`), `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database). Errors are `{ "error": string }` via `jsonError`.
 
 ## Configuration
 
