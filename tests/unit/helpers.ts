@@ -30,6 +30,10 @@ export interface FakeApis {
   kev?: KevFeedEntry[] | null;
   /** FIRST EPSS API served at https://epss.test/epss; CVEs not listed are omitted like the real API; `null` fails with HTTP 503. */
   epss?: Record<string, { epss: number; percentile: number }> | null;
+  /** "<deps.dev system>:<name>@<version>" -> source repo id, e.g. "github.com/lodash/lodash" */
+  sourceRepos?: Record<string, string>;
+  /** repo id -> deps.dev project scorecard; repos not listed answer 404 */
+  scorecards?: Record<string, { overallScore: number; checks: { name: string; score: number; reason?: string }[] }>;
   calls?: string[];
 }
 
@@ -44,7 +48,16 @@ export interface KevFeedEntry {
 }
 
 /** Fake OSV.dev + deps.dev backend. */
-export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, kev, epss, calls = [] }: FakeApis = {}): FetchFn {
+export function fakeFetch({
+  vulns = {},
+  osvVulns = {},
+  latest = {},
+  sourceRepos = {},
+  scorecards = {},
+  kev,
+  epss,
+  calls = [],
+}: FakeApis = {}): FetchFn {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
   return (async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(input.toString());
@@ -73,6 +86,16 @@ export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, kev, epss, c
     if (url.pathname.startsWith('/v1/vulns/')) {
       const id = decodeURIComponent(url.pathname.slice('/v1/vulns/'.length));
       return osvVulns[id] ? json(osvVulns[id]) : json({ message: 'not found' }, 404);
+    }
+    const project = url.pathname.match(/^\/v3\/projects\/(.+)$/);
+    if (project) {
+      const card = scorecards[decodeURIComponent(project[1])];
+      return card ? json({ scorecard: { date: '2026-10-01T00:00:00Z', ...card } }) : json({}, 404);
+    }
+    const ver = url.pathname.match(/^\/v3\/systems\/([^/]+)\/packages\/([^/]+)\/versions\/(.+)$/);
+    if (ver) {
+      const repo = sourceRepos[`${ver[1]}:${decodeURIComponent(ver[2])}@${ver[3]}`];
+      return json({ relatedProjects: repo ? [{ projectKey: { id: repo }, relationType: 'SOURCE_REPO' }] : [] });
     }
     const m = url.pathname.match(/^\/v3\/systems\/([^/]+)\/packages\/(.+)$/);
     if (m) {

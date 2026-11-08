@@ -29,6 +29,13 @@
       "when": 1792159213024,
       "tag": "0003_component_edges",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794155243130,
+      "tag": "0004_bent_pyro",
+      "breakpoints": true
     }
   ]
 }

@@ -49,6 +49,9 @@ test('package page shows which applications use each version', async ({ page }) 
   await expect(versions).toContainText('web-storefront');
   await expect(versions).toContainText('inventory-service');
   await expect(page.getByRole('grid', { name: 'Vulnerabilities' })).toContainText('CVE-2020-8203');
+  // The demo seed's fake deps.dev has no source repo, so the tile reports it as unsupported.
+  await expect(page.getByText('OpenSSF Scorecard')).toBeVisible();
+  await expect(page.getByText('No source repository or scorecard found')).toBeVisible();
 });
 
 test('vulnerability detail links affected packages and applications', async ({ page }) => {

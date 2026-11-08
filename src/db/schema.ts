@@ -14,6 +14,7 @@ import {
   text,
   timestamp,
 } from 'drizzle-orm/pg-core';
+import type { ScorecardCheck } from '@/lib/scorecard';
 
 export const severityEnum = pgEnum('severity', ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN']);
 
@@ -99,6 +100,13 @@ export const packages = pgTable('packages', {
   latestVersion: text('latest_version'),
   latestCheckedAt: timestamp('latest_checked_at', { withTimezone: true }),
   latestError: text('latest_error'),
+  /** deps.dev SOURCE_REPO of the latest version, e.g. "github.com/lodash/lodash". */
+  sourceRepo: text('source_repo'),
+  /** OpenSSF Scorecard overall score (0-10) and every check, as published through deps.dev. Null when there is none. */
+  scorecardScore: real('scorecard_score'),
+  scorecardChecks: jsonb('scorecard_checks').$type<ScorecardCheck[]>(),
+  scorecardCheckedAt: timestamp('scorecard_checked_at', { withTimezone: true }),
+  scorecardError: text('scorecard_error'),
 });
 
 /** A package version in use. `vulnsCheckedAt` drives the vulnerability scan queue. */
