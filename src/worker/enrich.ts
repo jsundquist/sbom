@@ -2,8 +2,10 @@
 // The database is the queue: rows with a null or stale "checked at" timestamp are due.
 import { and, asc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { packages, packageVersions, versionVulnerabilities, vulnerabilities } from '@/db/schema';
+import { components, packages, packageVersions, versionVulnerabilities, vulnerabilities } from '@/db/schema';
 import { isVersionCheckable, SCANNABLE_ECOSYSTEMS } from '@/lib/coverage';
+import { isDistroScoped } from '@/lib/ecosystems';
+import { parsePurl } from '@/lib/purl';
 import { latestVersion } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
 import { syncEpss } from './epss';
@@ -36,6 +38,28 @@ export interface EnrichStats {
 }
 
 const BATCH_SIZE = 500;
+
+/** OS packages are matched by release, which only the component purls carry (`distro`); the newest upload that carries one wins.
+ * One version row holds one vulnerability set, so the same version in two releases is only checked against one. */
+async function distrosFor(db: Db, rows: { packageKey: string; version: string; type: string }[]): Promise<Map<string, string>> {
+  const keys = [...new Set(rows.filter((r) => isDistroScoped(r.type)).map((r) => r.packageKey))];
+  const out = new Map<string, string>();
+  if (!keys.length) {
+    return out;
+  }
+  const found = await db
+    .select({ packageKey: components.packageKey, version: components.version, purl: components.purl })
+    .from(components)
+    .where(inArray(components.packageKey, keys))
+    .orderBy(asc(components.id));
+  for (const c of found) {
+    const distro = parsePurl(c.purl)?.qualifiers.distro;
+    if (distro && c.version) {
+      out.set(`${c.packageKey}@${c.version}`, distro);
+    }
+  }
+  return out;
+}
 
 export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> {
   const stats: EnrichStats = { versionsScanned: 0, vulnsFetched: 0, packagesChecked: 0, errors: 0, feedsSynced: 0 };
@@ -112,7 +136,8 @@ async function scanVulnerabilities(db: Db, opts: EnrichOptions, stats: EnrichSta
 
   for (let i = 0; i < due.length; i += BATCH_SIZE) {
     const rows = due.slice(i, i + BATCH_SIZE);
-    const queries: VersionQuery[] = rows.map((r) => ({ pkg: r, version: r.version }));
+    const distros = await distrosFor(db, rows);
+    const queries: VersionQuery[] = rows.map((r) => ({ pkg: r, version: r.version, distro: distros.get(`${r.packageKey}@${r.version}`) }));
     const results = await queryBatch(fetchImpl, opts.osvApiUrl, queries);
 
     // Fetch details for vulnerabilities not stored (or stale).

@@ -1,5 +1,6 @@
 // Vulnerability lookups against the OSV.dev API (https://google.github.io/osv.dev/api/).
 import { z } from 'zod';
+import { osvEcosystem } from '@/lib/ecosystems';
 import { basePurl, displayName, type PackageRef } from '@/lib/purl';
 import { compareVersions } from '@/lib/version';
 import { cvss3Score, normalizeSeverity, ratingFromScore, type Severity } from '@/lib/severity';
@@ -39,10 +40,15 @@ const batchResponse = z.looseObject({ results: z.array(queryResult) });
 export interface VersionQuery {
   pkg: PackageRef;
   version: string;
+  /** purl `distro` qualifier; selects the OSV ecosystem for OS packages. */
+  distro?: string | null;
 }
 export type QueryResult = { vulnIds: string[] } | { error: string };
 
-const toQuery = ({ pkg, version }: VersionQuery) => ({ package: { purl: basePurl(pkg) }, version });
+const toQuery = ({ pkg, version, distro }: VersionQuery) => {
+  const ecosystem = osvEcosystem(pkg.type, distro);
+  return { package: ecosystem ? { name: pkg.name, ecosystem } : { purl: basePurl(pkg) }, version };
+};
 
 /** Looks up vulnerability ids for many package versions; results align with `items`. */
 export async function queryBatch(fetchImpl: FetchFn, baseUrl: string, items: VersionQuery[]): Promise<QueryResult[]> {

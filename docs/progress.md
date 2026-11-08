@@ -8,6 +8,13 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-08: B-004 Container image scans
+- Done (branch `feat/b-004-image-scans`): action `image` input (Syft scans the image instead of the checkout), README row and example; worker now queries OSV by `Alpine:vX.Y` + name for `apk` packages, with the release read from the component purl `distro` qualifier (`osvEcosystem()` in `src/lib/ecosystems.ts`, `distrosFor()` in `enrich.ts`).
+- Verified: `pnpm run lint` and `pnpm test` (241, new `os-packages.test.ts`) green. Not run: e2e (no UI or route change); the action's `image` path (needs a real workflow run); live OSV after deploy.
+- Why: a bare purl lookup returned `{}` for `musl` even with `?distro=`; the same name + `Alpine:v3.20` returned `ALPINE-CVE-2025-26519`. Image SBOMs from `k8s-gitops/cluster-sbom.yml` therefore showed no OS-package CVEs.
+- Not done: the same version in two Alpine releases (a version row holds one vuln set, so only the newest release is queried; needs the release on `package_versions`); deb/rpm (advisories use source package names), apk packages whose binary name differs from the origin package (e.g. `musl-utils`), a project "kind" column, and an `apk` package with no `distro` qualifier still returns nothing silently.
+- Next: after deploy, check `musl` on the sbom image page; B-003.
+
 ## 2026-11-04: Inventory deepening refactor
 - Done (branch `refactor/inventory-depth`, one commit each): (1) `src/server/exploit-signals.ts` replaces the loadKev/loadEpss/kevFor/epssFor twins, and `src/lib/cve.ts` holds the CVE-alias rule shared with the EPSS worker; (2) `src/lib/coverage.ts` owns scannable/version-checkable and the vuln/version status, used by `loadComponents` and the worker due queries; (3) `loadComponents(db, scope)` takes `sbomIds`/`packageKey`/`vulnerabilityId`, so `getPackage` and `getVulnerability` no longer load the whole inventory.
 - Verified: `pnpm run lint` and `pnpm test` (233, incl. new `inventory-scope.test.ts`) green after each commit. Not run: `pnpm run test:e2e` (no UI or route changes).

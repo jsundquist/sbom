@@ -70,7 +70,7 @@ transaction, point `latest_sbom_id`, prune history, `NOTIFY sbom_uploaded`, then
 dashboard URL. Parse/ingest errors are 400.
 
 **Enrichment** (`enrich()` in `src/worker/enrich.ts`): independent jobs so one upstream outage does not block the others:
-1. Vulnerability scan: due package versions -> OSV `querybatch` -> fetch each new vuln -> write `vulnerabilities` and
+1. Vulnerability scan: due package versions -> OSV `querybatch` (purl; Alpine `apk` packages by `Alpine:vX.Y` + name, release from the component purl `distro`) -> fetch each new vuln -> write `vulnerabilities` and
    `version_vulnerabilities`, stamp `vulns_checked_at` (or `vulns_error`).
 2. Latest-version check: due packages -> deps.dev -> `latest_version` (or `latest_error`).
 3. KEV sync (`src/worker/kev.ts`): when `feed_syncs.kev` is older than `KEV_TTL_HOURS`, download the CISA catalog and replace

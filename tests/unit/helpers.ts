@@ -21,7 +21,7 @@ export async function createTestDb(): Promise<{ db: Db; close: () => Promise<voi
 }
 
 export interface FakeApis {
-  /** "<base purl>@<version>" -> vulnerability ids */
+  /** "<base purl>@<version>" (or "<OSV ecosystem>:<name>@<version>" for OS packages) -> vulnerability ids */
   vulns?: Record<string, string[]>;
   osvVulns?: Record<string, OsvVuln>;
   /** "<deps.dev system>:<name>" -> latest version */
@@ -63,10 +63,12 @@ export function fakeFetch({ vulns = {}, osvVulns = {}, latest = {}, kev, epss, c
       return json({ status: 'OK', total: data.length, offset: 0, limit: 100, data });
     }
     if (url.pathname === '/v1/querybatch') {
-      const { queries } = JSON.parse(String(init?.body)) as { queries: { package: { purl: string }; version: string }[] };
-      return json({
-        results: queries.map((q) => ({ vulns: (vulns[`${q.package.purl}@${q.version}`] ?? []).map((id) => ({ id })) })),
-      });
+      const { queries } = JSON.parse(String(init?.body)) as {
+        queries: { package: { purl?: string; name?: string; ecosystem?: string }; version: string }[];
+      };
+      // Like the real API, a name+ecosystem query and a purl query are answered from different keys.
+      const key = (q: (typeof queries)[number]) => `${q.package.purl ?? `${q.package.ecosystem}:${q.package.name}`}@${q.version}`;
+      return json({ results: queries.map((q) => ({ vulns: (vulns[key(q)] ?? []).map((id) => ({ id })) })) });
     }
     if (url.pathname.startsWith('/v1/vulns/')) {
       const id = decodeURIComponent(url.pathname.slice('/v1/vulns/'.length));
