@@ -313,7 +313,7 @@
     },
     {
       "id": "B-004",
-      "title": "Container image scans: Action input for Syft image scan; image recorded as a project kind",
+      "title": "Container image scans: Action input for Syft image scan; Alpine OS packages matched in OSV (project kind dropped)",
       "epic": "B",
       "size": "S",
       "priority": 29,
@@ -325,7 +325,7 @@
         "Example workflow updated"
       ],
       "evidence": "2026-11-08: action.yml `image` input + README + example; worker queries Alpine packages by OSV ecosystem (Alpine:vX.Y from the purl distro qualifier) via osvEcosystem(); tests/unit/os-packages.test.ts; pnpm run lint and pnpm test (241) green. No image project kind column was added.",
-      "notes": "Rescoped: the worker used bare purl queries, which OSV never matches for OS packages, so image SBOMs scanned clean. Only Alpine is mapped; deb/rpm need source-package names (binary-to-source mapping) and still return nothing."
+      "notes": "Rescoped: the worker used bare purl queries, which OSV never matches for OS packages, so image SBOMs scanned clean. Only Alpine is mapped; deb/rpm need source-package names (binary-to-source mapping) and still return nothing. Project kind dropped: images are separate projects by name. Known gap: the same package version in two Alpine releases is checked against only the newest release."
     },
     {
       "id": "B-005",

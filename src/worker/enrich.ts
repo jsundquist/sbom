@@ -3,8 +3,9 @@
 import { and, asc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { components, packages, packageVersions, versionVulnerabilities, vulnerabilities } from '@/db/schema';
-import { parsePurl } from '@/lib/purl';
 import { isVersionCheckable, SCANNABLE_ECOSYSTEMS } from '@/lib/coverage';
+import { isDistroScoped } from '@/lib/ecosystems';
+import { parsePurl } from '@/lib/purl';
 import { latestVersion } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
 import { syncEpss } from './epss';
@@ -38,9 +39,10 @@ export interface EnrichStats {
 
 const BATCH_SIZE = 500;
 
-/** OS packages are matched by release, which only the component purls carry (`distro`); the newest upload wins. */
+/** OS packages are matched by release, which only the component purls carry (`distro`); the newest upload that carries one wins.
+ * One version row holds one vulnerability set, so the same version in two releases is only checked against one. */
 async function distrosFor(db: Db, rows: { packageKey: string; version: string; type: string }[]): Promise<Map<string, string>> {
-  const keys = [...new Set(rows.filter((r) => r.type === 'apk').map((r) => r.packageKey))];
+  const keys = [...new Set(rows.filter((r) => isDistroScoped(r.type)).map((r) => r.packageKey))];
   const out = new Map<string, string>();
   if (!keys.length) {
     return out;
