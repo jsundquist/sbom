@@ -171,9 +171,11 @@ Outside production, with none of these set, reads stay open so local development
 | `POST` | `/api/v1/sboms` | Upload an SBOM (token required when `UPLOAD_TOKENS` is set; disabled in production without one) |
 | `GET` | `/api/v1/sboms/:id` | Download the original SBOM document |
 | `GET` | `/api/v1/summary` | Totals, severity counts and recent uploads |
+| `GET` | `/api/v1/summary/trends[?days=90]` | Daily totals across all applications, oldest first (`points`; max 365 days) |
 | `GET` | `/api/v1/projects` | Applications with their latest SBOM stats |
 | `GET` | `/api/v1/projects/:id[?sbom=:sbomId]` | Application details and enriched packages |
 | `GET` | `/api/v1/projects/:id/dependencies[?sbom=:sbomId]` | Dependency edges of an SBOM (`components`, `edges`, `directIds`); empty when the SBOM has no relationships |
+| `GET` | `/api/v1/projects/:id/trends[?days=90]` | Daily snapshots of one application: vulnerabilities by severity, outdated and package counts (`points`) |
 | `DELETE` | `/api/v1/projects/:id` | Delete an application and its SBOMs (token required when configured) |
 | `GET` | `/api/v1/packages` | Packages across all applications |
 | `GET` | `/api/v1/packages/:key` | One package (key such as `npm%3Alodash`) |

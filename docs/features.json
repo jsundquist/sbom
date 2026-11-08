@@ -220,7 +220,7 @@
       "epic": "A",
       "size": "S-M",
       "priority": 15,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "A-005"
       ],
@@ -229,7 +229,7 @@
         "Charts render with empty and populated data (e2e)",
         "Reuse src/components/charts.tsx and severity colors"
       ],
-      "evidence": ""
+      "evidence": "2026-11-08: GET /api/v1/projects/[id]/trends and /summary/trends (?days, default 90, max 365) over src/server/trends.ts; VulnerabilityTrendChart (Recharts, severity colors, in charts.tsx) on the overview and application pages; tests/unit/trends.test.ts (5) plus both routes in the api-auth matrix; e2e covers populated and empty (14 passed); pnpm run lint and pnpm test green."
     },
     {
       "id": "A-007",

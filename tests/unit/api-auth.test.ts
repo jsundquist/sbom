@@ -6,6 +6,8 @@ import { resetEnv } from '@/lib/env';
 import { GET as listProjects } from '@/app/api/v1/projects/route';
 import { GET as getProject } from '@/app/api/v1/projects/[id]/route';
 import { GET as getDeps } from '@/app/api/v1/projects/[id]/dependencies/route';
+import { GET as projectTrends } from '@/app/api/v1/projects/[id]/trends/route';
+import { GET as summaryTrends } from '@/app/api/v1/summary/trends/route';
 import { GET as listPackages } from '@/app/api/v1/packages/route';
 import { GET as getPackage } from '@/app/api/v1/packages/[key]/route';
 import { GET as listVulns } from '@/app/api/v1/vulnerabilities/route';
@@ -51,6 +53,8 @@ const ROUTES: [string, (req: Request) => Promise<Response>][] = [
   ['projects', (r) => listProjects(r)],
   ['projects/:id', (r) => getProject(r, p({ id: '1' }))],
   ['projects/:id/dependencies', (r) => getDeps(r, p({ id: '1' }))],
+  ['projects/:id/trends', (r) => projectTrends(r, p({ id: '1' }))],
+  ['summary/trends', (r) => summaryTrends(r)],
   ['packages', (r) => listPackages(r)],
   ['packages/:key', (r) => getPackage(r, p({ key: 'npm:lodash' }))],
   ['vulnerabilities', (r) => listVulns(r)],
