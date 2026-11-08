@@ -106,6 +106,17 @@ test('SBOMs uploaded through the API appear in the dashboard', async ({ page, re
   await expect(page.getByRole('heading', { name: 'e2e-upload' })).toBeVisible();
   await expect(page.getByText('acme/e2e · version 9.9.9')).toBeVisible();
   await expect(page.getByRole('grid', { name: 'Packages' })).toContainText('requests');
+  // No worker run has snapshotted this new project yet.
+  await expect(page.getByRole('heading', { name: 'Vulnerabilities over time' })).toBeVisible();
+  await expect(page.getByText('No trend data yet')).toBeVisible();
+});
+
+test('overview and application pages chart vulnerabilities over time from the daily snapshots', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Vulnerabilities over time' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Vulnerabilities over time, latest \d{4}-\d{2}-\d{2}/ })).toBeVisible();
+  await page.getByRole('grid', { name: 'Applications' }).getByRole('link', { name: 'payments-api' }).click();
+  await expect(page.getByRole('img', { name: /^Vulnerabilities over time, latest .*Critical 1/ })).toBeVisible();
 });
 
 test('responses carry security headers and the page still renders under the CSP', async ({ page }) => {

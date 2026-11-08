@@ -119,4 +119,4 @@ export async function readBodyLimited(req: Request, limit: number): Promise<stri
   return Buffer.concat(chunks).toString('utf8');
 }
 
-export { parseIdOrNull as parseId } from '@/lib/params';
+export { parseDays, parseIdOrNull as parseId } from '@/lib/params';

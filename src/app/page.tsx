@@ -7,9 +7,10 @@ import { getDb } from '@/db';
 import { requireOwnerPage } from '@/server/auth';
 import { AccessGate } from '@/components/AccessGate';
 import { getOverview } from '@/server/inventory';
+import { getSummaryTrend } from '@/server/trends';
 import { requestOrigin } from '@/server/origin';
 import { KevChip, PendingChip, SeverityCounts } from '@/components/chips';
-import { ProjectRiskChart, SeverityBarChart } from '@/components/charts';
+import { ProjectRiskChart, SeverityBarChart, VulnerabilityTrendChart } from '@/components/charts';
 import { DateTime } from '@/components/DateTime';
 import { FixFirstList } from '@/components/FixFirstList';
 import { GettingStarted } from '@/components/GettingStarted';
@@ -36,6 +37,7 @@ export default async function OverviewPage() {
     );
   }
   const { stats } = data;
+  const trend = await getSummaryTrend(getDb(), 90);
   return (
     <>
       <PageHeader title="Overview" subtitle={`Latest SBOM of each of ${data.projectCount} applications`} />
@@ -97,6 +99,13 @@ export default async function OverviewPage() {
           </Paper>
         </Grid>
       </Grid>
+
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" component="h2" gutterBottom>
+          Vulnerabilities over time
+        </Typography>
+        <VulnerabilityTrendChart points={trend} />
+      </Paper>
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 8 }}>

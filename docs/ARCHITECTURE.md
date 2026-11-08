@@ -92,7 +92,7 @@ Pages use `export const dynamic = 'force-dynamic'`.
 ## API surface (`/api/v1`)
 
 `POST sboms` (auth), `GET sboms/[id]`, `GET projects[/id]`, `DELETE projects/[id]` (auth), `GET packages[/key]`,
-`GET vulnerabilities[/id]`, `GET summary`, `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database). Errors are `{ "error": string }` via `jsonError`.
+`GET vulnerabilities[/id]`, `GET summary`, `GET summary/trends`, `GET projects/[id]/trends` (both read `project_snapshots` via `src/server/trends.ts`), `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database). Errors are `{ "error": string }` via `jsonError`.
 
 ## Configuration
 
