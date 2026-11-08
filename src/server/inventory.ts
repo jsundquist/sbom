@@ -16,6 +16,8 @@ import { versionStatus, vulnStatus, type VersionStatus, type VulnStatus } from '
 import { compareVersions, UPDATE_RANK, updateType, type UpdateType } from '@/lib/version';
 import { comparePriority } from '@/lib/priority';
 import { scorecardStatus, weakestChecks, type ScorecardCheck, type ScorecardStatus } from '@/lib/scorecard';
+import { env } from '@/lib/env';
+import { maintenanceFlags, type Maintenance } from '@/lib/maintenance';
 import { loadExploitSignals, type ExploitSignals } from './exploit-signals';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';
 
@@ -44,6 +46,7 @@ export interface InventoryComponent {
   licenses: string | null;
   latestVersion: string | null;
   outdated: UpdateType | null;
+  maintenance: Maintenance;
   vulns: ComponentVuln[];
   maxSeverity: Severity | null;
   fixVersion: string | null;
@@ -130,6 +133,9 @@ export async function loadComponents(db: Db, scope: ComponentScope = {}): Promis
       licenses: components.licenses,
       latestVersion: packages.latestVersion,
       latestCheckedAt: packages.latestCheckedAt,
+      latestReleasedAt: packages.latestReleasedAt,
+      deprecated: packages.deprecated,
+      deprecatedReason: packages.deprecatedReason,
       vulnsCheckedAt: packageVersions.vulnsCheckedAt,
     })
     .from(components)
@@ -178,6 +184,7 @@ export async function loadComponents(db: Db, scope: ComponentScope = {}): Promis
     vulnsByVersion.set(key, list);
   }
 
+  const now = new Date();
   return rows.map((r) => {
     const vulns = (vulnsByVersion.get(`${r.packageKey}@${r.version}`) ?? []).sort(
       (a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || (b.score ?? 0) - (a.score ?? 0),
@@ -196,6 +203,11 @@ export async function loadComponents(db: Db, scope: ComponentScope = {}): Promis
       licenses: r.licenses,
       latestVersion: r.latestVersion,
       outdated: updateType(r.version, r.latestVersion),
+      maintenance: maintenanceFlags(
+        { deprecated: r.deprecated ?? false, reason: r.deprecatedReason, latestReleasedAt: r.latestReleasedAt },
+        now,
+        env().ABANDONED_AFTER_YEARS,
+      ),
       vulns,
       maxSeverity: maxSeverity(vulns.map((v) => v.severity)),
       fixVersion: recommendedFix(r.version, vulns),
@@ -437,6 +449,7 @@ export interface PackageSummary {
   vulnCount: number;
   maxSeverity: Severity | null;
   outdated: UpdateType | null;
+  maintenance: Maintenance;
   licenses: string[];
 }
 
@@ -461,6 +474,7 @@ export function aggregatePackages(list: InventoryComponent[]): PackageSummary[] 
         ecosystem: c.ecosystem,
         purl: c.purl?.split('@')[0] ?? null,
         latestVersion: c.latestVersion,
+        maintenance: c.maintenance,
         versions: new Map(),
         projects: new Set(),
         vulnIds: new Set(),

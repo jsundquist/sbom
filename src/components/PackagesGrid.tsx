@@ -9,7 +9,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import type { PackageSummary } from '@/server/inventory';
 import { SEVERITY_RANK } from '@/lib/severity';
 import { UPDATE_RANK } from '@/lib/version';
-import { OutdatedChip, SeverityChip } from './chips';
+import { MaintenanceChip, OutdatedChip, SeverityChip } from './chips';
 import { Grid } from './grid';
 import { AppLink } from './Links';
 import { packageHref } from '@/lib/routes';
@@ -55,6 +55,13 @@ const columns: GridColDef<PackageSummary>[] = [
     width: 150,
     valueGetter: (v: PackageSummary['outdated']) => (v ? UPDATE_RANK[v] : 0),
     renderCell: ({ row }) => <OutdatedChip outdated={row.outdated} latest={row.latestVersion} />,
+  },
+  {
+    field: 'maintenance',
+    headerName: 'Maintenance',
+    width: 170,
+    valueGetter: (_v, row) => Number(row.maintenance.deprecated) * 2 + Number(row.maintenance.abandoned),
+    renderCell: ({ row }) => <MaintenanceChip maintenance={row.maintenance} />,
   },
 ];
 

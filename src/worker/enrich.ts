@@ -6,7 +6,7 @@ import { components, packages, packageVersions, versionVulnerabilities, vulnerab
 import { isVersionCheckable, SCANNABLE_ECOSYSTEMS } from '@/lib/coverage';
 import { isDistroScoped } from '@/lib/ecosystems';
 import { parsePurl } from '@/lib/purl';
-import { latestVersion, projectScorecard, sourceRepo } from './depsdev';
+import { latestRelease, projectScorecard, sourceRepo } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
 import { syncEpss } from './epss';
 import { syncKev } from './kev';
@@ -241,11 +241,11 @@ async function checkLatestVersions(db: Db, opts: EnrichOptions, stats: EnrichSta
   ).filter((p) => isVersionCheckable(p.type));
 
   await mapLimit(due, 8, async (p) => {
-    let latest: string | null = null;
+    let release: Awaited<ReturnType<typeof latestRelease>> = null;
     let error: string | null = null;
     try {
-      latest = await latestVersion(fetchImpl, opts.depsDevApiUrl, p);
-      if (!latest) {
+      release = await latestRelease(fetchImpl, opts.depsDevApiUrl, p);
+      if (!release) {
         error = 'not found';
       }
     } catch (err) {
@@ -254,7 +254,15 @@ async function checkLatestVersions(db: Db, opts: EnrichOptions, stats: EnrichSta
     }
     await db
       .update(packages)
-      .set({ latestVersion: sql`coalesce(${latest}, ${packages.latestVersion})`, latestCheckedAt: new Date(), latestError: error })
+      .set({
+        latestVersion: sql`coalesce(${release?.version ?? null}, ${packages.latestVersion})`,
+        // A failed lookup keeps the last known release date and deprecation.
+        ...(release
+          ? { latestReleasedAt: release.releasedAt, deprecated: release.deprecated, deprecatedReason: release.deprecatedReason }
+          : {}),
+        latestCheckedAt: new Date(),
+        latestError: error,
+      })
       .where(eq(packages.key, p.key));
     stats.packagesChecked++;
   });

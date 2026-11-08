@@ -141,6 +141,7 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | `VULN_TTL_HOURS` | 12 | Re-scan package versions for new vulnerabilities after this long |
 | `LATEST_TTL_HOURS` | 24 | Re-check latest package versions after this long |
 | `SCORECARD_TTL_HOURS` | 168 | Re-fetch each package's OpenSSF Scorecard (via deps.dev) after this long |
+| `ABANDONED_AFTER_YEARS` | 2 | Flag a package as abandoned when its latest release is older than this |
 | `KEV_TTL_HOURS` | 24 | Re-download the [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) catalog (vulnerabilities known to be exploited) after this long |
 | `EPSS_TTL_HOURS` | 24 | Re-check [FIRST EPSS](https://www.first.org/epss/) exploit-probability scores after this long (new CVEs are looked up immediately) |
 | `EPSS_API_URL` | FIRST public API | Override for mirrors or testing |

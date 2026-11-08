@@ -9,19 +9,40 @@ import { fetchJson, type FetchFn } from './http';
 const versionSchema = z.looseObject({
   versionKey: z.looseObject({ version: z.string() }),
   isDefault: z.boolean().nullish(),
+  publishedAt: z.string().nullish(),
+  isDeprecated: z.boolean().nullish(),
+  deprecatedReason: z.string().nullish(),
 });
 const packageSchema = z.looseObject({ versions: z.array(versionSchema).nullish() });
 type DepsDevVersion = z.infer<typeof versionSchema>;
 
-/** Latest stable version of a package, or null when unknown. */
-export async function latestVersion(fetchImpl: FetchFn, baseUrl: string, pkg: PackageRef): Promise<string | null> {
+export interface LatestRelease {
+  version: string;
+  releasedAt: Date | null;
+  deprecated: boolean;
+  deprecatedReason: string | null;
+}
+
+/** Latest stable version of a package with its release date and deprecation, or null when unknown. */
+export async function latestRelease(fetchImpl: FetchFn, baseUrl: string, pkg: PackageRef): Promise<LatestRelease | null> {
   const system = depsDevSystem(pkg.type);
   if (!system) {
     return null;
   }
   const url = `${baseUrl}/v3/systems/${system}/packages/${encodeURIComponent(displayName(pkg))}`;
-  const data = await fetchJson(fetchImpl, url, packageSchema);
-  return pickLatest(data?.versions ?? []);
+  const versions = (await fetchJson(fetchImpl, url, packageSchema))?.versions ?? [];
+  const version = pickLatest(versions);
+  const entry = versions.find((v) => v.versionKey.version === version);
+  if (!version) {
+    return null;
+  }
+  const released = entry?.publishedAt ? new Date(entry.publishedAt) : null;
+  return {
+    version,
+    releasedAt: released && !Number.isNaN(released.getTime()) ? released : null,
+    deprecated: entry?.isDeprecated ?? false,
+    deprecatedReason: entry?.deprecatedReason ?? null,
+  };
 }
 
 export function pickLatest(versions: DepsDevVersion[]): string | null {

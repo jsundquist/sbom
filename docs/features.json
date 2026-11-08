@@ -284,7 +284,7 @@
       "epic": "B",
       "size": "S-M",
       "priority": 27,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "A-004"
       ],
@@ -293,7 +293,8 @@
         "Threshold N from env",
         "Tests cover each signal"
       ],
-      "evidence": "",
+      "evidence": "2026-11-08: packages.latest_released_at/deprecated/deprecated_reason (migration), read from the deps.dev package call the latest-version job already makes (isDeprecated, deprecatedReason, publishedAt verified live); abandoned derived at read time from ABANDONED_AFTER_YEARS (default 2); Maintenance chip on the packages grid and package page; tests/unit/maintenance.test.ts; pnpm run lint, pnpm test (238) and pnpm run test:e2e (13) green.",
+      "notes": "Built without A-004: the release date of the latest version is all this needs, so no libyears and no per-version released_at.",
       "notes": "Verify deps.dev exposes a deprecation field."
     },
     {
