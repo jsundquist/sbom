@@ -20,3 +20,6 @@ jobs:
           api-token: ${{ secrets.SBOM_DASHBOARD_TOKEN }}
           # generator: dependency-graph   # use GitHub's dependency graph instead of Syft
           # sbom-file: build/sbom.json    # or upload an SBOM produced by your build
+          # image: ghcr.io/my-org/my-app:1.2.3   # scan a built image (OS packages included) instead of the checkout
+          # project-name: my-org/my-app          # one project per image
+          # project-version: 1.2.3

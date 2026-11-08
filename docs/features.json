@@ -317,14 +317,15 @@
       "epic": "B",
       "size": "S",
       "priority": 29,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "action.yml input documented in README",
         "Image SBOM ingests like any other",
         "Example workflow updated"
       ],
-      "evidence": ""
+      "evidence": "2026-11-08: action.yml `image` input + README + example; worker queries Alpine packages by OSV ecosystem (Alpine:vX.Y from the purl distro qualifier) via osvEcosystem(); tests/unit/os-packages.test.ts; pnpm run lint and pnpm test (241) green. No image project kind column was added.",
+      "notes": "Rescoped: the worker used bare purl queries, which OSV never matches for OS packages, so image SBOMs scanned clean. Only Alpine is mapped; deb/rpm need source-package names (binary-to-source mapping) and still return nothing."
     },
     {
       "id": "B-005",

@@ -29,9 +29,13 @@ inputs:
     required: false
     default: syft
   path:
-    description: Directory scanned by Syft.
+    description: Directory scanned by Syft. Ignored when image is set.
     required: false
     default: .
+  image:
+    description: Container image (registry reference or tag) scanned by Syft instead of the checkout. Needs the syft generator. Set project-name to the image path so each image is its own project.
+    required: false
+    default: ''
   github-token:
     description: Token used for the dependency-graph generator.
     required: false
@@ -55,7 +59,8 @@ runs:
       if: inputs.sbom-file == '' && inputs.generator == 'syft'
       uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
       with:
-        path: ${{ inputs.path }}
+        image: ${{ inputs.image }}
+        path: ${{ inputs.image == '' && inputs.path || '' }}
         format: cyclonedx-json
         output-file: ${{ runner.temp }}/sbom-dashboard.cdx.json
         upload-artifact: false

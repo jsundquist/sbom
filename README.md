@@ -103,8 +103,12 @@ jobs:
 | `sbom-file` | `''` | Upload an existing CycloneDX/SPDX JSON file instead of generating one |
 | `generator` | `syft` | `syft` scans the checkout with [Syft](https://github.com/anchore/syft); `dependency-graph` exports GitHub's dependency graph |
 | `path` | `.` | Directory scanned by Syft |
+| `image` | `''` | Scan this container image with Syft instead of the checkout (needs `generator: syft`); OS packages are included |
 
 Outputs: `project-id`, `sbom-id`, `url`. See [`examples/upload-sbom.yml`](examples/upload-sbom.yml).
+
+To track a deployed image, set `image` and give each image its own `project-name` (for example `my-org/my-app`) and its tag as
+`project-version`. The worker re-checks the image's packages against OSV on its normal schedule, so new CVEs surface without a new upload.
 
 The dashboard has to be reachable from the GitHub runner. For a dashboard on a private network, use a self-hosted runner.
 

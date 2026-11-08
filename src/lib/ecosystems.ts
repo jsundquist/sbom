@@ -34,3 +34,13 @@ const SYSTEMS: Record<string, string> = {
 };
 
 export const depsDevSystem = (purlType: string): string | null => SYSTEMS[purlType] ?? null;
+
+/**
+ * OSV ecosystem name for OS packages, which OSV matches by release ("Alpine:v3.20") and never by a bare purl.
+ * `distro` is the purl qualifier, e.g. "alpine-3.20.1". Only Alpine is mapped: Debian, Ubuntu and RPM advisories are filed
+ * under source package names that the SBOM's binary package names do not give.
+ */
+export function osvEcosystem(purlType: string, distro: string | null | undefined): string | null {
+  const alpine = purlType === 'apk' ? /^alpine-(\d+\.\d+)/.exec(distro ?? '') : null;
+  return alpine ? `Alpine:v${alpine[1]}` : null;
+}
