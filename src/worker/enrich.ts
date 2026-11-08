@@ -274,7 +274,7 @@ async function checkScorecards(db: Db, opts: EnrichOptions, stats: EnrichStats) 
         latest: packages.latestVersion,
       })
       .from(packages)
-      .where(and(isNotNull(packages.latestVersion), or(isNull(packages.scorecardCheckedAt), lt(packages.scorecardCheckedAt, before))))
+      .where(and(isNotNull(packages.latestCheckedAt), or(isNull(packages.scorecardCheckedAt), lt(packages.scorecardCheckedAt, before))))
       .orderBy(asc(packages.key))
   ).filter((p) => isVersionCheckable(p.type));
 
@@ -283,7 +283,8 @@ async function checkScorecards(db: Db, opts: EnrichOptions, stats: EnrichStats) 
     let card: Awaited<ReturnType<typeof projectScorecard>> = null;
     let error: string | null = null;
     try {
-      repo = await sourceRepo(fetchImpl, opts.depsDevApiUrl, p, p.latest!);
+      // No known latest version means no source repo to look up; that is a settled "unsupported", not a pending check.
+      repo = p.latest ? await sourceRepo(fetchImpl, opts.depsDevApiUrl, p, p.latest) : null;
       card = repo ? await projectScorecard(fetchImpl, opts.depsDevApiUrl, repo) : null;
     } catch (err) {
       stats.errors++;
@@ -292,10 +293,11 @@ async function checkScorecards(db: Db, opts: EnrichOptions, stats: EnrichStats) 
     await db
       .update(packages)
       .set({
-        // A failed lookup keeps the last good result and retries after the TTL.
-        ...(error ? {} : { sourceRepo: repo, scorecardScore: card?.score ?? null, scorecardChecks: card?.checks ?? null }),
-        scorecardCheckedAt: new Date(),
-        scorecardError: error,
+        // A failed lookup keeps the last good result and leaves the package due, so the next run retries instead of
+        // reporting a transient error as "unsupported" for a whole TTL.
+        ...(error
+          ? { scorecardError: error }
+          : { sourceRepo: repo, scorecardScore: card?.score ?? null, scorecardChecks: card?.checks ?? null, scorecardCheckedAt: new Date(), scorecardError: null }),
       })
       .where(eq(packages.key, p.key));
   });

@@ -5,7 +5,7 @@ import { scorecardStatus, weakestChecks } from '@/lib/scorecard';
 import { getPackage } from '@/server/inventory';
 import { ingestSbom } from '@/server/ingest';
 import { enrich } from '@/worker/enrich';
-import { createTestDb, enrichOptions, type FakeApis } from './helpers';
+import { createTestDb, enrichOptions, fakeFetch, type FakeApis } from './helpers';
 
 describe('weakestChecks', () => {
   const checks = [
@@ -83,6 +83,22 @@ describe('Scorecard enrichment', () => {
     const stats = await enrich(db, enrichOptions(APIS));
     expect((await getPackage(db, 'npm:norepo'))?.scorecard).toMatchObject({ status: 'unsupported', score: null });
     expect(stats.errors).toBe(0);
+  });
+
+  test('a failed lookup is retried on the next run rather than reported as unsupported', async () => {
+    const healthy = fakeFetch(APIS);
+    const down: typeof fetch = async (input, init) =>
+      new URL(input.toString()).pathname.startsWith('/v3/projects/') ? new Response('unavailable', { status: 503 }) : healthy(input, init);
+    const quiet = { info() {}, warn() {}, error() {} };
+    await enrich(db, { ...enrichOptions(APIS), fetchImpl: down, logger: quiet });
+    expect((await getPackage(db, 'npm:lodash'))?.scorecard.status).toBe('pending');
+    await enrich(db, enrichOptions(APIS));
+    expect((await getPackage(db, 'npm:lodash'))?.scorecard).toMatchObject({ status: 'checked', score: 7.5 });
+  });
+
+  test('a package whose latest version is unknown settles as unsupported', async () => {
+    await enrich(db, enrichOptions({ ...APIS, latest: { 'npm:lodash': '4.17.21' } }));
+    expect((await getPackage(db, 'npm:norepo'))?.scorecard.status).toBe('unsupported');
   });
 
   test('is not re-fetched inside the TTL', async () => {

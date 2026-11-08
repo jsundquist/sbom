@@ -46,7 +46,7 @@ blocks in `eslint.config.mjs`); `components/` may import only types from `db/` a
 | `sboms` | One uploaded document | Raw `document` jsonb kept; pruned to `SBOM_HISTORY_LIMIT` per project |
 | `components` | Package entries of one SBOM | Cascade-deleted with the SBOM; `package_key` = `<ecosystem>:<name>` |
 | `component_edges` | "parent depends on child" within one SBOM | Null `parent_id` = the application depends on the child directly; no null rows = direct dependencies unknown. Cascade-deleted with the SBOM |
-| `packages` | Distinct package, version independent | Holds `latest_version`, `latest_checked_at` |
+| `packages` | Distinct package, version independent | Holds `latest_version`, `latest_checked_at`, and the OpenSSF Scorecard (`source_repo`, `scorecard_score`, `scorecard_checks`, `scorecard_checked_at`, `scorecard_error`) |
 | `package_versions` | A version in use | `vulns_checked_at` drives the scan queue |
 | `vulnerabilities` | OSV record (GHSA/CVE/...) | `severity` enum, CVSS `score`/`vector` |
 | `version_vulnerabilities` | Which version is hit, plus `fixed_versions` | FK to `package_versions` and `vulnerabilities` |
@@ -73,7 +73,7 @@ dashboard URL. Parse/ingest errors are 400.
 1. Vulnerability scan: due package versions -> OSV `querybatch` (purl; Alpine `apk` packages by `Alpine:vX.Y` + name, release from the component purl `distro`) -> fetch each new vuln -> write `vulnerabilities` and
    `version_vulnerabilities`, stamp `vulns_checked_at` (or `vulns_error`).
 2. Latest-version check: due packages -> deps.dev -> `latest_version` (or `latest_error`).
-   Scorecard check (after it, `SCORECARD_TTL_HOURS`): latest version -> deps.dev `SOURCE_REPO` -> deps.dev project scorecard -> `source_repo`, `scorecard_score`, `scorecard_checks`. No repo or scorecard stores a null score, shown as unsupported.
+   Scorecard check (`SCORECARD_TTL_HOURS`; a failed lookup keeps `scorecard_checked_at` unset or stale so the next run retries, and `scorecard_error` records why): latest version -> deps.dev `SOURCE_REPO` -> deps.dev project scorecard -> `source_repo`, `scorecard_score`, `scorecard_checks`. No repo or scorecard stores a null score, shown as unsupported.
 3. KEV sync (`src/worker/kev.ts`): when `feed_syncs.kev` is older than `KEV_TTL_HOURS`, download the CISA catalog and replace
    `kev_entries`. Skipped when `kevUrl` is not passed to `enrich()` (tests opt in). Failures keep old data and retry after 15 min.
 4. EPSS sync (`src/worker/epss.ts`): CVEs of stored vulnerabilities with no score or one older than `EPSS_TTL_HOURS` are looked up

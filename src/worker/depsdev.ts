@@ -55,7 +55,7 @@ const projectSchema = z.looseObject({
   scorecard: z
     .looseObject({
       overallScore: z.number().nullish(),
-      checks: z.array(z.looseObject({ name: z.string(), score: z.number(), reason: z.string().nullish() })).nullish(),
+      checks: z.array(z.looseObject({ name: z.string(), score: z.number().nullish(), reason: z.string().nullish() })).nullish(),
     })
     .nullish(),
 });
@@ -72,5 +72,5 @@ export async function projectScorecard(fetchImpl: FetchFn, baseUrl: string, repo
   if (card?.overallScore == null) {
     return null;
   }
-  return { score: card.overallScore, checks: (card.checks ?? []).map((c) => ({ name: c.name, score: c.score, reason: c.reason ?? null })) };
+  return { score: card.overallScore, checks: (card.checks ?? []).map((c) => ({ name: c.name, score: c.score ?? -1, reason: c.reason ?? null })) };
 }
