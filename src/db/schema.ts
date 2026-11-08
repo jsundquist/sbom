@@ -107,6 +107,10 @@ export const packages = pgTable('packages', {
   scorecardChecks: jsonb('scorecard_checks').$type<ScorecardCheck[]>(),
   scorecardCheckedAt: timestamp('scorecard_checked_at', { withTimezone: true }),
   scorecardError: text('scorecard_error'),
+  /** Publish date of the latest version, and whether deps.dev marks it deprecated (the registry deprecates whole packages). */
+  latestReleasedAt: timestamp('latest_released_at', { withTimezone: true }),
+  deprecated: boolean('deprecated').notNull().default(false),
+  deprecatedReason: text('deprecated_reason'),
 });
 
 /** A package version in use. `vulnsCheckedAt` drives the vulnerability scan queue. */

@@ -12,6 +12,7 @@ import UpgradeIcon from '@mui/icons-material/Upgrade';
 import HourglassIcon from '@mui/icons-material/HourglassEmpty';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import type { Severity } from '@/lib/severity';
+import type { Maintenance } from '@/lib/maintenance';
 import type { UpdateType } from '@/lib/version';
 import type { KevInfo } from '@/server/exploit-signals';
 
@@ -76,6 +77,18 @@ export function OutdatedChip({ outdated, latest }: { outdated: UpdateType | null
   }
   const chip = <Chip size="small" variant="outlined" color={UPDATE_COLOR[outdated]} icon={<UpgradeIcon />} label={`${outdated} update`} />;
   return latest ? <Tooltip title={`Latest: ${latest}`}>{chip}</Tooltip> : chip;
+}
+
+/** Deprecated and/or no release for years; nothing when the package looks maintained. Color is never the only signal. */
+export function MaintenanceChip({ maintenance }: { maintenance: Maintenance }) {
+  const { deprecated, deprecatedReason, abandoned, lastReleaseAt } = maintenance;
+  if (!deprecated && !abandoned) {
+    return null;
+  }
+  const label = deprecated && abandoned ? 'Deprecated, abandoned' : deprecated ? 'Deprecated' : 'Abandoned';
+  const detail = [deprecatedReason, lastReleaseAt ? `Last release ${lastReleaseAt.slice(0, 10)}` : null].filter(Boolean).join(' · ');
+  const chip = <Chip size="small" variant="outlined" color="warning" icon={<WarningIcon />} label={label} />;
+  return detail ? <Tooltip title={detail}>{chip}</Tooltip> : chip;
 }
 
 export function PendingChip({ label = 'Scanning…' }: { label?: string }) {

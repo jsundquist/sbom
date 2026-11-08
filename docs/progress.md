@@ -8,6 +8,13 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-08: B-002 Deprecated and abandoned packages
+- Done (branch `feat/b-002-abandoned-packages`, off main): `packages` gains `latest_released_at`, `deprecated`, `deprecated_reason`, filled by the existing latest-version job from the same deps.dev call (`publishedAt`, `isDeprecated`, `deprecatedReason`); `maintenanceFlags()` in `src/lib/maintenance.ts` derives `abandoned` at read time from `ABANDONED_AFTER_YEARS` (2); `MaintenanceChip` on the packages grid (sortable column) and package page.
+- Verified: `pnpm run lint`, `pnpm test` (238), `pnpm run test:e2e` (13) green; deps.dev fields checked live (`request` is deprecated, with a reason).
+- Decision: did not build A-004 first. B-002 only needs the latest version's publish date, so there is no libyears and no per-version `released_at`; the ticket's dependency is satisfied without it.
+- Gotchas: a package with an unknown release date is never abandoned. A failed lookup keeps the last known date and deprecation. The chip shows nothing for maintained packages.
+- Not done: abandoned/deprecated counts on the overview, and the per-component grid.
+
 ## 2026-11-08: B-003 OpenSSF Scorecard per package
 - Done (branch `feat/b-003-scorecard`, off main): `packages` gains `source_repo`, `scorecard_score`, `scorecard_checks`, `scorecard_checked_at`, `scorecard_error` (migration 0004); worker job `checkScorecards` runs after the latest-version check (latest version -> deps.dev `relatedProjects` SOURCE_REPO -> `/v3/projects/<repo>` scorecard) on `SCORECARD_TTL_HOURS` (168); `getPackage` returns `scorecard {status, score, sourceRepo, weakest[3], checkedAt}`; Scorecard tile on the package page.
 - Verified: `pnpm run lint`, `pnpm test` (242, new `scorecard.test.ts`), `pnpm run test:e2e` (13) green. Live deps.dev shapes checked with curl (lodash: SOURCE_REPO + scorecard.overallScore/checks).

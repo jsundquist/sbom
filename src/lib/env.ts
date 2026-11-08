@@ -62,6 +62,8 @@ const schema = z.object({
     .default(6 * 3600)
     .transform((s) => Math.max(s, MIN_WORKER_POLL_SECONDS)),
   VULN_TTL_HOURS: z.coerce.number().positive().default(12),
+  /** A package whose latest release is older than this many years is flagged as abandoned. */
+  ABANDONED_AFTER_YEARS: z.coerce.number().positive().default(2),
   LATEST_TTL_HOURS: z.coerce.number().positive().default(24),
   SCORECARD_TTL_HOURS: z.coerce.number().positive().default(168),
   KEV_TTL_HOURS: z.coerce.number().positive().default(24),

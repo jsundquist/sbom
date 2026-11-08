@@ -6,7 +6,7 @@ import { getDb } from '@/db';
 import { requireOwnerPage } from '@/server/auth';
 import { AccessGate } from '@/components/AccessGate';
 import { getPackage } from '@/server/inventory';
-import { OutdatedChip, SeverityCounts } from '@/components/chips';
+import { MaintenanceChip, OutdatedChip, SeverityCounts } from '@/components/chips';
 import { PackageVersionsTable } from '@/components/PackageVersionsTable';
 import { PageHeader } from '@/components/PageHeader';
 import { StatTile } from '@/components/StatTile';
@@ -40,8 +40,9 @@ export default async function PackagePage({ params }: { params: Promise<{ key: s
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatTile label="Latest version" value={pkg.latestVersion ?? '—'}>
-            <Box sx={{ mt: 1 }}>
+            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <OutdatedChip outdated={pkg.outdated} latest={pkg.latestVersion} />
+              <MaintenanceChip maintenance={pkg.maintenance} />
             </Box>
           </StatTile>
         </Grid>

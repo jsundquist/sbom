@@ -26,6 +26,8 @@ export interface FakeApis {
   osvVulns?: Record<string, OsvVuln>;
   /** "<deps.dev system>:<name>" -> latest version */
   latest?: Record<string, string>;
+  /** "<deps.dev system>:<name>" -> release date and deprecation of the latest version, as deps.dev reports them */
+  latestMeta?: Record<string, { publishedAt?: string; deprecated?: boolean; reason?: string }>;
   /** CISA KEV catalog served at https://kev.test/kev.json; `null` makes the feed fail with HTTP 503. */
   kev?: KevFeedEntry[] | null;
   /** FIRST EPSS API served at https://epss.test/epss; CVEs not listed are omitted like the real API; `null` fails with HTTP 503. */
@@ -52,6 +54,7 @@ export function fakeFetch({
   vulns = {},
   osvVulns = {},
   latest = {},
+  latestMeta = {},
   sourceRepos = {},
   scorecards = {},
   kev,
@@ -106,7 +109,13 @@ export function fakeFetch({
       return json({
         versions: [
           { versionKey: { version: '0.0.1' }, isDefault: false },
-          { versionKey: { version: v }, isDefault: true },
+          {
+            versionKey: { version: v },
+            isDefault: true,
+            publishedAt: latestMeta[`${m[1]}:${decodeURIComponent(m[2])}`]?.publishedAt,
+            isDeprecated: latestMeta[`${m[1]}:${decodeURIComponent(m[2])}`]?.deprecated ?? false,
+            deprecatedReason: latestMeta[`${m[1]}:${decodeURIComponent(m[2])}`]?.reason,
+          },
         ],
       });
     }
