@@ -201,7 +201,7 @@
       "epic": "A",
       "size": "S-M",
       "priority": 14,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "A-004"
       ],
@@ -210,7 +210,8 @@
         "Survives SBOM history pruning",
         "Backfill is not required"
       ],
-      "evidence": "",
+      "evidence": "2026-11-08: project_snapshots (unique project+day, FK to project only), worker/snapshots.ts as the last enrich job, pure snapshotCounts in lib/snapshot.ts; tests/unit/snapshots.test.ts (5): one row per day upserted, new day adds a row, survives history pruning, no SBOM no row; pnpm run lint and pnpm test green. e2e not run (no page or route change).",
+      "notes": "Built without A-004, so no libyears column; outdated counts are total and major. History cannot be rebuilt from old SBOMs (they are pruned, and vulnerability data changes).",
       "notes": "History is pruned to SBOM_HISTORY_LIMIT, so trends cannot be rebuilt from old SBOMs."
     },
     {

@@ -13,6 +13,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
 } from 'drizzle-orm/pg-core';
 
 export const severityEnum = pgEnum('severity', ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN']);
@@ -182,3 +183,30 @@ export const epssScores = pgTable('epss_scores', {
   modelDate: date('model_date', { mode: 'string' }),
   fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * One row per project per UTC day (upserted by the worker). Keyed by project, not SBOM, so it outlives SBOM history
+ * pruning; history cannot be rebuilt from old SBOMs because vulnerability data changes over time.
+ */
+export const projectSnapshots = pgTable(
+  'project_snapshots',
+  {
+    id: serial('id').primaryKey(),
+    projectId: integer('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    day: date('day', { mode: 'string' }).notNull(),
+    components: integer('components').notNull(),
+    vulnerableComponents: integer('vulnerable_components').notNull(),
+    vulnerabilities: integer('vulnerabilities').notNull(),
+    critical: integer('critical').notNull(),
+    high: integer('high').notNull(),
+    medium: integer('medium').notNull(),
+    low: integer('low').notNull(),
+    unknown: integer('unknown').notNull(),
+    outdatedComponents: integer('outdated_components').notNull(),
+    outdatedMajor: integer('outdated_major').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique('project_snapshots_project_day_unique').on(t.projectId, t.day)],
+);

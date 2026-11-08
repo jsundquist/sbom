@@ -8,6 +8,13 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-08: A-005 Daily snapshots
+- Done (branch `feat/a-005-daily-snapshots`, off main): `project_snapshots` (unique project + UTC day; components, vulnerable components, distinct vulnerabilities by severity, outdated total and major); `snapshotCounts()` in `src/lib/snapshot.ts`; `writeSnapshots()` in `src/worker/snapshots.ts` runs last in every `enrich()`.
+- Verified: `pnpm run lint` and `pnpm test` (239, new `snapshots.test.ts`) green. Not run: e2e (no page or route change).
+- Decisions: built without A-004, so no libyears column. Keyed by project, not SBOM, so pruning cannot delete it. "On upload" is the NOTIFY-woken enrich run; with the worker down no snapshot is written.
+- Not done: KEV/exploited count, backfill (not required), any read API (A-006).
+- Gotchas: migration `0004` is also taken by the B-003 and B-002 branches; whichever merges after the first must rebase and rerun `pnpm run db:generate`.
+
 ## 2026-11-08: B-004 Container image scans
 - Done (branch `feat/b-004-image-scans`): action `image` input (Syft scans the image instead of the checkout), README row and example; worker now queries OSV by `Alpine:vX.Y` + name for `apk` packages, with the release read from the component purl `distro` qualifier (`osvEcosystem()` in `src/lib/ecosystems.ts`, `distrosFor()` in `enrich.ts`).
 - Verified: `pnpm run lint` and `pnpm test` (241, new `os-packages.test.ts`) green. Not run: e2e (no UI or route change); the action's `image` path (needs a real workflow run); live OSV after deploy.
