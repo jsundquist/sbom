@@ -8,6 +8,12 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-08: B-003 OpenSSF Scorecard per package
+- Done (branch `feat/b-003-scorecard`, off main): `packages` gains `source_repo`, `scorecard_score`, `scorecard_checks`, `scorecard_checked_at`, `scorecard_error` (migration 0004); worker job `checkScorecards` runs after the latest-version check (latest version -> deps.dev `relatedProjects` SOURCE_REPO -> `/v3/projects/<repo>` scorecard) on `SCORECARD_TTL_HOURS` (168); `getPackage` returns `scorecard {status, score, sourceRepo, weakest[3], checkedAt}`; Scorecard tile on the package page.
+- Verified: `pnpm run lint`, `pnpm test` (242, new `scorecard.test.ts`), `pnpm run test:e2e` (13) green. Live deps.dev shapes checked with curl (lodash: SOURCE_REPO + scorecard.overallScore/checks).
+- Gotchas: e2e reads `E2E_DATABASE_URL`, not `DATABASE_URL`. The demo seed runs enrichment, so seeded packages show "No source repository or scorecard found". Scorecard `-1` means a check could not run and is excluded from "weakest". A failed lookup keeps the last good score and retries after the TTL.
+- Not done: Scorecard in the packages grid or overview; packages whose source repo is not on a host Scorecard covers show as unsupported.
+
 ## 2026-11-08: B-004 Container image scans
 - Done (branch `feat/b-004-image-scans`): action `image` input (Syft scans the image instead of the checkout), README row and example; worker now queries OSV by `Alpine:vX.Y` + name for `apk` packages, with the release read from the component purl `distro` qualifier (`osvEcosystem()` in `src/lib/ecosystems.ts`, `distrosFor()` in `enrich.ts`).
 - Verified: `pnpm run lint` and `pnpm test` (241, new `os-packages.test.ts`) green. Not run: e2e (no UI or route change); the action's `image` path (needs a real workflow run); live OSV after deploy.

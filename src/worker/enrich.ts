@@ -1,12 +1,12 @@
 // Enrichment jobs: CVE lookups (OSV.dev) and latest-version lookups (deps.dev).
 // The database is the queue: rows with a null or stale "checked at" timestamp are due.
-import { and, asc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { components, packages, packageVersions, versionVulnerabilities, vulnerabilities } from '@/db/schema';
 import { isVersionCheckable, SCANNABLE_ECOSYSTEMS } from '@/lib/coverage';
 import { isDistroScoped } from '@/lib/ecosystems';
 import { parsePurl } from '@/lib/purl';
-import { latestVersion } from './depsdev';
+import { latestVersion, projectScorecard, sourceRepo } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
 import { syncEpss } from './epss';
 import { syncKev } from './kev';
@@ -18,6 +18,8 @@ export interface EnrichOptions {
   depsDevApiUrl: string;
   vulnTtlHours: number;
   latestTtlHours: number;
+  /** Scorecard results are refreshed weekly upstream, so a week is the default. */
+  scorecardTtlHours?: number;
   /** CISA KEV catalog; the job is skipped when `kevUrl` is not set. */
   kevUrl?: string;
   kevTtlHours?: number;
@@ -67,6 +69,7 @@ export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> 
   for (const [name, job] of [
     ['vulnerability scan', scanVulnerabilities],
     ['latest-version check', checkLatestVersions],
+    ['Scorecard check', checkScorecards],
     ['KEV sync', syncKevFeed],
     ['EPSS sync', syncEpssScores],
   ] as const) {
@@ -254,5 +257,46 @@ async function checkLatestVersions(db: Db, opts: EnrichOptions, stats: EnrichSta
       .set({ latestVersion: sql`coalesce(${latest}, ${packages.latestVersion})`, latestCheckedAt: new Date(), latestError: error })
       .where(eq(packages.key, p.key));
     stats.packagesChecked++;
+  });
+}
+
+async function checkScorecards(db: Db, opts: EnrichOptions, stats: EnrichStats) {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  const before = cutoff(opts.scorecardTtlHours ?? 168, opts.force);
+  // The source repo comes from the latest version, so packages wait for the latest-version check first.
+  const due = (
+    await db
+      .select({
+        key: packages.key,
+        type: packages.ecosystem,
+        namespace: packages.namespace,
+        name: packages.name,
+        latest: packages.latestVersion,
+      })
+      .from(packages)
+      .where(and(isNotNull(packages.latestVersion), or(isNull(packages.scorecardCheckedAt), lt(packages.scorecardCheckedAt, before))))
+      .orderBy(asc(packages.key))
+  ).filter((p) => isVersionCheckable(p.type));
+
+  await mapLimit(due, 8, async (p) => {
+    let repo: string | null = null;
+    let card: Awaited<ReturnType<typeof projectScorecard>> = null;
+    let error: string | null = null;
+    try {
+      repo = await sourceRepo(fetchImpl, opts.depsDevApiUrl, p, p.latest!);
+      card = repo ? await projectScorecard(fetchImpl, opts.depsDevApiUrl, repo) : null;
+    } catch (err) {
+      stats.errors++;
+      error = (err as Error).message.slice(0, 500);
+    }
+    await db
+      .update(packages)
+      .set({
+        // A failed lookup keeps the last good result and retries after the TTL.
+        ...(error ? {} : { sourceRepo: repo, scorecardScore: card?.score ?? null, scorecardChecks: card?.checks ?? null }),
+        scorecardCheckedAt: new Date(),
+        scorecardError: error,
+      })
+      .where(eq(packages.key, p.key));
   });
 }

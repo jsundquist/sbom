@@ -24,6 +24,7 @@ export default async function PackagePage({ params }: { params: Promise<{ key: s
   if (!pkg) {
     notFound();
   }
+  const sc = pkg.scorecard;
   const counts = emptySeverityCounts();
   for (const v of pkg.vulnerabilities) {
     counts[v.severity]++;
@@ -37,21 +38,40 @@ export default async function PackagePage({ params }: { params: Promise<{ key: s
         subtitle={[pkg.ecosystem, pkg.purl, pkg.licenses.join(', ')].filter(Boolean).join(' · ')}
       />
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatTile label="Latest version" value={pkg.latestVersion ?? '—'}>
             <Box sx={{ mt: 1 }}>
               <OutdatedChip outdated={pkg.outdated} latest={pkg.latestVersion} />
             </Box>
           </StatTile>
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatTile label="Applications" value={pkg.projectCount} hint={`${pkg.versions.length} distinct versions in use`} />
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatTile label="Vulnerabilities" value={pkg.vulnCount}>
             <Box sx={{ mt: 1 }}>
               <SeverityCounts counts={counts} />
             </Box>
+          </StatTile>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatTile
+            label="OpenSSF Scorecard"
+            value={sc.score === null ? '—' : `${sc.score.toFixed(1)} / 10`}
+            hint={
+              sc.status === 'unsupported'
+                ? 'No source repository or scorecard found'
+                : sc.status === 'pending'
+                  ? 'Not checked yet'
+                  : sc.sourceRepo
+            }
+          >
+            {sc.weakest.length > 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Weakest: {sc.weakest.map((c) => `${c.name} ${c.score}`).join(', ')}
+              </Typography>
+            )}
           </StatTile>
         </Grid>
       </Grid>

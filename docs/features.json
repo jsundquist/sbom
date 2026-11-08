@@ -302,14 +302,14 @@
       "epic": "B",
       "size": "S-M",
       "priority": 28,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "Score and weakest checks stored per package",
         "Shown on package page",
         "Missing repo handled as unsupported"
       ],
-      "evidence": ""
+      "evidence": "2026-11-08: packages.source_repo/scorecard_* (migration 0004), worker job checkScorecards (SCORECARD_TTL_HOURS, default 168), Scorecard tile on the package page; tests/unit/scorecard.test.ts; pnpm run lint, pnpm test (242) and pnpm run test:e2e (13, against Postgres 16) green."
     },
     {
       "id": "B-004",

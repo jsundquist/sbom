@@ -15,6 +15,7 @@ import { cveOf } from '@/lib/cve';
 import { versionStatus, vulnStatus, type VersionStatus, type VulnStatus } from '@/lib/coverage';
 import { compareVersions, UPDATE_RANK, updateType, type UpdateType } from '@/lib/version';
 import { comparePriority } from '@/lib/priority';
+import { scorecardStatus, weakestChecks, type ScorecardCheck, type ScorecardStatus } from '@/lib/scorecard';
 import { loadExploitSignals, type ExploitSignals } from './exploit-signals';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';
 
@@ -564,13 +565,41 @@ export async function listPackages(db: Db) {
   return aggregatePackages(await loadComponents(db));
 }
 
+export interface PackageScorecard {
+  status: ScorecardStatus;
+  score: number | null;
+  sourceRepo: string | null;
+  /** Lowest scored checks, worst first. */
+  weakest: ScorecardCheck[];
+  checkedAt: string | null;
+}
+
+async function loadScorecard(db: Db, key: string, ecosystem: string | null): Promise<PackageScorecard> {
+  const [p] = await db
+    .select({
+      sourceRepo: packages.sourceRepo,
+      score: packages.scorecardScore,
+      checks: packages.scorecardChecks,
+      checkedAt: packages.scorecardCheckedAt,
+    })
+    .from(packages)
+    .where(eq(packages.key, key));
+  return {
+    status: scorecardStatus(ecosystem, p?.checkedAt ?? null, p?.score ?? null),
+    score: p?.score ?? null,
+    sourceRepo: p?.sourceRepo ?? null,
+    weakest: weakestChecks(p?.checks ?? []),
+    checkedAt: iso(p?.checkedAt ?? null),
+  };
+}
+
 export async function getPackage(db: Db, key: string) {
   const list = await loadComponents(db, { packageKey: key });
   if (!list.length) {
     return null;
   }
   const [pkg] = aggregatePackages(list);
-  return { ...pkg, vulnerabilities: aggregateVulnerabilities(list) };
+  return { ...pkg, scorecard: await loadScorecard(db, key, pkg.ecosystem), vulnerabilities: aggregateVulnerabilities(list) };
 }
 
 export async function listVulnerabilities(db: Db) {

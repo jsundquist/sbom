@@ -40,6 +40,7 @@ async function runLoop() {
         depsDevApiUrl: config.DEPS_DEV_API_URL,
         vulnTtlHours: config.VULN_TTL_HOURS,
         latestTtlHours: config.LATEST_TTL_HOURS,
+        scorecardTtlHours: config.SCORECARD_TTL_HOURS,
         kevUrl: config.KEV_URL,
         kevTtlHours: config.KEV_TTL_HOURS,
         epssUrl: config.EPSS_API_URL,

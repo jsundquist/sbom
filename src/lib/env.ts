@@ -63,6 +63,7 @@ const schema = z.object({
     .transform((s) => Math.max(s, MIN_WORKER_POLL_SECONDS)),
   VULN_TTL_HOURS: z.coerce.number().positive().default(12),
   LATEST_TTL_HOURS: z.coerce.number().positive().default(24),
+  SCORECARD_TTL_HOURS: z.coerce.number().positive().default(168),
   KEV_TTL_HOURS: z.coerce.number().positive().default(24),
   KEV_URL: z.string().url().default('https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json'),
   EPSS_TTL_HOURS: z.coerce.number().positive().default(24),

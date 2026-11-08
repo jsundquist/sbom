@@ -73,6 +73,7 @@ dashboard URL. Parse/ingest errors are 400.
 1. Vulnerability scan: due package versions -> OSV `querybatch` (purl; Alpine `apk` packages by `Alpine:vX.Y` + name, release from the component purl `distro`) -> fetch each new vuln -> write `vulnerabilities` and
    `version_vulnerabilities`, stamp `vulns_checked_at` (or `vulns_error`).
 2. Latest-version check: due packages -> deps.dev -> `latest_version` (or `latest_error`).
+   Scorecard check (after it, `SCORECARD_TTL_HOURS`): latest version -> deps.dev `SOURCE_REPO` -> deps.dev project scorecard -> `source_repo`, `scorecard_score`, `scorecard_checks`. No repo or scorecard stores a null score, shown as unsupported.
 3. KEV sync (`src/worker/kev.ts`): when `feed_syncs.kev` is older than `KEV_TTL_HOURS`, download the CISA catalog and replace
    `kev_entries`. Skipped when `kevUrl` is not passed to `enrich()` (tests opt in). Failures keep old data and retry after 15 min.
 4. EPSS sync (`src/worker/epss.ts`): CVEs of stored vulnerabilities with no score or one older than `EPSS_TTL_HOURS` are looked up
