@@ -30,10 +30,10 @@
     "@mui/icons-material": "^9.5.0",
     "@mui/material": "^9.5.0",
     "@mui/material-nextjs": "^9.5.0",
-    "@mui/x-data-grid": "^9.16.0",
-    "@mui/x-tree-view": "^9.16.0",
+    "@mui/x-data-grid": "^9.17.0",
+    "@mui/x-tree-view": "^9.17.0",
     "drizzle-orm": "^0.45.4",
-    "next": "^16.4.3",
+    "next": "^16.4.5",
     "next-auth": "4.24.15",
     "pg": "^8.23.1",
     "react": "^19.3.1",
@@ -43,7 +43,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.13",
+    "@electric-sql/pglite": "^0.5.15",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
@@ -51,12 +51,12 @@
     "@types/react-dom": "^19.3.0",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.4.3",
+    "eslint-config-next": "^16.4.5",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.10",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   },
   "packageManager": "pnpm@11.21.0"
 }
