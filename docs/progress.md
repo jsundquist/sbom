@@ -8,6 +8,11 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: pick the lowest-priority `todo` in `docs/features.json`.
 
+## 2026-11-15: Node 26 upgrade
+- Done (branch `build/node-26`, off main): Dockerfile build and distroless runtime stages, CI and security workflows, `engines`, README/AGENTS and `.trivyignore` moved from Node 22 to 26. Dependabot's docker `node` entry ignores odd majors (25.x, 27.x, ...). Supersedes Dependabot PR #43 (25, failed `image-scan`).
+- Verified: `pnpm run lint` and `pnpm test` (273) green, but on local Node 24. Not run locally: docker build (daemon down) and e2e; CI's `image-scan` and `test` jobs on Node 26 are the evidence.
+- Gotchas: Node 25+ ships no corepack, so the Dockerfile runs `npm install --global corepack` first. `.trivyignore` entries were for the 22 distroless digest; drop them if the 26 image is clean (they expire 2026-11-22).
+
 ## 2026-11-08: A-006 Trend charts
 - Done (branch `feat/a-006-trend-charts`, stacked on `feat/a-005-daily-snapshots`): `getProjectTrend` / `getSummaryTrend` in `src/server/trends.ts`, routes `GET /api/v1/projects/[id]/trends` and `/summary/trends`, `VulnerabilityTrendChart` on the overview and application pages.
 - Verified: `pnpm run lint`, `pnpm test`, `pnpm run test:e2e` (14: populated via the seeded worker run, empty via an API upload) green.

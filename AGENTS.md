@@ -21,7 +21,7 @@ This file is the entry point for any coding agent. `CLAUDE.md` imports it. Keep 
 | Feature scope and status | `docs/features.json` |
 | Security posture and open hardening items | `docs/ARCHITECTURE.md#security` |
 
-## Commands (pnpm only, Node 22+)
+## Commands (pnpm only, Node 26+)
 
 | Command | Purpose |
 |---|---|
