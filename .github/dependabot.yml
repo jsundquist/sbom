@@ -52,6 +52,11 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: 'build(docker)'
+    ignore:
+      # Odd-numbered Node majors never become LTS. Stay on even majors; add the next odd one here
+      # when it ships (Dependabot has no way to express "odd" as a pattern).
+      - dependency-name: node
+        versions: ['25.x', '27.x', '29.x', '31.x']
 
   - package-ecosystem: docker-compose
     directory: /

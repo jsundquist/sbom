@@ -46,7 +46,7 @@ Open http://localhost:3000. Postgres is published on `127.0.0.1:5432` only; the 
 
 ### Local development
 
-Requires Node 22+. The quickest way is one command: it starts Postgres in Docker (needs `POSTGRES_PASSWORD` in `.env`, see
+Requires Node 26+. The quickest way is one command: it starts Postgres in Docker (needs `POSTGRES_PASSWORD` in `.env`, see
 above), applies migrations, then runs the web app with hot reload and the worker on your machine. Stop the compose `web` and
 `worker` containers first (`docker compose stop web worker`), since they use port 3000.
 

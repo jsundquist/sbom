@@ -1,8 +1,9 @@
 # Two runtime targets from one build: `web` (Next standalone, traced files only) and `worker` (worker + migrations).
 # Build with `--target web` or `--target worker` (see docker-compose.yml).
-FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS deps
+FROM node:26-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1 AS deps
 WORKDIR /app
-RUN corepack enable
+# Node 25+ no longer bundles corepack, so install it before enabling the pnpm shim.
+RUN npm install --global corepack && corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
@@ -17,7 +18,7 @@ RUN pnpm prune --prod && rm -rf node_modules/next node_modules/.pnpm/next@*
 
 # Runtime base is distroless: no shell, apt, dpkg, util-linux, gzip, tar or bundled npm/corepack, so the CVEs those
 # carry (and the stock node image's npm node_modules) never ship. Pinned by digest.
-FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:34985bab6fd6981259f18ab7555995a911ca3bee4b0d38bacdc63932df1dc6cb AS distroless
+FROM gcr.io/distroless/nodejs26-debian13:nonroot@sha256:1d736cf8b5716c07a245301f92717143215d248fd55771ee1936ef4b3302e531 AS distroless
 
 # Distroless keeps node at /nodejs/bin/node, off PATH. Manifests run `node` by name, so add a symlink for it.
 FROM deps AS node-link
