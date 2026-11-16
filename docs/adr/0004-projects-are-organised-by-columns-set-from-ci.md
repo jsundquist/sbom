@@ -1,0 +1,5 @@
+# Projects are organised by columns that CI sets on every upload
+
+"Application" was the only bucket, so libraries, images, hosts and monorepo services all looked alike. We keep one `projects` table and add a `kind` column back (B-004 dropped it), normalise `repository` to `github.com/owner/repo` on ingest, and add `tags`. All three arrive as upload metadata from the Action and are replaced on every upload; the browser session stays read-only, so there is no tag editor, no CSRF surface and no new auth path. Saved views are filter query strings you bookmark.
+
+Rejected: a `repositories` table (nothing hangs off it yet; CODEOWNERS ownership, D-003, was superseded), environments as part of this change (nothing in the system knows what is deployed; that design belongs to the W-006 host map, so only a nullable `sboms.environment` is accepted), and a data backfill (Drizzle migrations are generated and a repository cannot be reliably parsed from free text; the next upload corrects each Project, and lookups tolerate both forms until then). Consequence: `host` as a Kind gives W-006 its home without a second data shape.
