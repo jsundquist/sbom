@@ -20,7 +20,9 @@ const schema = z.object({
   DATABASE_URL: z.string().default('postgres://sbom:sbom@localhost:5432/sbom'),
   /** When set, uploads must send one of these as a bearer token. Empty = open uploads. */
   UPLOAD_TOKENS: csv,
-  /** In production, uploads are rejected when UPLOAD_TOKENS is empty unless this is "true". */
+  /** Bearer tokens that may delete a project. Separate from UPLOAD_TOKENS, which every repo's CI holds. Empty = open deletes. */
+  ADMIN_TOKENS: csv,
+  /** In production, uploads and deletes are rejected when UPLOAD_TOKENS / ADMIN_TOKENS are empty unless this is "true". */
   ALLOW_OPEN_UPLOADS: z
     .enum(['true', 'false'])
     .default('false')

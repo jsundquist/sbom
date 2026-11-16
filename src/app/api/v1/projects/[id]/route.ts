@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { requireOwner } from '@/server/auth';
-import { checkUploadToken, jsonError, parseId } from '@/server/api';
+import { checkAdminToken, jsonError, parseId } from '@/server/api';
 import { deleteProject } from '@/server/ingest';
 import { getProject } from '@/server/inventory';
 
@@ -24,7 +24,7 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {
-  const denied = checkUploadToken(req);
+  const denied = checkAdminToken(req);
   if (denied) {
     return denied;
   }

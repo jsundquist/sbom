@@ -37,7 +37,7 @@ If you discover unrelated problems, add them to `docs/features.json` as `todo`; 
 - [ ] API test in `tests/unit/api.test.ts`; e2e journey in `tests/e2e/dashboard.spec.ts` if user-visible
 
 ### New write endpoint
-- [ ] Call `checkUploadToken(req)` first
+- [ ] Call `checkUploadToken(req)` first (`checkAdminToken(req)` for deletes and other destructive actions)
 - [ ] Validate all input with Zod; enforce size limits
 - [ ] Logic in `src/server/`, transactional, ends with `garbageCollect` if it removes rows
 - [ ] Tests for success, 400, 401/503, and 413 paths

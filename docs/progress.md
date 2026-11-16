@@ -6,7 +6,14 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: F-002 (`ADMIN_TOKENS`), then F-003 and F-004; the order of the 2026-11-16 backlog is in its entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+- Next: F-003 (stale SBOM flag), then F-004; the order of the 2026-11-16 backlog is in its entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-16: F-002 ADMIN_TOKENS for delete
+- Done (branch `feat/f-002-admin-tokens`, off main): `DELETE /api/v1/projects/[id]` now needs a token from `ADMIN_TOKENS`; an upload token gets 401 and an admin token cannot upload. `checkUploadToken` and the new `checkAdminToken` share one `checkBearer` (same rate-limit bucket, same fail-closed rule: 503 in production when the list is empty unless `ALLOW_OPEN_UPLOADS=true`). Env, `.env.example`, compose, README, kubernetes.md, ARCHITECTURE and WORKFLOW updated.
+- Verified: new `tests/unit/admin-token.test.ts` failed first (5 of 8), then passed; `pnpm run lint`, `pnpm test` (285) and `pnpm run test:e2e` (14) green.
+- Decisions: reused `ALLOW_OPEN_UPLOADS` as the single "open writes in production" switch rather than adding a second flag. The proxy allow-list is unchanged (method + exact path); only the token it checks differs.
+- Breaking change: anything that deleted with an upload token now gets 401 (503 in production with no `ADMIN_TOKENS`). Set `ADMIN_TOKENS` on the web deployment before upgrading.
+- Gotchas: e2e needs `pnpm exec playwright install chromium` after a Playwright bump (the browser build is versioned), and reads `E2E_DATABASE_URL`. The existing delete test in `api.test.ts` passed by accident (deletes were open with no admin token); it now sends an admin token.
 
 ## 2026-11-16: F-001 null-version key collision
 - Done (branch `fix/f-001-null-version-key`, off main): `componentKey` in `src/sbom/parse.ts` now gives a missing version an empty suffix (`npm:leftpad@`) instead of the text `null`, so it no longer collides with a component whose version is the string "null". Before, `dedupe()` silently dropped one of the two.

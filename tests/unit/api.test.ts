@@ -15,6 +15,7 @@ import { schema } from '@/db';
 import { createTestDb, enrichOptions, fakeFetch, fixture, LODASH_VULN, type FakeApis } from './helpers';
 
 const TOKEN = 'test-token';
+const ADMIN = 'test-admin-token';
 const BASE = 'http://dash.test';
 let db: Db;
 let close: () => Promise<void>;
@@ -23,12 +24,14 @@ beforeEach(async () => {
   ({ db, close } = await createTestDb());
   setDb(db);
   process.env.UPLOAD_TOKENS = TOKEN;
+  process.env.ADMIN_TOKENS = ADMIN;
   resetEnv();
   resetRateLimits();
 });
 afterEach(async () => {
   vi.unstubAllEnvs();
   delete process.env.UPLOAD_TOKENS;
+  delete process.env.ADMIN_TOKENS;
   resetEnv();
   await close();
 });
@@ -240,7 +243,7 @@ describe('history and deletion', () => {
     expect(packages.map((p: { name: string }) => p.name)).toEqual(['lodash']);
 
     const del = await deleteProject(
-      new Request(BASE, { method: 'DELETE', headers: { authorization: `Bearer ${TOKEN}` } }),
+      new Request(BASE, { method: 'DELETE', headers: { authorization: `Bearer ${ADMIN}` } }),
       params({ id: String(second.projectId) }),
     );
     expect(del.status).toBe(204);

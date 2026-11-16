@@ -129,10 +129,11 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | Variable | Default | Description |
 |---|---|---|
 | `DATABASE_URL` | `postgres://sbom:sbom@localhost:5432/sbom` | Postgres connection string |
-| `UPLOAD_TOKENS` | empty | Comma-separated bearer tokens required for uploads and deletes. Empty = open uploads outside production; in production uploads are rejected (503) |
-| `ALLOW_OPEN_UPLOADS` | `false` | Set `true` to allow open uploads in production (e.g. `docker compose` on localhost) |
+| `UPLOAD_TOKENS` | empty | Comma-separated bearer tokens required for uploads (the Action's `api-token`). Empty = open uploads outside production; in production uploads are rejected (503) |
+| `ADMIN_TOKENS` | empty | Comma-separated bearer tokens required to delete a project. An upload token cannot delete. Empty = open deletes outside production; in production deletes are rejected (503). **Upgrading:** anything that deleted with an upload token now needs one of these |
+| `ALLOW_OPEN_UPLOADS` | `false` | Set `true` to allow open uploads and deletes in production (e.g. `docker compose` on localhost) |
 | `MAX_UPLOAD_BYTES` | 52428800 | Maximum SBOM size; larger bodies are cut off while streaming and get 413 |
-| `WRITE_RATE_LIMIT` | 60 | Uploads/deletes allowed per client per window (429 with `Retry-After` beyond it); `0` disables. In-memory, per web process |
+| `WRITE_RATE_LIMIT` | 60 | Uploads and deletes allowed per client per window (429 with `Retry-After` beyond it); `0` disables. In-memory, per web process |
 | `AUTH_RATE_LIMIT` | 60 | `/api/auth/*` requests allowed per client per window, in a bucket separate from uploads/deletes; `0` disables |
 | `WRITE_RATE_WINDOW_SECONDS` | 60 | Length of the rate-limit window |
 | `TRUST_PROXY` | `false` | Key the limit on `X-Forwarded-For`/`X-Real-IP`; only set behind a proxy that overwrites them. When `false`, all clients share one bucket |
@@ -176,7 +177,7 @@ Outside production, with none of these set, reads stay open so local development
 | `GET` | `/api/v1/projects/:id[?sbom=:sbomId]` | Application details and enriched packages |
 | `GET` | `/api/v1/projects/:id/dependencies[?sbom=:sbomId]` | Dependency edges of an SBOM (`components`, `edges`, `directIds`); empty when the SBOM has no relationships |
 | `GET` | `/api/v1/projects/:id/trends[?days=90]` | Daily snapshots of one application: vulnerabilities by severity, outdated and package counts (`points`) |
-| `DELETE` | `/api/v1/projects/:id` | Delete an application and its SBOMs (token required when configured) |
+| `DELETE` | `/api/v1/projects/:id` | Delete a project and its SBOMs (admin token required when configured; an upload token is refused) |
 | `GET` | `/api/v1/packages` | Packages across all applications |
 | `GET` | `/api/v1/packages/:key` | One package (key such as `npm%3Alodash`) |
 | `GET` | `/api/v1/vulnerabilities[/:id]` | Vulnerabilities affecting the latest SBOMs |
