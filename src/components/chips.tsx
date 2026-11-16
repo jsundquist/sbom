@@ -10,6 +10,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import UpgradeIcon from '@mui/icons-material/Upgrade';
 import HourglassIcon from '@mui/icons-material/HourglassEmpty';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import type { Severity } from '@/lib/severity';
 import type { Maintenance } from '@/lib/maintenance';
@@ -89,6 +90,21 @@ export function MaintenanceChip({ maintenance }: { maintenance: Maintenance }) {
   const detail = [deprecatedReason, lastReleaseAt ? `Last release ${lastReleaseAt.slice(0, 10)}` : null].filter(Boolean).join(' · ');
   const chip = <Chip size="small" variant="outlined" color="warning" icon={<WarningIcon />} label={label} />;
   return detail ? <Tooltip title={detail}>{chip}</Tooltip> : chip;
+}
+
+/** The latest SBOM is older than STALE_AFTER_DAYS. With `count` it labels a roll-up ("3 stale") instead of one project. */
+export function StaleChip({ uploadedAt, count }: { uploadedAt?: string | null; count?: number }) {
+  const chip = (
+    <Chip
+      size="small"
+      variant="outlined"
+      color="warning"
+      icon={<ScheduleIcon />}
+      label={count === undefined ? 'Stale' : `${count} stale`}
+    />
+  );
+  const detail = uploadedAt ? `Last SBOM uploaded ${uploadedAt.slice(0, 10)}` : 'Latest SBOM is older than STALE_AFTER_DAYS';
+  return <Tooltip title={detail}>{chip}</Tooltip>;
 }
 
 export function PendingChip({ label = 'Scanning…' }: { label?: string }) {

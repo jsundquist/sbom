@@ -6,7 +6,14 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: F-003 (stale SBOM flag), then F-004; the order of the 2026-11-16 backlog is in its entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+- Next: F-004 (100-Project benchmark), then K (only what it justifies) and G; the order of the 2026-11-16 backlog is in its entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-16: F-003 Stale SBOM flag
+- Done (branch `feat/f-003-stale-sbom`, off main after F-002 merged in #58): `STALE_AFTER_DAYS` (default 14, `0` disables); `isStale()` in `src/lib/stale.ts`; `ProjectSummary.stale` and `getOverview().staleProjects`, both derived at read time (nothing stored). `StaleChip` on a new sortable boolean Stale column of the projects grid, beside "uploaded" on the project page, and as an "N stale" chip in the overview's Applications tile. The flag also appears in `GET /api/v1/projects[/id]`.
+- Verified: new `tests/unit/stale.test.ts` failed first (module missing), then 8 green; `pnpm run lint`, `pnpm test` (293) and `pnpm run test:e2e` (14) green. Also checked on the built app with one project backdated 30 days (overview tile, project page chip, API flag, no chip on a fresh project).
+- Decisions: older than the threshold means strictly greater (exactly 14 days is not stale). The chip describes the latest SBOM, so it shows even when an older SBOM from history is being viewed. A project with no SBOM is never stale.
+- Not done: the grid's Stale column was not checked in a browser (client-rendered DataGrid; the e2e seed has no old uploads). Missing `commit_sha`/`ref` is a separate, smaller signal left out of scope by the ticket. No filter yet: L-002 adds `?stale=` to the list API.
+- Gotchas: F-002 was squash-merged while this branch was stacked on it, so the branch was rebased with `git rebase --onto origin/main <old F-002 commit>`; a plain rebase would have replayed the F-002 commit.
 
 ## 2026-11-16: F-002 ADMIN_TOKENS for delete
 - Done (branch `feat/f-002-admin-tokens`, off main): `DELETE /api/v1/projects/[id]` now needs a token from `ADMIN_TOKENS`; an upload token gets 401 and an admin token cannot upload. `checkUploadToken` and the new `checkAdminToken` share one `checkBearer` (same rate-limit bucket, same fail-closed rule: 503 in production when the list is empty unless `ALLOW_OPEN_UPLOADS=true`). Env, `.env.example`, compose, README, kubernetes.md, ARCHITECTURE and WORKFLOW updated.

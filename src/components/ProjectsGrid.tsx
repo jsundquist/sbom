@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 import type { GridColDef } from '@mui/x-data-grid';
 import type { ProjectSummary } from '@/server/inventory';
 import { SEVERITY_RANK, SEVERITIES } from '@/lib/severity';
-import { PendingChip, SeverityCounts } from './chips';
+import { PendingChip, SeverityCounts, StaleChip } from './chips';
 import { DateTime } from './DateTime';
 import { Grid } from './grid';
 import { AppLink } from './Links';
@@ -48,6 +48,14 @@ const columns: GridColDef<ProjectSummary>[] = [
     width: 180,
     valueGetter: (_v, row) => row.latest?.uploadedAt ?? '',
     renderCell: ({ row }) => <DateTime value={row.latest?.uploadedAt} />,
+  },
+  {
+    field: 'stale',
+    headerName: 'Stale',
+    type: 'boolean',
+    width: 100,
+    valueGetter: (_v, row) => row.stale,
+    renderCell: ({ row }) => (row.stale ? <StaleChip uploadedAt={row.latest?.uploadedAt} /> : null),
   },
 ];
 
