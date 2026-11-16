@@ -1,11 +1,15 @@
 name: Release image
 # Builds the two runtime images (web; worker, which also runs migrate), scans them, and publishes them to GHCR.
 # The tag is <short-sha>-<run_number>. The bump job then pins it in jsundquist/k8s-gitops, which Argo CD syncs.
-# Assumes the ruleset on main (reviewed PRs, required CI and security checks, no bypass actors): this workflow runs on
-# every push to main independently of those workflows, so only merged, checked code reaches the build.
+# Runs every four hours and on demand, not on every push, so a burst of merges becomes one deploy commit in the GitOps repo.
+# A scheduled run builds only when the head of main has no image yet; a manual run always builds. Both build main only.
+# Assumes the ruleset on main (reviewed PRs, required CI and security checks, no bypass actors): only merged, checked code
+# is ever the head of main, so only that reaches the build.
 on:
-  push:
-    branches: [main]
+  schedule:
+    # Off the hour: GitHub delays scheduled runs that start at the top of an hour.
+    - cron: '17 */4 * * *'
+  workflow_dispatch:
 
 permissions: {}
 
@@ -18,7 +22,49 @@ env:
   WORKER_IMAGE: ghcr.io/jsundquist/sbom-worker
 
 jobs:
+  # Decides whether this run releases anything. Image tags are <short-sha>-<run_number>, so an image tagged with the
+  # head commit's short sha means that commit was already built. Asking GHCR rather than the GitOps repo means a manual
+  # rollback there is not undone by the next tick, and a failed prune or token-expiry check does not trigger a rebuild.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      packages: read
+    outputs:
+      release: ${{ steps.decide.outputs.release }}
+    steps:
+      - name: Decide whether to release
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          # A manual run can be started from any branch; only main is ever built and pushed to the GitOps repo.
+          if [ "$REF" != "refs/heads/main" ]; then
+            echo "::error::Releases are built from main only; this run is on $REF"
+            exit 1
+          fi
+          if [ "$EVENT" != "schedule" ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Manual run: building ${SHA::7}"
+            exit 0
+          fi
+          tags=$(gh api --paginate "/users/$OWNER/packages/container/sbom/versions?per_page=100" --jq '.[].metadata.container.tags[]?')
+          if grep -Eq "^${SHA::7}-[0-9]+$" <<<"$tags"; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::main is at ${SHA::7}, which already has an image; nothing to release"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::main moved to ${SHA::7}, which has no image yet; releasing"
+          fi
+
   image:
+    needs: changes
+    if: needs.changes.outputs.release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -319,7 +365,10 @@ jobs:
             exit 1
           fi
 
+  # Only on runs that release, like before, so an expiring token fails the deploys that need it rather than every tick.
   token-expiry:
+    needs: changes
+    if: needs.changes.outputs.release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions: {}

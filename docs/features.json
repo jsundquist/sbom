@@ -1790,6 +1790,27 @@
       "labels": [
         "ready-for-agent"
       ]
+    },
+    {
+      "id": "E-009",
+      "title": "Batch deploys: release workflow runs every four hours and on demand, not on every push",
+      "epic": "E",
+      "size": "S",
+      "priority": 0.5,
+      "status": "done",
+      "depends_on": [],
+      "acceptance": [
+        "release.yml triggers on a four-hour schedule and workflow_dispatch, not on push",
+        "A scheduled run builds only when GHCR has no image tagged with the short sha of the head of main; a manual run always builds",
+        "A manual run from any branch other than main fails before building or touching the GitOps repo (the cosign identity in SECURITY.md pins refs/heads/main)",
+        "Rollbacks in the GitOps repo are not undone by a tick, and a failing prune or token-expiry check does not trigger a rebuild",
+        "docs/kubernetes.md explains the cadence and how to deploy now"
+      ],
+      "evidence": "2026-11-16: the decide step's run block, extracted from the workflow with yq, ran against a fake gh for 7 cases: head already has an image -> release=false; only older commits, no images, or a lookalike tag -> release=true; manual on main with an image -> release=true; manual on a feature branch -> exit 1; GHCR listing failure -> exit 1 (fails loudly, never silently skips). zizmor --offline and actionlint (docker) clean; prettier clean. Not verified on GitHub: a real scheduled or manual run, and that GITHUB_TOKEN with packages: read can list the package versions (the prune job lists them with packages: write). First check after merge: run the workflow by hand once, then watch the first scheduled tick.",
+      "notes": "Requested by the owner: every merge was producing a chore(sbom): deploy commit in jsundquist/k8s-gitops. Interval is the cron line (17 */4 * * *, off the hour because GitHub delays top-of-hour runs). Rejected signals for 'already released': the tag pinned in the GitOps repo (a tick would undo a manual rollback), the last successful run of this workflow (token-expiry fails by design for 14 days before expiry, which would rebuild every tick), a moving 'deployed' git tag (needs contents: write). Not changed: sbom.yml still uploads this repo's SBOM to the dashboard on every push; it does not touch the GitOps repo. Possible follow-up: skip releases whose only changes are docs, tests and scripts.",
+      "labels": [
+        "ready-for-agent"
+      ]
     }
   ]
 }
