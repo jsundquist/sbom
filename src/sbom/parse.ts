@@ -15,8 +15,12 @@ export interface ParsedComponent {
   supplier: string | null;
 }
 
-/** Identifies a component within one SBOM: package and version, or the name when there is no purl. */
-export const componentKey = (c: Pick<ParsedComponent, 'packageKey' | 'name' | 'version'>) => `${c.packageKey ?? c.name}@${c.version}`;
+/**
+ * Identifies a component within one SBOM: package and version, or the name when there is no purl. A missing version is an
+ * empty suffix, not the text "null": normalize() turns '' into null, so no real version is empty and an unversioned
+ * component cannot collide with one whose version is the string "null".
+ */
+export const componentKey = (c: Pick<ParsedComponent, 'packageKey' | 'name' | 'version'>) => `${c.packageKey ?? c.name}@${c.version ?? ''}`;
 
 export interface ParsedSbom {
   format: 'CycloneDX' | 'SPDX';
