@@ -1081,7 +1081,7 @@
       "epic": "F",
       "size": "S",
       "priority": 1.7,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "STALE_AFTER_DAYS in env.ts, .env.example and README (default 14; 0 disables)",
@@ -1089,7 +1089,7 @@
         "Stale chip and sortable column on the projects grid and the project page; overview tile counts stale Projects",
         "A Project with no SBOM is not reported stale"
       ],
-      "evidence": "",
+      "evidence": "2026-11-16: tests/unit/stale.test.ts written first (module missing), then 8 green; pnpm run lint, pnpm test (293) and pnpm run test:e2e (14, throwaway Postgres 16) green. Checked against the built app with payments-api backdated 30 days: overview tile reads \"1 stale\", the project page shows the chip with the upload date, GET /api/v1/projects returns stale true only for it, a fresh project shows no chip. The grid column is not visually checked (client-rendered DataGrid).",
       "notes": "Idea 7 of the review: an abandoned CI pipeline must not look healthy. Missing commit_sha/ref is a separate, smaller signal and out of scope here.",
       "labels": [
         "ready-for-agent"

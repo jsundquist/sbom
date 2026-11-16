@@ -66,6 +66,8 @@ const schema = z.object({
   VULN_TTL_HOURS: z.coerce.number().positive().default(12),
   /** A package whose latest release is older than this many years is flagged as abandoned. */
   ABANDONED_AFTER_YEARS: z.coerce.number().positive().default(2),
+  /** Flag a project as stale when its latest SBOM was uploaded longer ago than this many days; 0 disables. */
+  STALE_AFTER_DAYS: z.coerce.number().int().nonnegative().default(14),
   LATEST_TTL_HOURS: z.coerce.number().positive().default(24),
   SCORECARD_TTL_HOURS: z.coerce.number().positive().default(168),
   KEV_TTL_HOURS: z.coerce.number().positive().default(24),

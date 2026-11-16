@@ -15,7 +15,7 @@ import { getDependencyGraph, getProject } from '@/server/inventory';
 import { getProjectTrend } from '@/server/trends';
 import { VulnerabilityTrendChart } from '@/components/charts';
 import { ComponentsGrid } from '@/components/ComponentsGrid';
-import { PendingChip, SeverityCounts } from '@/components/chips';
+import { PendingChip, SeverityCounts, StaleChip } from '@/components/chips';
 import { DateTime } from '@/components/DateTime';
 import { DependencyTree } from '@/components/DependencyTree';
 import { ProjectTabs } from '@/components/ProjectTabs';
@@ -69,6 +69,12 @@ export default async function ProjectPage({
               <>
                 {' · uploaded '}
                 <DateTime value={sbom.uploadedAt} />
+                {project.stale && (
+                  <>
+                    {' '}
+                    <StaleChip uploadedAt={project.latest?.uploadedAt} />
+                  </>
+                )}
               </>
             )}
           </Box>

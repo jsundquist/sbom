@@ -18,6 +18,7 @@ import { comparePriority } from '@/lib/priority';
 import { scorecardStatus, weakestChecks, type ScorecardCheck, type ScorecardStatus } from '@/lib/scorecard';
 import { env } from '@/lib/env';
 import { maintenanceFlags, type Maintenance } from '@/lib/maintenance';
+import { isStale } from '@/lib/stale';
 import { loadExploitSignals, type ExploitSignals } from './exploit-signals';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';
 
@@ -294,6 +295,8 @@ export interface ProjectSummary {
   updatedAt: string;
   uploadCount: number;
   latest: SbomInfo | null;
+  /** The latest SBOM is older than STALE_AFTER_DAYS; false for a project with no SBOM. */
+  stale: boolean;
   stats: Stats;
 }
 
@@ -344,6 +347,7 @@ async function projectRows(db: Db, filter?: ReturnType<typeof eq>) {
 }
 
 function toProject(r: Awaited<ReturnType<typeof projectRows>>[number], stats: Stats): ProjectSummary {
+  const latest = r.sbom ? toSbomInfo(r.sbom as Parameters<typeof toSbomInfo>[0]) : null;
   return {
     id: r.id,
     name: r.name,
@@ -351,7 +355,8 @@ function toProject(r: Awaited<ReturnType<typeof projectRows>>[number], stats: St
     createdAt: iso(r.createdAt)!,
     updatedAt: iso(r.updatedAt)!,
     uploadCount: r.uploadCount,
-    latest: r.sbom ? toSbomInfo(r.sbom as Parameters<typeof toSbomInfo>[0]) : null,
+    latest,
+    stale: isStale(latest?.uploadedAt, new Date(), env().STALE_AFTER_DAYS),
     stats,
   };
 }
@@ -669,6 +674,7 @@ export async function getOverview(db: Db) {
   ]);
   return {
     projectCount: projectList.length,
+    staleProjects: projectList.filter((p) => p.stale).length,
     packageCount: pkgs.length,
     vulnerablePackages: pkgs.filter((p) => p.vulnCount).length,
     outdatedPackages: pkgs.filter((p) => p.outdated).length,

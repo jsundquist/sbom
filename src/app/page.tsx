@@ -9,7 +9,7 @@ import { AccessGate } from '@/components/AccessGate';
 import { getOverview } from '@/server/inventory';
 import { getSummaryTrend } from '@/server/trends';
 import { requestOrigin } from '@/server/origin';
-import { KevChip, PendingChip, SeverityCounts } from '@/components/chips';
+import { KevChip, PendingChip, SeverityCounts, StaleChip } from '@/components/chips';
 import { ProjectRiskChart, SeverityBarChart, VulnerabilityTrendChart } from '@/components/charts';
 import { DateTime } from '@/components/DateTime';
 import { FixFirstList } from '@/components/FixFirstList';
@@ -43,7 +43,13 @@ export default async function OverviewPage() {
       <PageHeader title="Overview" subtitle={`Latest SBOM of each of ${data.projectCount} applications`} />
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatTile label="Applications" value={data.projectCount} hint={`${stats.components.toLocaleString()} package references`} />
+          <StatTile label="Applications" value={data.projectCount} hint={`${stats.components.toLocaleString()} package references`}>
+            {data.staleProjects > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <StaleChip count={data.staleProjects} />
+              </Box>
+            )}
+          </StatTile>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatTile
