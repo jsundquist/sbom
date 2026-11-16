@@ -1,0 +1,5 @@
+# Reads from scripts use `READ_TOKENS`, and deletes use `ADMIN_TOKENS`
+
+Owner-only sign-in (ADR 0001) means only a browser session can read, so scripts, `/metrics` and the MCP server have no way in. We add `READ_TOKENS`, an env var of bearer secrets like `UPLOAD_TOKENS`, accepted by `requireOwner()` for `GET /api/v1/*` and `/metrics` only, compared in constant time and fail-closed in production. Read tokens never open pages and never write; sessions stay cookie-only. At the same time `DELETE /api/v1/projects/[id]` moves to its own `ADMIN_TOKENS`, because the secret every repo's CI holds for uploading must not also be able to delete any Project and cascade its history.
+
+We chose env vars over a hashed-token table with a UI: with one Owner there is no one to delegate to, rotation is a redeploy, and secrets stay out of Postgres. Revisit if per-token revocation or "last used" is wanted. Token use is attributed in the audit trail by a short fingerprint of the token, never the token. Rejected: letting the upload token read (it lives in every repo's secrets), and a single "api token" with scopes (one leaked CI secret would carry all of them).

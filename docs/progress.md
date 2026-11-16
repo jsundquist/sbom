@@ -6,7 +6,16 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: pick the lowest-priority `todo` in `docs/features.json`.
+- Next: F-001 (null-version key collision), then F-002..F-004; the order of the 2026-11-16 backlog is in its entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-16: Backlog from the codebase review (docs only)
+- Done (branch `docs/spec-hierarchy-consumption-mcp`, off main): a review of what the code structure is missing, grilled into 21 decisions and written up as ADRs 0002-0005, new CONTEXT.md terms (Project, Kind, Repository, Tag, Read token, Admin token, Stale SBOM, Scope, Upgrade, Rollup) and 35 tickets in `docs/features.json`. No code changed.
+- New epics: F foundations and trust, G organising Projects, I remediation, J dependency scope, K scale, L consuming the data (read tokens, pagination, CSV, `/metrics`, OpenAPI), M MCP server, N audit. Priorities 1-12 run ahead of the old `todo` items; four deferred ideas sit at 40+ labelled `needs-triage`.
+- Order: F-001..F-004 (bug, `ADMIN_TOKENS`, stale flag, 100-Project benchmark), then K (only what the benchmark justifies), G, L, N, I/J, M.
+- Decisions: single Owner stays; scale target is about 100 Projects x 2,000 components (this repo's own Syft SBOM is 1,975); repository is a column, not a table; kind and tags come from the Action on every upload, no UI editing; read tokens and admin tokens are env vars; MCP v1 is read-only over tracked data. A-004 marked `superseded`.
+- Corrections found while grilling: Syft emits no dependency scope, so J-001 researches how to get one; `check_before_adding` and `diff_working_tree` cannot be read-only (the app may not call OSV), so they became M-006 instead of MCP v1; the list routes take no query params today.
+- Verified: `features.json` parses, ids unique, every `depends_on` exists, no dependency cycles, F-001 is the first ready ticket. Not run: `pnpm test` (no code changed).
+- Not done: the Action inputs, schema and API are all unbuilt. UI wording still says "Application"; G-001 changes it.
 
 ## 2026-11-15: Node 26 upgrade
 - Done (branch `build/node-26`, off main): Dockerfile build and distroless runtime stages, CI and security workflows, `engines`, README/AGENTS and `.trivyignore` moved from Node 22 to 26. Dependabot's docker `node` entry ignores odd majors (25.x, 27.x, ...). Supersedes Dependabot PR #43 (25, failed `image-scan`).

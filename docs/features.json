@@ -1,5 +1,5 @@
 {
-  "_readme": "Scope boundary for agents. Work on one feature at a time. status: todo | in_progress | done | superseded. Lower priority number first; skip items whose depends_on are not done. Optional fields: epic (A prioritization/freshness, B dependency health, C reports and repo health, D tools that act, E foundations), size (S/M/L), depends_on, notes, labels (triage roles, docs/agents/triage-labels.md), parent and assignee (wayfinding, docs/agents/issue-tracker.md). Set done only after the Definition of Done in docs/WORKFLOW.md passes and put the commands/results in evidence.",
+  "_readme": "Scope boundary for agents. Work on one feature at a time. status: todo | in_progress | done | superseded. Lower priority number first; skip items whose depends_on are not done. Optional fields: epic (A prioritization/freshness, B dependency health, C reports and repo health, D tools that act, E foundations; added 2026-11-16: F foundations and trust, G organising Projects, I remediation, J dependency scope, K scale, L consuming the data, M MCP server, N audit), size (S/M/L), depends_on, notes, labels (triage roles, docs/agents/triage-labels.md), parent and assignee (wayfinding, docs/agents/issue-tracker.md). Set done only after the Definition of Done in docs/WORKFLOW.md passes and put the commands/results in evidence.",
   "features": [
     {
       "id": "F-000",
@@ -185,7 +185,7 @@
       "epic": "A",
       "size": "S-M",
       "priority": 13,
-      "status": "todo",
+      "status": "superseded",
       "depends_on": [],
       "acceptance": [
         "Migration adds release timestamps",
@@ -193,7 +193,7 @@
         "Shown on app page and projects grid"
       ],
       "evidence": "",
-      "notes": "Check the deps.dev response field names."
+      "notes": "Check the deps.dev response field names. 2026-11-16: dropped by the owner after seeing it (a release-date gap says nothing about risk; vulnerable versions are covered by Fix first and the Update chip), kept for B-002's latest_released_at."
     },
     {
       "id": "A-005",
@@ -1033,6 +1033,744 @@
       ],
       "evidence": "",
       "notes": "QUESTION: Given the data shape, which of B-001, B-004, B-005, C-001, D-002 must land first, which need re-scoping for hosts, and what are the host-only features (collector, deb ecosystem mapping in the worker, k3s version check, host view)? Output: the list of features to add to features.json with depends_on."
+    },
+    {
+      "id": "F-001",
+      "title": "Fix the null-version key collision in componentKey",
+      "epic": "F",
+      "size": "S",
+      "priority": 1.0,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "A component with a null version and one whose version is the string \"null\" get different keys",
+        "Regression test in tests/unit",
+        "Keys for versioned components are unchanged, so stored edges and dependency trees still resolve"
+      ],
+      "evidence": "",
+      "notes": "Open low finding of security audit run-2 (2026-11-12, ~/security-audit-skill/sbom/run-2/REPORT.md). componentKey in src/sbom/parse.ts builds `${key}@${version}`, so a null version becomes \"null\". Land before any hierarchy work (ADR 0004).",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "F-002",
+      "title": "ADMIN_TOKENS: DELETE /api/v1/projects/[id] stops accepting upload tokens",
+      "epic": "F",
+      "size": "S",
+      "priority": 1.35,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "ADMIN_TOKENS declared and validated in src/lib/env.ts, .env.example and the README table",
+        "DELETE accepts only an admin token (constant-time compare, same rate limit as uploads); an upload token gets 401",
+        "Fail-closed: 503 in production without ADMIN_TOKENS, mirroring uploads",
+        "The src/proxy.ts allow-list entry (method + exact path) is unchanged",
+        "README and docs/ARCHITECTURE.md#security name the breaking change for anyone deleting with an upload token",
+        "Tests cover upload token rejected, admin token accepted, unset in production"
+      ],
+      "evidence": "",
+      "notes": "ADR 0002. Mirror checkUploadToken in src/server/api.ts. Do before L-001 so read tokens do not arrive as a third secret beside an overpowered upload token.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "F-003",
+      "title": "Stale SBOM flag: STALE_AFTER_DAYS",
+      "epic": "F",
+      "size": "S",
+      "priority": 1.7,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "STALE_AFTER_DAYS in env.ts, .env.example and README (default 14; 0 disables)",
+        "Staleness derived at read time from the latest SBOM uploadedAt, in a pure src/lib helper with tests",
+        "Stale chip and sortable column on the projects grid and the project page; overview tile counts stale Projects",
+        "A Project with no SBOM is not reported stale"
+      ],
+      "evidence": "",
+      "notes": "Idea 7 of the review: an abandoned CI pipeline must not look healthy. Missing commit_sha/ref is a separate, smaller signal and out of scope here.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "F-004",
+      "title": "Benchmark: seed 100 Projects x 2,000 components and record the numbers",
+      "epic": "F",
+      "size": "M",
+      "priority": 2.05,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "A script under scripts/ seeds 100 Projects of about 2,000 synthetic components each with 20 retained SBOMs, on Postgres",
+        "Records time for listProjects, getOverview, listVulnerabilities, listPackages, getProject and the table and index sizes",
+        "Results and the targets they were judged against are written to docs/ and decide K-001, K-002 and K-003 (build, shrink or drop each)",
+        "Nothing hits the network"
+      ],
+      "evidence": "",
+      "notes": "ADR 0005. This repo alone is 1,975 components in a Syft scan, so the target is about 200k components in latest SBOMs and a few million rows with history. Set page-load targets in this ticket before measuring.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "K-001",
+      "title": "Per-project rollups written by the worker; overview and projects grid read them",
+      "epic": "K",
+      "size": "L",
+      "priority": 2.4,
+      "status": "todo",
+      "depends_on": [
+        "F-004"
+      ],
+      "acceptance": [
+        "Schema and generated migration for project_rollups (counts by severity, exploited, outdated, scope-ready columns left for J)",
+        "Worker writes rollups next to snapshots in the same run; stale rollup is visible via updated_at",
+        "Overview and projects grid read rollups; detail pages keep the scoped loadComponents",
+        "A test proves a rollup equals summarize() for the same Project",
+        "docs/ARCHITECTURE.md updated in the same commit"
+      ],
+      "evidence": "",
+      "notes": "ADR 0005. Build only if F-004 shows the overview or projects grid over target; otherwise mark superseded with the numbers.",
+      "labels": [
+        "needs-triage"
+      ]
+    },
+    {
+      "id": "K-002",
+      "title": "Skip re-ingesting an identical SBOM",
+      "epic": "K",
+      "size": "M",
+      "priority": 2.75,
+      "status": "todo",
+      "depends_on": [
+        "F-004"
+      ],
+      "acceptance": [
+        "sboms stores a content hash; uploading the same document for a Project does not write components, edges or a new history entry",
+        "The upload still returns 201 with the existing ids and refreshes uploaded_at so staleness is accurate",
+        "Test covers identical, changed and reordered documents"
+      ],
+      "evidence": "",
+      "notes": "Components are re-inserted in full on every upload. Gated on F-004 write timings.",
+      "labels": [
+        "needs-triage"
+      ]
+    },
+    {
+      "id": "K-003",
+      "title": "Reduce stored SBOM history cost",
+      "epic": "K",
+      "size": "M",
+      "priority": 3.1,
+      "status": "todo",
+      "depends_on": [
+        "F-004"
+      ],
+      "acceptance": [
+        "Choose from F-004 sizes: lower the SBOM_HISTORY_LIMIT default, drop components rows for old SBOMs while keeping the document, or move sboms.document out of Postgres",
+        "The chosen option keeps SbomHistorySelect and the SBOM download working, or states what is removed",
+        "garbageCollect() invariants in docs/ARCHITECTURE.md still hold"
+      ],
+      "evidence": "",
+      "notes": "Postgres already compresses large jsonb through TOAST, so measure before moving documents. Gated on F-004.",
+      "labels": [
+        "needs-triage"
+      ]
+    },
+    {
+      "id": "G-001",
+      "title": "Project kind: application, library, image, host",
+      "epic": "G",
+      "size": "M",
+      "priority": 3.45,
+      "status": "todo",
+      "depends_on": [
+        "F-001"
+      ],
+      "acceptance": [
+        "projects.kind column with generated migration, default application; Zod enum in upload metadata (query param and X-Sbom-Kind header)",
+        "action.yml input `kind` (default application), automatically image when `image` is set; README and example workflow updated",
+        "kind is replaced on every upload and returned by the projects API; kind chip, grid column and filter",
+        "UI headers and API docs say Project for the general concept; Application appears only as a kind value (CONTEXT.md)",
+        "No backfill; existing rows read as application until their next upload"
+      ],
+      "evidence": "",
+      "notes": "ADR 0004. B-004 dropped the original kind column; host is the home W-006 asked for, so the collector there should send kind=host.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "G-002",
+      "title": "Normalise repository to github.com/owner/repo on ingest",
+      "epic": "G",
+      "size": "S",
+      "priority": 3.8,
+      "status": "todo",
+      "depends_on": [
+        "F-001"
+      ],
+      "acceptance": [
+        "Pure normaliser in src/lib covering https, .git suffix, git@ scp form, ssh://, trailing slash, case, and non-GitHub hosts (kept as host/path)",
+        "Ingest stores the normalised value; projects.repository indexed; projects API accepts ?repository= using the normaliser on the input",
+        "Lookups also match the old unnormalised form until the Project is re-uploaded",
+        "Unit tests for each form"
+      ],
+      "evidence": "",
+      "notes": "ADR 0004. The MCP project lookup (M-002) matches a git remote against this column.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "G-003",
+      "title": "Project tags from the Action",
+      "epic": "G",
+      "size": "M",
+      "priority": 4.15,
+      "status": "todo",
+      "depends_on": [
+        "G-001"
+      ],
+      "acceptance": [
+        "projects.tags (jsonb string array) with generated migration",
+        "Zod: at most 20 tags, each 1-40 chars of [a-z0-9:_-], lower-cased and de-duplicated",
+        "action.yml input `tags` (comma-separated); replaced on every upload; shown as chips on the grid and project page",
+        "No UI or API to edit tags"
+      ],
+      "evidence": "",
+      "notes": "ADR 0004. Tags are the Owner's own organising (single Owner, CONTEXT.md).",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "G-006",
+      "title": "Accept an optional environment on upload (stored, not shown)",
+      "epic": "G",
+      "size": "S",
+      "priority": 4.5,
+      "status": "todo",
+      "depends_on": [
+        "G-001"
+      ],
+      "acceptance": [
+        "sboms.environment nullable text with generated migration; Zod: 1-40 chars [a-z0-9_-]",
+        "Action input `environment` and header X-Sbom-Environment; returned by GET /api/v1/sboms/[id]",
+        "No UI, filter or rollup built on it"
+      ],
+      "evidence": "",
+      "notes": "Deliberately minimal: what is actually deployed is the W-006 collector question. Do not add deployments or per-environment rollups here.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "G-005",
+      "title": "Show sibling Projects of the same repository",
+      "epic": "G",
+      "size": "S",
+      "priority": 4.85,
+      "status": "todo",
+      "depends_on": [
+        "G-002"
+      ],
+      "acceptance": [
+        "Projects grid gets a Repository column and filter",
+        "Project page lists other Projects with the same normalised repository, with their kind and severity counts",
+        "No DataGrid Pro row grouping (ARCHITECTURE.md decision: MIT edition only)"
+      ],
+      "evidence": "",
+      "notes": "Monorepo services are separate Projects; this is how they find each other.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "G-004",
+      "title": "Filters and group rollups on the overview",
+      "epic": "G",
+      "size": "M",
+      "priority": 5.2,
+      "status": "todo",
+      "depends_on": [
+        "G-003"
+      ],
+      "acceptance": [
+        "Overview and projects grid filter by kind, tag and repository through URL query params, so a view is a bookmark",
+        "Overview stat tiles, trend and fix-first list scope to the active filter",
+        "Page guard coverage test still passes",
+        "e2e covers a tag filter changing the counts"
+      ],
+      "evidence": "",
+      "notes": "Saved views are query strings (ADR 0004); no saved-views table. Uses K-001 rollups when they exist, otherwise the existing load.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "L-001",
+      "title": "READ_TOKENS: bearer access to GET /api/v1/* for scripts",
+      "epic": "L",
+      "size": "M",
+      "priority": 5.55,
+      "status": "todo",
+      "depends_on": [
+        "F-002"
+      ],
+      "acceptance": [
+        "READ_TOKENS in env.ts, .env.example and README; constant-time compare; fail-closed rules identical to the session gate",
+        "requireOwner() accepts a valid read token for GET /api/v1/* only; pages, /api/auth and writes never accept it; sessions still ignore Authorization",
+        "src/proxy.ts passes GET /api/v1/* with a bearer to the handler, other methods and pages unchanged; failed attempts hit the auth rate-limit bucket",
+        "tests/unit/page-auth.test.ts guard coverage and the authed Playwright project cover read token accepted, wrong token 401, token on a page ignored",
+        "docs/ARCHITECTURE.md#security updated"
+      ],
+      "evidence": "",
+      "notes": "ADR 0002. A read token has no write capability by construction.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "L-003",
+      "title": "CSV export on the grids",
+      "epic": "L",
+      "size": "S",
+      "priority": 5.9,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Projects, packages, vulnerabilities and components grids expose the MIT DataGrid CSV export, honouring current filters and sort",
+        "No Pro or Premium features",
+        "Playwright checks one download"
+      ],
+      "evidence": "",
+      "notes": "Aggregate CycloneDX/SPDX export and VEX output are deferred (L-006, L-007).",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "L-002",
+      "title": "Pagination and filters on list endpoints",
+      "epic": "L",
+      "size": "M",
+      "priority": 6.25,
+      "status": "todo",
+      "depends_on": [
+        "G-001",
+        "G-002",
+        "G-003",
+        "F-003"
+      ],
+      "acceptance": [
+        "Optional ?limit (max 1000) and ?offset with X-Total-Count; responses stay bare arrays and default to unlimited",
+        "Filters as plain query params: projects (kind, tag, repository, stale, q), packages (ecosystem, deprecated, abandoned, q), vulnerabilities (severity, exploited, project, q)",
+        "Parsing in src/lib/params.ts with Zod; invalid values are 400; route handlers stay thin and call src/server",
+        "Existing pages and tests unaffected; no ETag (ADR 0005 scale makes responses cheap)"
+      ],
+      "evidence": "",
+      "notes": "List routes take no query params today (they call listX(getDb())). J-003 adds the scope filter later.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "N-001",
+      "title": "Audit events for mutations",
+      "epic": "N",
+      "size": "M",
+      "priority": 6.6,
+      "status": "todo",
+      "depends_on": [
+        "F-002"
+      ],
+      "acceptance": [
+        "events table (at, kind upload|delete|prune, project_id set null on delete, project_name, token_fingerprint, detail jsonb) with generated migration",
+        "Written in the same transaction as the upload, delete and prune; the fingerprint is a short hash of the token, never the token",
+        "GET /api/v1/events with the pagination params of L-002 conventions; owner-gated",
+        "Test: deleting a Project leaves an event naming it"
+      ],
+      "evidence": "",
+      "notes": "Mutations only (decision, ADR 0002). Also the source D-002 notifications can read.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "N-002",
+      "title": "Structured logs for read-token use",
+      "epic": "N",
+      "size": "S",
+      "priority": 6.95,
+      "status": "todo",
+      "depends_on": [
+        "L-001"
+      ],
+      "acceptance": [
+        "One JSON line per read-token request on stdout: method, path, status, token fingerprint, duration",
+        "Never logs the token, query strings with free text, or response bodies",
+        "Test captures the line"
+      ],
+      "evidence": "",
+      "notes": "Not stored in Postgres: an agent will call this far more often than a person clicks.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "L-004",
+      "title": "Prometheus /metrics",
+      "epic": "L",
+      "size": "M",
+      "priority": 7.3,
+      "status": "todo",
+      "depends_on": [
+        "L-001",
+        "F-003",
+        "K-001"
+      ],
+      "acceptance": [
+        "GET /metrics in text exposition format behind READ_TOKENS (401 otherwise; added to the proxy allow-list by exact path)",
+        "Gauges labelled only by project and severity: vulnerabilities, exploited, SBOM age in seconds, stale; plus worker last successful run timestamp",
+        "No package or CVE labels (bounded cardinality); reads rollups, not components",
+        "Documented with an example scrape config in the README"
+      ],
+      "evidence": "",
+      "notes": "If F-004 shows K-001 is unnecessary, drop that dependency and read the existing project stats.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "I-001",
+      "title": "aggregateUpgrades(): ranked package upgrades that retire the most risk",
+      "epic": "I",
+      "size": "M",
+      "priority": 7.65,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Pure function next to aggregateVulnerabilities over InventoryComponent[]; unit tests on PGlite fixtures",
+        "Per package version: the lowest fixed version within the current major (primary) and the lowest clearing every CVE (a major bump), each with the CVEs cleared and the affected Projects",
+        "Transitives report the vulnerable package and its direct parent path from the dependency graph, with no claim the parent drops it",
+        "Ranked with the A-003 priority rank (KEV > EPSS > CVSS), summed over cleared CVEs; packages with no fixed version are listed separately"
+      ],
+      "evidence": "",
+      "notes": "Idea 3 of the review. Reuses src/lib/version.ts and src/lib/priority.ts; no new query path (ADR 0005 keeps scoped in-memory loads).",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "I-002",
+      "title": "Upgrades page and GET /api/v1/upgrades",
+      "epic": "I",
+      "size": "M",
+      "priority": 8.0,
+      "status": "todo",
+      "depends_on": [
+        "I-001",
+        "L-002"
+      ],
+      "acceptance": [
+        "/upgrades page with requireOwnerPage() and a route with requireOwner(); both in the guard coverage test",
+        "Table: package, from, target, CVEs cleared, Projects affected; per-Project view on the project page; link from the overview fix-first list",
+        "API supports the L-002 pagination and project filter",
+        "e2e covers the page"
+      ],
+      "evidence": "",
+      "notes": "Needs the fix-first list context: this ranks actions, the list ranks CVEs.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "J-001",
+      "title": "Research: how to get a prod-only SBOM from Syft",
+      "epic": "J",
+      "size": "S",
+      "priority": 8.35,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Measured on this repo and one image: component counts for the full scan and a prod-only scan, and the exact Syft/pnpm invocation that produces each",
+        "Recommendation among: a second scan whose difference is dev, a Syft config option, or a lockfile-derived dev list sent as metadata",
+        "Findings written to docs/ and linked from J-002"
+      ],
+      "evidence": "",
+      "notes": "Syft 2026-11 emits no scope and no dev marker; a scan of this repo gives 1,975 components with vitest, typescript and eslint indistinguishable from runtime packages. CycloneDX scope is required/optional/excluded, not dev/runtime.",
+      "labels": [
+        "wayfinder:research",
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "J-002",
+      "title": "Store component scope from the Action",
+      "epic": "J",
+      "size": "M",
+      "priority": 8.7,
+      "status": "todo",
+      "depends_on": [
+        "J-001"
+      ],
+      "acceptance": [
+        "components.scope (runtime | dev | unknown) with generated migration, default unknown",
+        "Action marks dev packages by the mechanism J-001 chose; the upload contract and README updated",
+        "Uploads without scope data still ingest as unknown"
+      ],
+      "evidence": "",
+      "notes": "No change to ranking (CONTEXT.md: Scope).",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "J-003",
+      "title": "Scope chip and filter",
+      "epic": "J",
+      "size": "S",
+      "priority": 9.05,
+      "status": "todo",
+      "depends_on": [
+        "J-002",
+        "L-002"
+      ],
+      "acceptance": [
+        "Scope chip on component rows; scope filter in the grids and as an API param",
+        "A-003 priority ordering is unchanged and a test pins that",
+        "Rollups (K-001) gain scope-aware counts if they exist"
+      ],
+      "evidence": "",
+      "notes": "Re-ranking by scope is a separate follow-up once the data has been seen.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "L-005",
+      "title": "OpenAPI document generated from the Zod schemas",
+      "epic": "L",
+      "size": "M",
+      "priority": 9.4,
+      "status": "todo",
+      "depends_on": [
+        "L-002",
+        "I-002"
+      ],
+      "acceptance": [
+        "GET /api/v1/openapi.json, owner- or read-token-gated, generated from the request and response schemas (Zod 4 toJSONSchema)",
+        "A test fails when a route exists in src/app/api/v1 without an entry"
+      ],
+      "evidence": "",
+      "notes": "After pagination and filters, so it is generated once.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "M-001",
+      "title": "mcp/ package scaffold: stdio server over /api/v1",
+      "epic": "M",
+      "size": "M",
+      "priority": 9.75,
+      "status": "todo",
+      "depends_on": [
+        "L-001"
+      ],
+      "acceptance": [
+        "mcp/ has its own package.json and imports nothing from src/ (ESLint no-restricted-imports enforces it); the app image build is unchanged",
+        "Config from DASHBOARD_URL and DASHBOARD_READ_TOKEN; HTTP client with timeout, injectable fetch, Zod-validated responses",
+        "CI builds and tests mcp/; one smoke test over stdio against a fake fetch",
+        "README section: install and a sample client config"
+      ],
+      "evidence": "",
+      "notes": "ADR 0003. Whether mcp/ joins the pnpm workspace is decided here by whether it disturbs the Dockerfile.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "M-002",
+      "title": "MCP tools: my_project_status and list_vulnerabilities",
+      "epic": "M",
+      "size": "M",
+      "priority": 10.1,
+      "status": "todo",
+      "depends_on": [
+        "M-001",
+        "L-002",
+        "G-002"
+      ],
+      "acceptance": [
+        "my_project_status resolves the current git remote through the G-002 normaliser to a Project via ?repository= and returns severity counts, KEV count and the fix-first list; clear message when the repo is not tracked",
+        "list_vulnerabilities filters by project, severity, exploited and an EPSS threshold, and is paginated",
+        "Read-only: no tool writes"
+      ],
+      "evidence": "",
+      "notes": "ADR 0003.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "M-003",
+      "title": "MCP tools: explain_vulnerability and who_uses_package",
+      "epic": "M",
+      "size": "M",
+      "priority": 10.45,
+      "status": "todo",
+      "depends_on": [
+        "M-002"
+      ],
+      "acceptance": [
+        "explain_vulnerability returns the affected package, fixed versions and the dependency path from the B-006 data",
+        "who_uses_package takes a name or purl and returns Projects and versions",
+        "Free text (summary, details, package descriptions) is truncated to 500 characters and returned in a separate field named untrusted; never placed in tool descriptions",
+        "A test feeds an advisory containing instructions and asserts it appears only in the untrusted field"
+      ],
+      "evidence": "",
+      "notes": "ADR 0003, prompt-injection requirement.",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "M-004",
+      "title": "MCP tool: suggest_upgrades",
+      "epic": "M",
+      "size": "S",
+      "priority": 10.8,
+      "status": "todo",
+      "depends_on": [
+        "M-003",
+        "I-002"
+      ],
+      "acceptance": [
+        "Wraps GET /api/v1/upgrades for the current Project or all Projects, paginated",
+        "Same untrusted-text rule"
+      ],
+      "evidence": "",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "M-005",
+      "title": "MCP docs and example client configs",
+      "epic": "M",
+      "size": "S",
+      "priority": 11.15,
+      "status": "todo",
+      "depends_on": [
+        "M-003"
+      ],
+      "acceptance": [
+        "Documents the tools, the token setup (a READ_TOKENS entry) and example configs for Claude Code and a generic MCP client",
+        "States plainly what v1 cannot answer: packages the dashboard has not scanned (see M-006)"
+      ],
+      "evidence": "",
+      "labels": [
+        "ready-for-agent"
+      ]
+    },
+    {
+      "id": "M-006",
+      "title": "Decide on-demand scanning for unseen packages (check_before_adding, diff_working_tree)",
+      "epic": "M",
+      "size": "S",
+      "priority": 11.5,
+      "status": "todo",
+      "depends_on": [
+        "D-001",
+        "M-003"
+      ],
+      "acceptance": [
+        "An ADR chooses the write path, which token authorises it, how an ephemeral SBOM is stored so it never becomes latest_sbom_id, and how a client polls for the worker's result",
+        "D-001 and this ticket agree on one mechanism rather than two"
+      ],
+      "evidence": "",
+      "notes": "ADR 0003 left this out of v1 because the app may not call OSV and a read token must not write. Run the grilling skill before building.",
+      "labels": [
+        "wayfinder:grilling",
+        "needs-triage"
+      ]
+    },
+    {
+      "id": "K-004",
+      "title": "Idea: worker concurrency (FOR UPDATE SKIP LOCKED) and OSV modified-since feed",
+      "epic": "K",
+      "size": "L",
+      "priority": 40,
+      "status": "todo",
+      "depends_on": [
+        "F-004"
+      ],
+      "acceptance": [
+        "Several workers claim due rows without double work; new CVEs are noticed from the OSV change feed instead of a full rescan"
+      ],
+      "evidence": "",
+      "notes": "Only if F-004 or an upload backlog shows the single polling worker is the limit (ADR 0005).",
+      "labels": [
+        "needs-triage"
+      ]
+    },
+    {
+      "id": "L-006",
+      "title": "Idea: aggregate CycloneDX/SPDX export across Projects",
+      "epic": "L",
+      "size": "M",
+      "priority": 41,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Download a single SBOM of everything tracked, or per tag, in CycloneDX and SPDX"
+      ],
+      "evidence": "",
+      "notes": "Deferred from the consumption review.",
+      "labels": [
+        "needs-triage"
+      ]
+    },
+    {
+      "id": "L-007",
+      "title": "Idea: VEX export",
+      "epic": "L",
+      "size": "M",
+      "priority": 42,
+      "status": "todo",
+      "depends_on": [
+        "D-004"
+      ],
+      "acceptance": [
+        "Accepted risks exported as OpenVEX and CycloneDX VEX"
+      ],
+      "evidence": "",
+      "notes": "Needs D-004.",
+      "labels": [
+        "needs-triage"
+      ]
+    },
+    {
+      "id": "F-005",
+      "title": "Idea: verify SBOM uploads with a GitHub OIDC token",
+      "epic": "F",
+      "size": "L",
+      "priority": 43,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "An upload is accepted only when a signed GitHub OIDC token matches the Project repository and an expected workflow"
+      ],
+      "evidence": "",
+      "notes": "Deferred: with one Owner controlling every repo, the threat (someone else's CI uploading under your name) is small. Upload tokens prove possession of the secret, not the repo.",
+      "labels": [
+        "needs-triage"
+      ]
     }
   ]
 }
