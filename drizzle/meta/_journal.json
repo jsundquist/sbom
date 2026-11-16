@@ -50,6 +50,13 @@
       "when": 1794161230805,
       "tag": "0006_brainy_the_anarchist",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794871258119,
+      "tag": "0007_lumpy_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

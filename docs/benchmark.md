@@ -90,31 +90,32 @@ fast because `ComponentScope` narrows the join in SQL.
 
 ### Uploads
 
-| Case | Target ms | As the schema ships | With indexes on `component_edges(parent_id)` and `(child_id)` |
+| Case | Target ms | Before F-006 | After F-006 (migration 0007, fresh seed) |
 |---|---:|---:|---:|
-| ingestSbom, identical re-upload | 2000 | **timed out after 120 s** | 416 ms |
-| ingestSbom, 5 components changed | 2000 | **timed out after 120 s** | 406 ms |
+| ingestSbom, identical re-upload | 2000 | **timed out after 120 s** | 383 ms |
+| ingestSbom, 5 components changed | 2000 | **timed out after 120 s** | 377 ms |
 
 The upload is not slow for the reason K-002 assumed (re-inserting 2,000 components). Every upload prunes the Project's oldest
 SBOM, and deleting an SBOM cascades to its components. `component_edges.parent_id` and `child_id` are foreign keys to
 `components` with `ON DELETE CASCADE` and have no index, so Postgres scans all 4.3M edges for each of the 2,000 deleted
 components. One prune ran for over 9 minutes in the first attempt; the failing statement was
-`DELETE FROM ONLY "public"."component_edges" WHERE $1 = "child_id"`. Two indexes fix it: 410 ms per upload, for 160 MB more index.
+`DELETE FROM ONLY "public"."component_edges" WHERE $1 = "child_id"`. Two indexes fix it (F-006, migration 0007): about 380 ms per upload. Before the migration existed the same two
+indexes were created by hand on the seeded database and measured 416 and 406 ms.
 
 The seed never deletes, so this only shows up when an upload prunes. The cost grows with the total number of edges in the
 database, not with the size of the SBOM being uploaded, so it was not measured at smaller sizes and may already be noticeable on a
-smaller inventory with a full history. It is tracked as F-006.
+smaller inventory with a full history. Fixed by F-006.
 
 ### Size
 
 | Table | Rows | Total | of which indexes |
 |---|---:|---:|---:|
 | components | 4.0M | 719 MB | 154 MB |
-| component_edges | 4.3M | 305 MB | 123 MB (283 MB with the two new indexes) |
+| component_edges | 4.3M | 503 MB | 322 MB (was 305 MB and 123 MB before F-006) |
 | sboms | 2,000 | 246 MB | 0.1 MB |
 | everything else | | under 10 MB | |
 
-Database: **1.26 GB** (1.42 GB with the new indexes). `sboms.document` is 246 MB for 2,000 documents because Postgres compresses large
+Database: **1.45 GB** (was 1.26 GB before F-006; the indexes cost about 200 MB when built during the seed, 160 MB when created afterwards on a populated table). `sboms.document` is 246 MB for 2,000 documents because Postgres compresses large
 `jsonb` values; it is not the biggest table.
 
 ## Decisions
@@ -122,9 +123,9 @@ Database: **1.26 GB** (1.42 GB with the new indexes). `sboms.document` is 246 MB
 | Ticket | Rule | Result | Decision |
 |---|---|---|---|
 | K-001 per-project rollups | any whole-inventory read over target, or memory over | four reads at 1.6-1.9 s, 1,208 MB | **build, with a wider scope** (below) |
-| K-002 skip identical SBOMs | upload over target | 410 ms once indexed | **drop**; the cost was the prune, tracked as F-006 |
-| K-003 history cost | database over 5 GB | 1.26 GB | **drop**; revisit at about 4x this size |
-| F-006 (new) | outside the rules | upload does not finish without the indexes | **build first** |
+| K-002 skip identical SBOMs | upload over target | about 380 ms after F-006 | **drop**; the cost was the prune, fixed by F-006 |
+| K-003 history cost | database over 5 GB | 1.45 GB | **drop**; revisit at about 3x this size |
+| F-006 | outside the rules | upload did not finish without the indexes | **done**: two indexes, migration 0007 |
 
 K-001 as written covers the overview and projects grid. The packages and vulnerabilities grids are just as slow and read the same
 load, and per-Project rollups do not help them, because they aggregate across Projects. The ticket now says what has to be true

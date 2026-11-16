@@ -1,0 +1,2 @@
+CREATE INDEX "component_edges_parent_idx" ON "component_edges" USING btree ("parent_id");--> statement-breakpoint
+CREATE INDEX "component_edges_child_idx" ON "component_edges" USING btree ("child_id");

@@ -45,7 +45,7 @@ blocks in `eslint.config.mjs`); `components/` may import only types from `db/` a
 | `projects` | An application or library | `name` unique; `latest_sbom_id` points at newest SBOM |
 | `sboms` | One uploaded document | Raw `document` jsonb kept; pruned to `SBOM_HISTORY_LIMIT` per project |
 | `components` | Package entries of one SBOM | Cascade-deleted with the SBOM; `package_key` = `<ecosystem>:<name>` |
-| `component_edges` | "parent depends on child" within one SBOM | Null `parent_id` = the application depends on the child directly; no null rows = direct dependencies unknown. Cascade-deleted with the SBOM |
+| `component_edges` | "parent depends on child" within one SBOM | Null `parent_id` = the application depends on the child directly; no null rows = direct dependencies unknown. Cascade-deleted with the SBOM. Indexed on `sbom_id`, `parent_id` and `child_id`: the last two are cascading foreign keys to `components`, and without them every deleted component scans all edges, which made pruning history take minutes at 4M edges (F-006, `docs/benchmark.md`) |
 | `packages` | Distinct package, version independent | Holds `latest_version`, `latest_checked_at`, `latest_released_at`, `deprecated`, `deprecated_reason`, and the OpenSSF Scorecard (`source_repo`, `scorecard_score`, `scorecard_checks`, `scorecard_checked_at`, `scorecard_error`) |
 | `package_versions` | A version in use | `vulns_checked_at` drives the scan queue |
 | `vulnerabilities` | OSV record (GHSA/CVE/...) | `severity` enum, CVSS `score`/`vector` |

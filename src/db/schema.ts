@@ -89,7 +89,13 @@ export const componentEdges = pgTable(
       .notNull()
       .references(() => components.id, { onDelete: 'cascade' }),
   },
-  (t) => [index('component_edges_sbom_idx').on(t.sbomId)],
+  // parent_id and child_id are cascading foreign keys to components. Deleting a component (which pruning an old SBOM does)
+  // looks up its edges through them, so without these indexes each deleted component scans every edge (F-006).
+  (t) => [
+    index('component_edges_sbom_idx').on(t.sbomId),
+    index('component_edges_parent_idx').on(t.parentId),
+    index('component_edges_child_idx').on(t.childId),
+  ],
 );
 
 /** A distinct package (version independent), e.g. "npm:lodash". Enriched with the latest release. */
