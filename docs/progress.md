@@ -6,7 +6,15 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: F-004 (100-Project benchmark), then K (only what it justifies) and G; the order of the 2026-11-16 backlog is in its entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+- Next: F-006 (index `component_edges`; uploads do not finish without it at scale), then K-001 (rescoped) and G; Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-16: F-004 Scale benchmark
+- Done (branch `feat/f-004-benchmark`, off main): `scripts/benchmark-seed.ts` (deterministic synthetic data: packages, versions, vulnerabilities with KEV and EPSS, Projects with 20 SBOMs each, edges, 90 days of snapshots) and `scripts/benchmark.ts` (`pnpm run bench seed|measure [--only reads|uploads]`, `BENCH_DATABASE_URL` only, refuses a database that already has Projects). Results, targets and decision rules are in `docs/benchmark.md`.
+- Verified: new `tests/unit/benchmark-seed.test.ts` failed first (module missing), then 4 green; `pnpm run lint` and `pnpm test` (289) green. Ran the real thing on Postgres 16: 100 Projects x 2,000 components x 20 SBOMs in 163 s (4.0M component rows, 4.3M edges, 1.26 GB).
+- Findings: (1) the projects grid, overview, vulnerabilities grid and packages grid take 1.6-1.9 s against a 1 s target, peak RSS 1,208 MB against 1,024, and all four are bound by one `loadComponents()` of ~200k rows (1.7 s; aggregation is 8-255 ms). (2) Uploads do not finish within 120 s as the schema ships: pruning the oldest SBOM cascades to components, and the foreign keys from `component_edges` have no index, so each deleted component scans every edge. With two indexes an upload takes ~410 ms. (3) Single-subject pages are fast (6-27 ms).
+- Decisions: K-001 is built and rescoped to all four pages (per-project rollups alone would not fix the packages and vulnerabilities grids); K-002 and K-003 are `superseded` (upload is fine once indexed; 1.26 GB against 5 GB); new ticket F-006 for the indexes, ahead of K-001.
+- Not done: the worker at this size, concurrent requests, browser rendering, a tuned Postgres (listed in `docs/benchmark.md`).
+- Gotchas: run `measure` in a fresh process after `seed`, or the memory figure includes seeding. A statement timeout surfaces as `error.cause.code === '57014'` because drizzle wraps driver errors. The uploads add SBOMs to the throwaway database, so reseed an empty one before comparing runs. Rebased onto main after F-003 merged (#59); the only conflict was the Next line in this file.
 
 ## 2026-11-16: F-003 Stale SBOM flag
 - Done (branch `feat/f-003-stale-sbom`, off main after F-002 merged in #58): `STALE_AFTER_DAYS` (default 14, `0` disables); `isStale()` in `src/lib/stale.ts`; `ProjectSummary.stale` and `getOverview().staleProjects`, both derived at read time (nothing stored). `StaleChip` on a new sortable boolean Stale column of the projects grid, beside "uploaded" on the project page, and as an "N stale" chip in the overview's Applications tile. The flag also appears in `GET /api/v1/projects[/id]`.

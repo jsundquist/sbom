@@ -32,6 +32,7 @@ This file is the entry point for any coding agent. `CLAUDE.md` imports it. Keep 
 | `pnpm run db:generate` | Generate a migration after editing `src/db/schema.ts` |
 | `pnpm run db:migrate` / `db:seed` | Apply migrations / load demo data |
 | `pnpm run dev` / `pnpm run worker` | Web app on :3000 / enrichment worker |
+| `pnpm run bench` | Scale benchmark on a throwaway Postgres (`BENCH_DATABASE_URL`); see `docs/benchmark.md` |
 
 ## Layering rules (enforce these)
 

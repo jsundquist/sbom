@@ -107,6 +107,7 @@ All env vars are declared and validated in `src/lib/env.ts` (Zod) and documented
 | Pure logic | `tests/unit/lib.test.ts` | Vitest, no DB |
 | Ingest, inventory, enrichment, API routes | `tests/unit/api.test.ts` | Vitest + in-process Postgres (PGlite) via `createTestDb()`; `fakeFetch()` stands in for OSV/deps.dev; routes called as functions |
 | UI journeys | `tests/e2e/dashboard.spec.ts` | Playwright against a built app and real Postgres, seeded in `global-setup.ts` (auth off) |
+| Scale | `scripts/benchmark.ts` | `pnpm run bench seed` then `measure` on a throwaway Postgres (`BENCH_DATABASE_URL`): 100 Projects x 2,000 components x 20 SBOMs, synthetic and deterministic; targets, rules and results in `docs/benchmark.md` |
 | Owner-only gate | `tests/e2e/auth.spec.ts` | Playwright `authed` project: second server with auth on, forged session cookie |
 
 Fixtures in `tests/fixtures/`. Tests never touch the network.
