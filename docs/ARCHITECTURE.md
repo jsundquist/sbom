@@ -92,7 +92,7 @@ Pages use `export const dynamic = 'force-dynamic'`.
 
 ## API surface (`/api/v1`)
 
-`POST sboms` (auth), `GET sboms/[id]`, `GET projects[/id]`, `DELETE projects/[id]` (auth), `GET packages[/key]`,
+`POST sboms` (auth), `GET sboms/[id]`, `GET projects[/id]`, `DELETE projects/[id]` (admin token), `GET packages[/key]`,
 `GET vulnerabilities[/id]`, `GET summary`, `GET summary/trends`, `GET projects/[id]/trends` (both read `project_snapshots` via `src/server/trends.ts`), `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database). Errors are `{ "error": string }` via `jsonError`.
 
 ## Configuration
@@ -113,8 +113,8 @@ Fixtures in `tests/fixtures/`. Tests never touch the network.
 
 ## Security
 
-Implemented: upload bearer tokens (constant-time compare); fail-closed uploads (503) in production without
-`UPLOAD_TOKENS` unless `ALLOW_OPEN_UPLOADS=true`; `MAX_UPLOAD_BYTES` enforced while streaming (413); in-memory write rate
+Implemented: upload bearer tokens (constant-time compare); a separate `ADMIN_TOKENS` list for `DELETE /api/v1/projects/[id]` (F-002, ADR 0002), so the secret every repo's CI holds cannot delete; fail-closed uploads and deletes (503) in production without
+`UPLOAD_TOKENS` / `ADMIN_TOKENS` unless `ALLOW_OPEN_UPLOADS=true`; `MAX_UPLOAD_BYTES` enforced while streaming (413); in-memory write rate
 limit (`WRITE_RATE_LIMIT`, 429, keyed on `X-Forwarded-For` only with `TRUST_PROXY=true`; per web process); CSP and
 baseline headers from `src/lib/security-headers.ts` (`'unsafe-inline'` for Next bootstrap scripts and MUI styles); Zod on all
 external input; compose requires `POSTGRES_PASSWORD`, binds Postgres to loopback, and runs containers with `cap_drop: ALL`,

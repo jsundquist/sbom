@@ -15,7 +15,7 @@ function isOpenPath(path: string): boolean {
 }
 
 /**
- * The two bearer-token routes keep their own UPLOAD_TOKENS check. Matched by method and exact path only, so a bearer
+ * The two bearer-token routes keep their own check (UPLOAD_TOKENS for the upload, ADMIN_TOKENS for the delete). Matched by method and exact path only, so a bearer
  * header on any other request gains nothing here.
  */
 function isBearerRoute(method: string, path: string): boolean {

@@ -1059,7 +1059,7 @@
       "epic": "F",
       "size": "S",
       "priority": 1.35,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "ADMIN_TOKENS declared and validated in src/lib/env.ts, .env.example and the README table",
@@ -1069,7 +1069,7 @@
         "README and docs/ARCHITECTURE.md#security name the breaking change for anyone deleting with an upload token",
         "Tests cover upload token rejected, admin token accepted, unset in production"
       ],
-      "evidence": "",
+      "evidence": "2026-11-16: tests/unit/admin-token.test.ts written first (5 of 8 failing: upload token still deleted, admin token unknown, production not fail-closed for deletes), then green; pnpm run lint, pnpm test (285) and pnpm run test:e2e (14, throwaway Postgres 16) green.",
       "notes": "ADR 0002. Mirror checkUploadToken in src/server/api.ts. Do before L-001 so read tokens do not arrive as a third secret beside an overpowered upload token.",
       "labels": [
         "ready-for-agent"

@@ -50,6 +50,7 @@ environment. Parsed and validated with Zod in `src/lib/env.ts`; invalid values c
 | `NEXTAUTH_SECRET` | yes in prod, 32+ chars | **yes** | web | `<openssl rand -hex 32>` |
 | `GITHUB_CLIENT_SECRET` | yes in prod | **yes** | web | `<oauth app client secret>` |
 | `UPLOAD_TOKENS` | yes unless `ALLOW_OPEN_UPLOADS=true` | **yes** | web | `<token1>,<token2>` |
+| `ADMIN_TOKENS` | yes unless `ALLOW_OPEN_UPLOADS=true`; deletes only | **yes** | web | `<token>` |
 | `GITHUB_CLIENT_ID` | yes in prod | no | web | `<oauth app client id>` |
 | `OWNER_GITHUB_ID` | yes in prod; the numeric GitHub user id, not the login | no | web | `1234567` |
 | `NEXTAUTH_URL` | yes in prod; http(s) URL | no | web | `https://sbom.digital-portfolio.net` |
@@ -65,7 +66,7 @@ environment. Parsed and validated with Zod in `src/lib/env.ts`; invalid values c
 | `NODE_ENV`, `PORT`, `NEXT_TELEMETRY_DISABLED` | set by the Dockerfile (`production`, `3000`, `1`) | no | all | leave unset |
 
 Fail-closed defaults in production (`NODE_ENV=production`): reads return 503 unless all five auth vars are set and valid
-(or `ALLOW_OPEN_READS=true`), and uploads are rejected when `UPLOAD_TOKENS` is empty (unless `ALLOW_OPEN_UPLOADS=true`).
+(or `ALLOW_OPEN_READS=true`), and uploads (`UPLOAD_TOKENS`) and deletes (`ADMIN_TOKENS`) are rejected when their token list is empty (unless `ALLOW_OPEN_UPLOADS=true`).
 A pod that starts "healthy" but answers 503 to everything usually has a missing or short auth value.
 
 ### Exact values for https://sbom.digital-portfolio.net

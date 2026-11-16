@@ -11,19 +11,18 @@ function safeEqual(a: string, b: string) {
 }
 
 /**
- * Returns an error response when UPLOAD_TOKENS is configured and the request lacks a valid token.
- * With no tokens configured, uploads are open outside production; in production they fail closed
- * unless ALLOW_OPEN_UPLOADS=true.
+ * Shared by the token checks: rate limit first (so guessing is throttled), then the bearer token. With no tokens
+ * configured the action is open outside production and fails closed in production unless ALLOW_OPEN_UPLOADS=true.
  */
-export function checkUploadToken(req: Request): NextResponse | null {
+function checkBearer(req: Request, tokens: string[], names: { env: string; what: string; token: string }): NextResponse | null {
   const limited = checkRateLimit(req);
   if (limited) {
     return limited;
   }
-  const { UPLOAD_TOKENS: tokens, ALLOW_OPEN_UPLOADS, NODE_ENV } = env();
+  const { ALLOW_OPEN_UPLOADS, NODE_ENV } = env();
   if (!tokens.length) {
     if (NODE_ENV === 'production' && !ALLOW_OPEN_UPLOADS) {
-      return jsonError(503, 'Uploads are disabled: set UPLOAD_TOKENS (or ALLOW_OPEN_UPLOADS=true for local use)');
+      return jsonError(503, `${names.what} are disabled: set ${names.env} (or ALLOW_OPEN_UPLOADS=true for local use)`);
     }
     return null;
   }
@@ -31,8 +30,16 @@ export function checkUploadToken(req: Request): NextResponse | null {
   if (token && tokens.some((t) => safeEqual(t, token))) {
     return null;
   }
-  return jsonError(401, 'Invalid or missing upload token');
+  return jsonError(401, `Invalid or missing ${names.token} token`);
 }
+
+/** Uploads: a token from UPLOAD_TOKENS. Fail-closed in production without any (see checkBearer). */
+export const checkUploadToken = (req: Request) =>
+  checkBearer(req, env().UPLOAD_TOKENS, { env: 'UPLOAD_TOKENS', what: 'Uploads', token: 'upload' });
+
+/** Deletes: a token from ADMIN_TOKENS only; an upload token does not delete. Fail-closed in production without any. */
+export const checkAdminToken = (req: Request) =>
+  checkBearer(req, env().ADMIN_TOKENS, { env: 'ADMIN_TOKENS', what: 'Deletes', token: 'admin' });
 
 const windows = new Map<string, { start: number; count: number }>();
 
