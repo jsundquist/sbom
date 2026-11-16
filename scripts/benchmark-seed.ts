@@ -68,7 +68,7 @@ const CHECKS = [
   'Branch-Protection',
 ];
 
-const purlOf = (p: UniversePackage, version: string) => `pkg:${p.ecosystem}/${p.name.replace('@', '%40')}@${version}`;
+const purlOf = (p: UniversePackage, version: string) => `pkg:${p.ecosystem}/${p.name.replaceAll('@', '%40')}@${version}`;
 
 interface Ref {
   pkg: number;
