@@ -1101,7 +1101,7 @@
       "epic": "F",
       "size": "M",
       "priority": 2.05,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "A script under scripts/ seeds 100 Projects of about 2,000 synthetic components each with 20 retained SBOMs, on Postgres",
@@ -1109,15 +1109,15 @@
         "Results and the targets they were judged against are written to docs/ and decide K-001, K-002 and K-003 (build, shrink or drop each)",
         "Nothing hits the network"
       ],
-      "evidence": "",
-      "notes": "ADR 0005. This repo alone is 1,975 components in a Syft scan, so the target is about 200k components in latest SBOMs and a few million rows with history. Set page-load targets in this ticket before measuring.",
+      "evidence": "2026-11-16: scripts/benchmark.ts + scripts/benchmark-seed.ts; tests/unit/benchmark-seed.test.ts written first (module missing), then 4 green; pnpm run lint and pnpm test green. Seeded 100 Projects x 2,000 components x 20 SBOMs on Postgres 16 (163 s, 4.0M component rows, 4.3M edges, 1.26 GB) and measured: whole-inventory reads 1.63-1.90 s (target 1.0 s), peak RSS 1,208 MB (target 1,024), single-subject reads 6-27 ms, uploads did not finish within 120 s as shipped and took ~410 ms with two indexes on component_edges. Results, targets and rules in docs/benchmark.md. Reads run only on Postgres, so e2e is not affected (no page or route change).",
+      "notes": "ADR 0005. This repo alone is 1,975 components in a Syft scan, so the target is about 200k components in latest SBOMs and a few million rows with history. Set page-load targets in this ticket before measuring. Result: K-001 build (wider scope), K-002 and K-003 dropped, new F-006 (missing component_edges indexes) found.",
       "labels": [
         "ready-for-agent"
       ]
     },
     {
       "id": "K-001",
-      "title": "Per-project rollups written by the worker; overview and projects grid read them",
+      "title": "Cheaper whole-inventory reads: the four slow pages under 1 s and peak memory under 1 GB",
       "epic": "K",
       "size": "L",
       "priority": 2.4,
@@ -1126,14 +1126,13 @@
         "F-004"
       ],
       "acceptance": [
-        "Schema and generated migration for project_rollups (counts by severity, exploited, outdated, scope-ready columns left for J)",
-        "Worker writes rollups next to snapshots in the same run; stale rollup is visible via updated_at",
-        "Overview and projects grid read rollups; detail pages keep the scoped loadComponents",
-        "A test proves a rollup equals summarize() for the same Project",
-        "docs/ARCHITECTURE.md updated in the same commit"
+        "Projects grid, overview, vulnerabilities grid and packages grid each under 1,000 ms median, and peak RSS of the reads under 1,024 MB, re-measured with pnpm run bench measure --only reads on the 100 x 2,000 x 20 dataset",
+        "Approach chosen from docs/benchmark.md: per-project rollups the worker writes beside project_snapshots (schema, generated migration, worker job, a test that a rollup equals summarize() for the same Project), plus whatever the packages and vulnerabilities grids need (per-package and per-vulnerability rollups, or a cheaper loadComponents)",
+        "Detail pages keep the scoped loadComponents and stay under 500 ms",
+        "docs/ARCHITECTURE.md and docs/benchmark.md updated in the same commit"
       ],
       "evidence": "",
-      "notes": "ADR 0005. Build only if F-004 shows the overview or projects grid over target; otherwise mark superseded with the numbers.",
+      "notes": "ADR 0005. Benchmark (docs/benchmark.md, 2026-11-16): listProjects 1,672 ms, getOverview 1,898, listVulnerabilities 1,629, listPackages 1,817, peak RSS 1,208 MB. loadComponents over ~200k rows is 1.7 s on its own; aggregation is 8-255 ms. Per-project rollups alone help only the overview and projects grid; the two other grids aggregate across Projects, so rescoped. Consider splitting once the approach is chosen.",
       "labels": [
         "needs-triage"
       ]
@@ -1144,7 +1143,7 @@
       "epic": "K",
       "size": "M",
       "priority": 2.75,
-      "status": "todo",
+      "status": "superseded",
       "depends_on": [
         "F-004"
       ],
@@ -1154,9 +1153,9 @@
         "Test covers identical, changed and reordered documents"
       ],
       "evidence": "",
-      "notes": "Components are re-inserted in full on every upload. Gated on F-004 write timings.",
+      "notes": "Components are re-inserted in full on every upload. Gated on F-004 write timings. 2026-11-16: dropped by the benchmark (docs/benchmark.md). An identical re-upload takes ~410 ms at 100 x 2,000 x 20 once component_edges is indexed; the slowness was the history prune (F-006), not re-inserting components.",
       "labels": [
-        "needs-triage"
+        "wontfix"
       ]
     },
     {
@@ -1165,7 +1164,7 @@
       "epic": "K",
       "size": "M",
       "priority": 3.1,
-      "status": "todo",
+      "status": "superseded",
       "depends_on": [
         "F-004"
       ],
@@ -1175,9 +1174,9 @@
         "garbageCollect() invariants in docs/ARCHITECTURE.md still hold"
       ],
       "evidence": "",
-      "notes": "Postgres already compresses large jsonb through TOAST, so measure before moving documents. Gated on F-004.",
+      "notes": "Postgres already compresses large jsonb through TOAST, so measure before moving documents. Gated on F-004. 2026-11-16: dropped by the benchmark (docs/benchmark.md). 1.26 GB at 100 x 2,000 x 20 against a 5 GB target; sboms.document is 246 MB because jsonb is compressed. Revisit at about 4x this size.",
       "labels": [
-        "needs-triage"
+        "wontfix"
       ]
     },
     {
@@ -1770,6 +1769,26 @@
       "notes": "Deferred: with one Owner controlling every repo, the threat (someone else's CI uploading under your name) is small. Upload tokens prove possession of the secret, not the repo.",
       "labels": [
         "needs-triage"
+      ]
+    },
+    {
+      "id": "F-006",
+      "title": "Index component_edges.parent_id and child_id: pruning SBOM history scans every edge",
+      "epic": "F",
+      "size": "S",
+      "priority": 2.2,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "Generated migration (pnpm run db:generate) adds indexes on component_edges(parent_id) and component_edges(child_id)",
+        "A test checks both indexes exist, so a schema edit cannot drop them silently",
+        "pnpm run bench measure --only uploads on the seeded 100 x 2,000 x 20 dataset: identical re-upload and 5-components-changed both under 2,000 ms median (were over 120 s); numbers added to docs/benchmark.md",
+        "docs/ARCHITECTURE.md data-model notes mention why the indexes exist"
+      ],
+      "evidence": "",
+      "notes": "Found by F-004. Every upload prunes the Project's oldest SBOM; deleting it cascades to components, and the two foreign keys from component_edges to components (ON DELETE CASCADE) have no index, so each deleted component scans all edges (4.3M at the benchmark size; one prune ran over 9 minutes, failing statement DELETE FROM ONLY component_edges WHERE child_id = $1). Cost grows with total edges in the database, so it may already be noticeable below the benchmark size; not measured there. With the two indexes an upload takes ~410 ms, for +160 MB of index at the benchmark size (docs/benchmark.md). Alternative to weigh in the ticket: edges are always deleted with their own SBOM, so the two cascades are redundant work, but the foreign keys also protect integrity; the indexes are the smaller change.",
+      "labels": [
+        "ready-for-agent"
       ]
     }
   ]
