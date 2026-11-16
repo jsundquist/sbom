@@ -6,7 +6,13 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: F-001 (null-version key collision), then F-002..F-004; the order of the 2026-11-16 backlog is in its entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+- Next: F-002 (`ADMIN_TOKENS`), then F-003 and F-004; the order of the 2026-11-16 backlog is in its entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-16: F-001 null-version key collision
+- Done (branch `fix/f-001-null-version-key`, off main): `componentKey` in `src/sbom/parse.ts` now gives a missing version an empty suffix (`npm:leftpad@`) instead of the text `null`, so it no longer collides with a component whose version is the string "null". Before, `dedupe()` silently dropped one of the two.
+- Verified: new `tests/unit/component-key.test.ts` failed first (2 of 4), then passed; `pnpm run lint` and `pnpm test` (277) green. Not run: e2e (no page or route change).
+- Decisions: versioned keys are unchanged (`name@1.2.3`). Keys are in-memory only (dedupe, edge resolution in ingest), so nothing stored needs migrating.
+- Gotchas: the empty suffix is safe because `normalize()` turns an empty version into null, so no real version is empty.
 
 ## 2026-11-16: Backlog from the codebase review (docs only)
 - Done (branch `docs/spec-hierarchy-consumption-mcp`, off main): a review of what the code structure is missing, grilled into 21 decisions and written up as ADRs 0002-0005, new CONTEXT.md terms (Project, Kind, Repository, Tag, Read token, Admin token, Stale SBOM, Scope, Upgrade, Rollup) and 35 tickets in `docs/features.json`. No code changed.

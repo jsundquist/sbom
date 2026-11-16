@@ -1040,14 +1040,14 @@
       "epic": "F",
       "size": "S",
       "priority": 1.0,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "A component with a null version and one whose version is the string \"null\" get different keys",
         "Regression test in tests/unit",
         "Keys for versioned components are unchanged, so stored edges and dependency trees still resolve"
       ],
-      "evidence": "",
+      "evidence": "2026-11-16: tests/unit/component-key.test.ts written first and failed (unversioned and \"null\"-versioned leftpad collapsed to one component, 2 of 4 failing), then passed after the fix; pnpm run lint and pnpm test (277) green. Not run: e2e (no page or route change).",
       "notes": "Open low finding of security audit run-2 (2026-11-12, ~/security-audit-skill/sbom/run-2/REPORT.md). componentKey in src/sbom/parse.ts builds `${key}@${version}`, so a null version becomes \"null\". Land before any hierarchy work (ADR 0004).",
       "labels": [
         "ready-for-agent"
