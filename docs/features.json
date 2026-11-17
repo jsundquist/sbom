@@ -910,7 +910,7 @@
       "epic": "Q",
       "size": "S",
       "priority": 24.5,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "labels": [
         "ready-for-agent"
@@ -920,7 +920,7 @@
         "Entries older than the current epic move to docs/progress-archive.md; progress.md keeps Current state and recent entries",
         "pnpm run lint && pnpm test green"
       ],
-      "evidence": "",
+      "evidence": "tests/unit/progress-order.test.ts (red on the old progress.md, green now) runs in pnpm test and scripts/init.sh; 29 entries before 2026-11-16 moved to docs/progress-archive.md. See docs/progress.md 2026-11-17.",
       "notes": "Source: retro of the owner-auth session (2026-10-31). Why: agents appended the E-007 entries at the bottom despite the 'Newest first' header, and the file has grown to 160+ lines."
     },
     {
