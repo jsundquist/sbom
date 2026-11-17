@@ -40,6 +40,10 @@ inputs:
     description: What this project is - application, library, image or host. Sent on every upload and replaces the stored value. Defaults to application, or image when the image input is set.
     required: false
     default: ''
+  tags:
+    description: Comma-separated labels for this project (team, tier, internet-facing), for example `team:payments,tier-1`. At most 20, each 1-40 characters of a-z, 0-9, colon, underscore and hyphen; lower-cased. Sent on every upload and replaces the stored tags, so leave it empty to clear them.
+    required: false
+    default: ''
   github-token:
     description: Token used for the dependency-graph generator.
     required: false
@@ -93,6 +97,7 @@ runs:
         SBOM_FILE: ${{ inputs.sbom-file }}
         GENERATOR: ${{ inputs.generator }}
         KIND: ${{ inputs.kind }}
+        TAGS: ${{ inputs.tags }}
         IMAGE: ${{ inputs.image }}
       run: |
         set -euo pipefail
@@ -114,6 +119,9 @@ runs:
           -H "X-Sbom-Commit: $GITHUB_SHA"
           -H "X-Sbom-Repository: $GITHUB_REPOSITORY"
           -H "X-Sbom-Kind: $kind")
+        # Newlines become commas so a multi-line input works and cannot inject headers.
+        tags=$(printf '%s' "$TAGS" | tr '\r\n' ',,')
+        [ -n "${tags//[, ]/}" ] && headers+=(-H "X-Sbom-Tags: $tags")
         [ -n "$API_TOKEN" ] && headers+=(-H "Authorization: Bearer $API_TOKEN")
 
         status=$(curl -sS -o "$RUNNER_TEMP/sbom-dashboard-response.json" -w '%{http_code}' --retry 3 --retry-all-errors \

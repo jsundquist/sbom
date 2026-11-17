@@ -360,6 +360,7 @@ export interface ProjectSummary {
   name: string;
   repository: string | null;
   kind: ProjectKind;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
   uploadCount: number;
@@ -395,6 +396,7 @@ async function projectRows(db: Db, filter?: ReturnType<typeof eq>) {
       name: projects.name,
       repository: projects.repository,
       kind: projects.kind,
+      tags: projects.tags,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
       uploadCount: sql<number>`coalesce(${uploads.n}, 0)`.mapWith(Number),
@@ -423,6 +425,7 @@ function toProject(r: Awaited<ReturnType<typeof projectRows>>[number], stats: St
     name: r.name,
     repository: r.repository,
     kind: r.kind,
+    tags: r.tags,
     createdAt: iso(r.createdAt)!,
     updatedAt: iso(r.updatedAt)!,
     uploadCount: r.uploadCount,

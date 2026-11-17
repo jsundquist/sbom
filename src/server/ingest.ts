@@ -14,6 +14,7 @@ export interface UploadMeta {
   commit?: string;
   repository?: string;
   kind?: ProjectKind;
+  tags?: string[];
 }
 
 export class IngestError extends Error {}
@@ -35,6 +36,7 @@ export async function ingestSbom(db: Db, document: unknown, meta: UploadMeta, { 
   }
 
   const kind = meta.kind ?? DEFAULT_PROJECT_KIND;
+  const tags = meta.tags ?? [];
   // Unparseable text is dropped, not stored, so the COALESCE below keeps the old value.
   const repository = meta.repository ? normalizeRepository(meta.repository) : null;
 
@@ -42,11 +44,11 @@ export async function ingestSbom(db: Db, document: unknown, meta: UploadMeta, { 
     const now = new Date();
     const [project] = await tx
       .insert(projects)
-      .values({ name: projectName, repository, kind })
+      .values({ name: projectName, repository, kind, tags })
       .onConflictDoUpdate({
         target: projects.name,
-        // Kind is replaced on every upload, so one that omits it resets to the default.
-        set: { repository: sql`COALESCE(excluded.repository, ${projects.repository})`, kind, updatedAt: now },
+        // Kind and tags are replaced on every upload, so one that omits them resets to the default.
+        set: { repository: sql`COALESCE(excluded.repository, ${projects.repository})`, kind, tags, updatedAt: now },
       })
       .returning({ id: projects.id });
 

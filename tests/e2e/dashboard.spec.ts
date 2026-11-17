@@ -11,6 +11,7 @@ test('overview summarizes projects, vulnerabilities and outdated packages', asyn
   const firstRow = page.getByRole('grid', { name: 'Projects' }).getByRole('row').nth(1);
   await expect(firstRow).toContainText('payments-api');
   await expect(firstRow).toContainText('Critical 1');
+  await expect(firstRow).toContainText('team:payments'); // tags from the upload metadata
   await expect(firstRow).toContainText('application'); // kind chip; rows without an explicit kind read as application
 });
 

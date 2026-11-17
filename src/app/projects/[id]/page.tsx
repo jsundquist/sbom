@@ -15,7 +15,7 @@ import { getDependencyGraph, getProject, getSiblingProjects } from '@/server/inv
 import { getProjectTrend } from '@/server/trends';
 import { VulnerabilityTrendChart } from '@/components/charts';
 import { ComponentsGrid } from '@/components/ComponentsGrid';
-import { KindChip, PendingChip, SeverityCounts, StaleChip } from '@/components/chips';
+import { KindChip, PendingChip, SeverityCounts, StaleChip, TagChips } from '@/components/chips';
 import { DateTime } from '@/components/DateTime';
 import { DependencyTree } from '@/components/DependencyTree';
 import { ProjectTabs } from '@/components/ProjectTabs';
@@ -59,6 +59,11 @@ export default async function ProjectPage({
         subtitle={
           <Box component="span">
             <KindChip kind={project.kind} />{' '}
+            {project.tags.length > 0 && (
+              <>
+                <TagChips tags={project.tags} />{' '}
+              </>
+            )}
             {[
               project.repository,
               sbom?.version && `version ${sbom.version}`,
