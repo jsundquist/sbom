@@ -5,7 +5,7 @@ import type { GridColDef } from '@mui/x-data-grid';
 import type { ProjectSummary } from '@/server/inventory';
 import { SEVERITY_RANK, SEVERITIES } from '@/lib/severity';
 import { PROJECT_KINDS } from '@/lib/kinds';
-import { KindChip, PendingChip, SeverityCounts, StaleChip } from './chips';
+import { KindChip, PendingChip, SeverityCounts, StaleChip, TagChips } from './chips';
 import { DateTime } from './DateTime';
 import { Grid } from './grid';
 import { AppLink } from './Links';
@@ -38,6 +38,15 @@ const columns: GridColDef<ProjectSummary>[] = [
     valueOptions: [...PROJECT_KINDS],
     width: 120,
     renderCell: ({ row }) => <KindChip kind={row.kind} />,
+  },
+  {
+    field: 'tags',
+    headerName: 'Tags',
+    flex: 1,
+    minWidth: 140,
+    // A string, so the toolbar's quick search and the column filter match tag text.
+    valueGetter: (_v, row) => row.tags.join(' '),
+    renderCell: ({ row }) => <TagChips tags={row.tags} />,
   },
   { field: 'version', headerName: 'Version', flex: 0.8, minWidth: 100, valueGetter: (_v, row) => row.latest?.version ?? '' },
   { field: 'components', headerName: 'Packages', type: 'number', width: 100, valueGetter: (_v, row) => row.stats.components },

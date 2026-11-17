@@ -31,7 +31,14 @@ const cdx = (name: string, version: string, purls: string[], licenses: Record<st
 
 export const DEMO_SBOMS = [
   {
-    meta: { project: 'web-storefront', version: '3.4.1', ref: 'refs/heads/main', commit: '9f2c1e7', repository: 'acme/web-storefront' },
+    meta: {
+      project: 'web-storefront',
+      version: '3.4.1',
+      ref: 'refs/heads/main',
+      commit: '9f2c1e7',
+      repository: 'acme/web-storefront',
+      tags: ['team:web', 'internet-facing'],
+    },
     document: cdx(
       'web-storefront',
       '3.4.1',
@@ -62,7 +69,14 @@ export const DEMO_SBOMS = [
     ),
   },
   {
-    meta: { project: 'payments-api', version: '1.12.0', ref: 'refs/tags/v1.12.0', commit: '41ab09d', repository: 'acme/payments-api' },
+    meta: {
+      project: 'payments-api',
+      version: '1.12.0',
+      ref: 'refs/tags/v1.12.0',
+      commit: '41ab09d',
+      repository: 'acme/payments-api',
+      tags: ['team:payments', 'tier-1'],
+    },
     document: cdx(
       'payments-api',
       '1.12.0',

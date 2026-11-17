@@ -23,4 +23,5 @@ jobs:
           # image: ghcr.io/my-org/my-app:1.2.3   # scan a built image (OS packages included) instead of the checkout
           # project-name: my-org/my-app          # one project per image
           # project-version: 1.2.3
+          # tags: team:payments,tier-1            # labels shown on the Projects grid; replaced on every upload
           # kind: library                        # application (default), library, image or host; image is implied by `image`

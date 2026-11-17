@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { env } from '@/lib/env';
 import { PROJECT_KINDS } from '@/lib/kinds';
+import { parseTags } from '@/lib/tags';
 import { SbomParseError } from '@/sbom/parse';
 import { checkUploadToken, jsonError, readBodyLimited } from '@/server/api';
 import { IngestError, ingestSbom } from '@/server/ingest';
@@ -19,7 +20,7 @@ const META_FIELDS = ['project', 'version', 'ref', 'commit', 'repository', 'kind'
 
 /**
  * Upload an SBOM (CycloneDX or SPDX JSON) as the request body.
- * Metadata comes from query parameters or X-Sbom-* headers: project, version, ref, commit, repository, kind.
+ * Metadata comes from query parameters or X-Sbom-* headers: project, version, ref, commit, repository, kind, tags.
  */
 export async function POST(req: Request) {
   const denied = checkUploadToken(req);
@@ -47,8 +48,13 @@ export async function POST(req: Request) {
     return jsonError(400, meta.error.issues[0].message);
   }
 
+  const tags = parseTags(pick('tags'));
+  if (!tags.ok) {
+    return jsonError(400, tags.error);
+  }
+
   try {
-    const result = await ingestSbom(getDb(), document, meta.data, { historyLimit: env().SBOM_HISTORY_LIMIT });
+    const result = await ingestSbom(getDb(), document, { ...meta.data, tags: tags.tags }, { historyLimit: env().SBOM_HISTORY_LIMIT });
     return NextResponse.json({ ...result, url: new URL(`/projects/${result.projectId}`, url.origin).toString() }, { status: 201 });
   } catch (err) {
     if (err instanceof SbomParseError || err instanceof IngestError) {
