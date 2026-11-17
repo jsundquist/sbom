@@ -1,5 +1,6 @@
 // Read model: joins SBOM components with vulnerability and latest-version data.
-import { and, count, desc, eq, exists, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, exists, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import { legacyRepositoryForms } from '@/lib/repository';
 import type { Db } from '@/db';
 import {
   componentEdges,
@@ -431,8 +432,26 @@ function toProject(r: Awaited<ReturnType<typeof projectRows>>[number], stats: St
   };
 }
 
-export async function listProjects(db: Db): Promise<ProjectSummary[]> {
-  return listProjectsFrom(db, await loadComponents(db));
+/** `repository` is already normalised (normalizeRepository); rows not yet re-uploaded may hold an older spelling, so those match too. */
+export async function listProjects(db: Db, { repository }: { repository?: string } = {}): Promise<ProjectSummary[]> {
+  if (!repository) {
+    return listProjectsFrom(db, await loadComponents(db));
+  }
+  const forms = legacyRepositoryForms(repository);
+  const rows = await projectRows(
+    db,
+    or(
+      inArray(projects.repository, forms),
+      inArray(
+        sql`lower(${projects.repository})`,
+        forms.map((f) => f.toLowerCase()),
+      ),
+    ),
+  );
+  const sbomIds = rows.flatMap((r) => (r.sbom?.id ? [r.sbom.id] : []));
+  const all = sbomIds.length ? await loadComponents(db, { sbomIds }) : [];
+  const bySbom = Map.groupBy(all, (c) => c.sbomId);
+  return rows.map((r) => toProject(r, summarize((r.sbom?.id && bySbom.get(r.sbom.id)) || [])));
 }
 
 export interface ProjectDetail extends ProjectSummary {

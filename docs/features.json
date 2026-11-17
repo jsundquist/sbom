@@ -1206,7 +1206,7 @@
       "epic": "G",
       "size": "S",
       "priority": 3.8,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "F-001"
       ],
@@ -1216,7 +1216,7 @@
         "Lookups also match the old unnormalised form until the Project is re-uploaded",
         "Unit tests for each form"
       ],
-      "evidence": "",
+      "evidence": "2026-11-17: tests/unit/repository.test.ts (+ index test in schema-indexes.test.ts) written first and failing, then green; pnpm run lint, pnpm test (382, 30 files) and pnpm run test:e2e (15, after a rebuild, Postgres 16) green. Not run: the real Action against a workflow, or a migration against a populated Postgres (CREATE INDEX only).",
       "notes": "ADR 0004. The MCP project lookup (M-002) matches a git remote against this column.",
       "labels": [
         "ready-for-agent"

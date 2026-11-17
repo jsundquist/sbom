@@ -64,6 +64,13 @@
       "when": 1794917082065,
       "tag": "0008_chief_solo",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794920415768,
+      "tag": "0009_opposite_captain_britain",
+      "breakpoints": true
     }
   ]
 }

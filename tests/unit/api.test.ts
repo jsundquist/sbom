@@ -144,7 +144,7 @@ describe('upload API', () => {
     const body = await res.json();
     expect(body).toMatchObject({ projectName: 'web-app', componentCount: 5, url: `${BASE}/projects/${body.projectId}` });
     const p = await project(body.projectId);
-    expect(p.repository).toBe('acme/web');
+    expect(p.repository).toBe('github.com/acme/web');
     expect(p.latest).toMatchObject({ version: '2.3.0', ref: 'refs/heads/main', commit: 'abc123', format: 'CycloneDX' });
 
     const download = await downloadSbom(new Request(`${BASE}/api/v1/sboms/${body.sbomId}`), params({ id: String(body.sbomId) }));

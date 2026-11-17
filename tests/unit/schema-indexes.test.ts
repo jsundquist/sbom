@@ -24,3 +24,9 @@ describe('foreign keys that cascade need an index on the referencing column', ()
     expect(await indexedColumns('component_edges')).toContain(column);
   });
 });
+
+describe('projects.repository lookups (G-002)', () => {
+  test('projects is indexed on repository', async () => {
+    expect(await indexedColumns('projects')).toContain('repository');
+  });
+});
