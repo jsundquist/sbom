@@ -63,7 +63,8 @@ const formatGolden = (g: { everything: unknown[]; scoped: Record<string, unknown
 const byId = <T extends { id: number }>(list: T[]) => [...list].sort((a, b) => a.id - b.id);
 
 async function snapshot() {
-  const everything = await loadComponents(db);
+  const everything = byId(await loadComponents(db));
+  // Subjects are picked from the id-sorted list: load order is whatever the database returns and is not part of the contract.
   const vulnerable = everything.find((c) => c.vulns.length && c.packageKey);
   const olderSbom = (await db.select({ id: schema.sboms.id }).from(schema.sboms).orderBy(schema.sboms.id).limit(1))[0].id;
   const scopes: Record<string, ComponentScope> = {
@@ -75,7 +76,7 @@ async function snapshot() {
   const scoped = Object.fromEntries(
     await Promise.all(Object.entries(scopes).map(async ([name, scope]) => [name, byId(await loadComponents(db, scope))])),
   );
-  return JSON.parse(JSON.stringify({ everything: byId(everything), scoped }));
+  return JSON.parse(JSON.stringify({ everything, scoped }));
 }
 
 describe('loadComponents output', () => {

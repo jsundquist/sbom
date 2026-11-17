@@ -6,7 +6,14 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: K-001 (rescoped: the four slow pages under 1 s), then G; F-006 is in review. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+- Next: G-001 (project kind), G-002 (normalise repository), then L-001 (read tokens); the backlog order is in the 2026-11-16 backlog entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-16: K-001 Cheaper whole-inventory reads
+- Done (branch `perf/k-001-whole-inventory-reads`, off main): `loadComponents` in `src/server/inventory.ts` no longer joins package, version and vulnerability facts onto every component row. It reads the components' own columns, loads the package, version and vulnerability facts from the small tables by package key (blocks of 5,000), and works out everything that depends only on a `package@version` once and shares it (28k versions cover 200k components). No schema change, no worker job, no migration.
+- Verified: new `tests/unit/load-components-golden.test.ts` pins the old output (and its four scopes) and was committed first; the refactor reproduces it exactly. `pnpm run lint` and `pnpm test` (301) green. On the 100 x 2,000 x 20 dataset: projects grid 1,672 -> 729 ms, overview 1,898 -> 911, vulnerabilities 1,629 -> 725, packages 1,817 -> 906 (target 1,000); peak RSS 1,208 -> 838 MB (target 1,024).
+- Decisions: chose a cheaper load over per-project rollups because profiling showed repeated work, not row volume, was the cost (query 1 630 ms, query 2 553 ms, per-row `updateType`/`maintenanceFlags` 334 ms; 28k distinct versions). ADR 0005 has an update saying so; rollups remain the next step if a page goes over again. L-004 no longer depends on K-001 and reads `listProjects`.
+- Not done: the margin on the overview and packages grid is about 9%, on an M1 Pro with Postgres local; a smaller server will be slower. Remaining cost: ~235 ms to move the component rows, ~250 ms in `aggregatePackages`, the per-row object spread. One-subject pages got ~20 ms slower (separate queries instead of one join), still far under 500 ms.
+- Gotchas: the golden test caught a flaw in my own first version of it: scope subjects were picked from load order, which is whatever the database returns and differs between the old and new queries. They are now picked from the id-sorted list. Do not join per-package facts back onto the component query. `UPDATE_GOLDEN=1` regenerates the golden file on purpose; review the diff.
 
 ## 2026-11-16: F-006 Index component_edges foreign keys
 - Done (branch `perf/f-006-edge-indexes`, stacked on the F-004 branch): `component_edges` is now indexed on `parent_id` and `child_id` (migration `0007`, generated). Both are cascading foreign keys to `components`; without an index, pruning an old SBOM scanned every edge once per deleted component.

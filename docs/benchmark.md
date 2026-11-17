@@ -118,11 +118,48 @@ smaller inventory with a full history. Fixed by F-006.
 Database: **1.45 GB** (was 1.26 GB before F-006; the indexes cost about 200 MB when built during the seed, 160 MB when created afterwards on a populated table). `sboms.document` is 246 MB for 2,000 documents because Postgres compresses large
 `jsonb` values; it is not the biggest table.
 
+## After K-001 (2026-11-16)
+
+Profile of the 1,779 ms `loadComponents` before the change, on the same dataset:
+
+| Part | Time |
+|---|---:|
+| Query 1: components joined to sboms, projects, packages and package_versions (200,000 rows, 17 columns) | 630 ms |
+| &nbsp;&nbsp;the same rows with only the components' own columns | 235 ms |
+| Query 2: vulnerabilities joined to every in-scope component, to find 972 rows | 553 ms |
+| `updateType` over every row, and `maintenanceFlags` over every row | 186 ms and 148 ms |
+| Distinct `package@version` among those rows | 27,987 of 200,000 |
+
+The cost was repeated work, not volume: package facts re-joined and re-parsed (three timestamps per row) 200,000 times, a join that
+visited every component to find a thousand vulnerabilities, and per-row calculations that depend only on the package version.
+K-001 therefore changed `loadComponents` and nothing else: it loads components' own columns, loads package, version and
+vulnerability facts from the small tables by package key (in blocks of 5,000 keys), and works out everything that depends only on
+a `package@version` once and shares it. No schema change, no worker job, no new table. Output is unchanged:
+`tests/unit/load-components-golden.test.ts` pins it, including all four scopes.
+
+| Case | Before | After | Target |
+|---|---:|---:|---:|
+| listProjects (projects grid) | 1,672 ms | **729 ms** | 1,000 |
+| getOverview (overview page) | 1,898 ms | **911 ms** | 1,000 |
+| listVulnerabilities (vulnerabilities grid) | 1,629 ms | **725 ms** | 1,000 |
+| listPackages (packages grid) | 1,817 ms | **906 ms** | 1,000 |
+| getProject (application page) | 24 ms | 44 ms | 500 |
+| getDependencyGraph (dependency tree) | 23 ms | 45 ms | 500 |
+| Peak RSS of the reads | 1,208 MB | **838 MB** | 1,024 |
+
+The one-subject pages got about 20 ms slower because the facts now come from separate small queries instead of one join. They are
+far inside their target.
+
+The margin on the overview and packages grid is about 9%, on an M1 Pro with Postgres on the same machine. A smaller server will be
+slower, and the inventory is expected to grow. What is left, from the profile: about 235 ms of driver time to move the 200,000
+component rows, about 250 ms in `aggregatePackages`, and the object spread per row. If a page goes over target again, per-Project
+rollups written by the worker (the original K-001 plan, ADR 0005) are the next step; they would avoid loading components at all.
+
 ## Decisions
 
 | Ticket | Rule | Result | Decision |
 |---|---|---|---|
-| K-001 per-project rollups | any whole-inventory read over target, or memory over | four reads at 1.6-1.9 s, 1,208 MB | **build, with a wider scope** (below) |
+| K-001 cheaper whole-inventory reads | any whole-inventory read over target, or memory over | four reads at 1.6-1.9 s, 1,208 MB | **done without rollups**: a cheaper `loadComponents` brought all four under 1 s (below) |
 | K-002 skip identical SBOMs | upload over target | about 380 ms after F-006 | **drop**; the cost was the prune, fixed by F-006 |
 | K-003 history cost | database over 5 GB | 1.45 GB | **drop**; revisit at about 3x this size |
 | F-006 | outside the rules | upload did not finish without the indexes | **done**: two indexes, migration 0007 |
