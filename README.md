@@ -104,6 +104,7 @@ jobs:
 | `generator` | `syft` | `syft` scans the checkout with [Syft](https://github.com/anchore/syft); `dependency-graph` exports GitHub's dependency graph |
 | `path` | `.` | Directory scanned by Syft |
 | `image` | `''` | Scan this container image with Syft instead of the checkout (needs `generator: syft`); OS packages are included |
+| `environment` | `''` | Environment this SBOM is for, such as `staging` (1-40 of `a-z 0-9 _ -`, lower-cased). Stored per upload, not shown yet |
 | `tags` | `''` | Comma-separated labels such as `team:payments,tier-1` (at most 20, each 1-40 of `a-z 0-9 : _ -`, lower-cased). Replaces the stored tags on every upload, so empty clears them |
 | `kind` | `application` (`image` when `image` is set) | What the project is: `application`, `library`, `image` or `host`. Replaces the stored kind on every upload |
 
@@ -123,7 +124,7 @@ curl -X POST "http://localhost:3000/api/v1/sboms?project=my-app&version=1.2.3" \
   --data-binary @sbom.cdx.json
 ```
 
-Metadata can be passed as query parameters or `X-Sbom-*` headers: `project`, `version`, `ref`, `commit`, `repository` (any git remote or `owner/repo`, stored as `github.com/owner/repo`; see below), `kind` (`application` by default, also `library`, `image`, `host`; replaced on every upload, so a project that stops sending it goes back to `application`), `tags` (comma-separated; same rules as the Action input; replaced on every upload; a bad tag is a 400).
+Metadata can be passed as query parameters or `X-Sbom-*` headers: `project`, `version`, `ref`, `commit`, `repository` (any git remote or `owner/repo`, stored as `github.com/owner/repo`; see below), `kind` (`application` by default, also `library`, `image`, `host`; replaced on every upload, so a project that stops sending it goes back to `application`), `tags` (comma-separated; same rules as the Action input; replaced on every upload; a bad tag is a 400), `environment` (1-40 of `a-z 0-9 _ -`, lower-cased; stored on that upload only, returned as `latest.environment` / `history[].environment` and in an `X-Sbom-Environment` header on `GET /api/v1/sboms/:id`; a bad value is a 400).
 
 `repository` is normalised on ingest: `https://github.com/Acme/Web.git`, `git@github.com:acme/web.git`, `ssh://git@github.com/acme/web` and a bare `acme/web` (what the Action sends from `GITHUB_REPOSITORY`) all become `github.com/acme/web`; other hosts are kept as `host/path`. An upload without one keeps the stored value, and text that is not a repository is ignored.
 If `project`/`version` are omitted they are taken from the SBOM's subject (CycloneDX `metadata.component`, SPDX described package).

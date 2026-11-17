@@ -44,6 +44,10 @@ inputs:
     description: Comma-separated labels for this project (team, tier, internet-facing), for example `team:payments,tier-1`. At most 20, each 1-40 characters of a-z, 0-9, colon, underscore and hyphen; lower-cased. Sent on every upload and replaces the stored tags, so leave it empty to clear them.
     required: false
     default: ''
+  environment:
+    description: Environment this SBOM is for, for example `staging` or `production`. 1-40 characters of a-z, 0-9, underscore and hyphen; lower-cased. Stored with the upload and not shown anywhere yet.
+    required: false
+    default: ''
   github-token:
     description: Token used for the dependency-graph generator.
     required: false
@@ -98,6 +102,7 @@ runs:
         GENERATOR: ${{ inputs.generator }}
         KIND: ${{ inputs.kind }}
         TAGS: ${{ inputs.tags }}
+        ENVIRONMENT: ${{ inputs.environment }}
         IMAGE: ${{ inputs.image }}
       run: |
         set -euo pipefail
@@ -122,6 +127,7 @@ runs:
         # Newlines become commas so a multi-line input works and cannot inject headers.
         tags=$(printf '%s' "$TAGS" | tr '\r\n' ',,')
         [ -n "${tags//[, ]/}" ] && headers+=(-H "X-Sbom-Tags: $tags")
+        [ -n "$ENVIRONMENT" ] && headers+=(-H "X-Sbom-Environment: $ENVIRONMENT")
         [ -n "$API_TOKEN" ] && headers+=(-H "Authorization: Bearer $API_TOKEN")
 
         status=$(curl -sS -o "$RUNNER_TEMP/sbom-dashboard-response.json" -w '%{http_code}' --retry 3 --retry-all-errors \

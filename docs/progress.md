@@ -8,6 +8,12 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: run e2e for L-002 and L-004 (both still `in_progress`), then I-002 and the MCP tools, and G-004. Decide M-007 (local vs remote MCP) before M-002. The backlog order is in the 2026-11-16 backlog entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
 
+## 2026-11-17: G-006 Optional environment on upload
+- Done (branch `feat/g-006-environment`, off main): `sboms.environment` (nullable text, migration `0012`), validated by `src/lib/environment.ts` (trimmed, lower-cased, at most 40 of `a-z 0-9 _ -`; empty counts as not sent; anything else is a 400 naming `environment`). Read from `?environment=` or `X-Sbom-Environment`. Returned as `latest.environment` and `history[].environment` on the project endpoints and as an `X-Sbom-Environment` header on `GET /api/v1/sboms/:id`. Action input `environment` sends the header. README and ARCHITECTURE updated. No UI, filter or rollup.
+- Verified: `tests/unit/sbom-environment.test.ts` failed first (9 of 10), then green; `pnpm run lint` and `pnpm test` (472) green. Not run: e2e (no Postgres here), and the Action change was not run on GitHub.
+- Decisions: the ticket says "returned by GET /api/v1/sboms/[id]", but that route downloads the raw document, so the value is a response header there and a field on the project JSON. It belongs to one upload (unlike kind and tags, which live on the Project), so history keeps each upload's own value.
+- Gotchas: the Action sends the header only when the input is non-empty.
+
 ## 2026-11-17: Q-007 CODING_STANDARDS.md
 - Done (branch `feat/q-007-q-009-docs-chores`, off main): `CODING_STANDARDS.md` at the repo root, five one-line judgement calls (fail closed with Zod minimum strength, one mapping from domain state to response, no duplicated denial or message literals, reject rather than repair external input, say what was not verified). `docs/WORKFLOW.md#definition-of-done` has the pointer saying reviews read it. `docs/agents/domain.md` and the review skill config untouched.
 - Verified: `pnpm run lint` (tsc, ESLint, Prettier check) green; full unit suite 414 tests green (`vitest run --maxWorkers=2` with 60 s timeouts, 34 files, includes `progress-order.test.ts`). Docs only, so no e2e.

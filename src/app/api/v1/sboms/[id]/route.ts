@@ -16,6 +16,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
   const filename = `${row.projectName}-${row.version ?? id}.sbom.json`.replace(/[^\w.@-]+/g, '_');
   return new Response(JSON.stringify(row.document, null, 2), {
-    headers: { 'content-type': 'application/json', 'content-disposition': `attachment; filename="${filename}"` },
+    headers: {
+      'content-type': 'application/json',
+      'content-disposition': `attachment; filename="${filename}"`,
+      ...(row.environment ? { 'x-sbom-environment': row.environment } : {}),
+    },
   });
 }

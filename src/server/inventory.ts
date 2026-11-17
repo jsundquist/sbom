@@ -351,6 +351,7 @@ export interface SbomInfo {
   version: string | null;
   ref: string | null;
   commit: string | null;
+  environment: string | null;
   format: string;
   specVersion: string | null;
   componentCount: number;
@@ -377,6 +378,7 @@ const sbomColumns = {
   version: sboms.version,
   ref: sboms.ref,
   commit: sboms.commitSha,
+  environment: sboms.environment,
   format: sboms.format,
   specVersion: sboms.specVersion,
   componentCount: sboms.componentCount,
@@ -407,6 +409,7 @@ async function projectRows(db: Db, filter?: ReturnType<typeof eq>) {
         version: sboms.version,
         ref: sboms.ref,
         commit: sboms.commitSha,
+        environment: sboms.environment,
         format: sboms.format,
         specVersion: sboms.specVersion,
         componentCount: sboms.componentCount,
@@ -998,7 +1001,7 @@ async function listProjectsFrom(db: Db, all: InventoryComponent[]) {
 
 export async function getSbomDocument(db: Db, id: number) {
   const [row] = await db
-    .select({ document: sboms.document, version: sboms.version, projectName: projects.name })
+    .select({ document: sboms.document, version: sboms.version, environment: sboms.environment, projectName: projects.name })
     .from(sboms)
     .innerJoin(projects, eq(projects.id, sboms.projectId))
     .where(eq(sboms.id, id));

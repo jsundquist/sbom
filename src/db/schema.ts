@@ -52,6 +52,7 @@ export const sboms = pgTable(
     version: text('version'),
     ref: text('ref'),
     commitSha: text('commit_sha'),
+    environment: text('environment'),
     format: text('format').notNull(),
     specVersion: text('spec_version'),
     componentCount: integer('component_count').notNull(),
