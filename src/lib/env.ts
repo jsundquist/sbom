@@ -22,6 +22,8 @@ const schema = z.object({
   UPLOAD_TOKENS: csv,
   /** Bearer tokens that may delete a project. Separate from UPLOAD_TOKENS, which every repo's CI holds. Empty = open deletes. */
   ADMIN_TOKENS: csv,
+  /** Bearer tokens that may read GET /api/v1/* (scripts; ADR 0002). Never pages, /api/auth or writes. Empty = bearer reads off. */
+  READ_TOKENS: csv,
   /** In production, uploads and deletes are rejected when UPLOAD_TOKENS / ADMIN_TOKENS are empty unless this is "true". */
   ALLOW_OPEN_UPLOADS: z
     .enum(['true', 'false'])

@@ -116,7 +116,7 @@ Fixtures in `tests/fixtures/`. Tests never touch the network.
 
 ## Security
 
-Implemented: upload bearer tokens (constant-time compare); a separate `ADMIN_TOKENS` list for `DELETE /api/v1/projects/[id]` (F-002, ADR 0002), so the secret every repo's CI holds cannot delete; fail-closed uploads and deletes (503) in production without
+Implemented: upload bearer tokens (constant-time compare); a separate `ADMIN_TOKENS` list for `DELETE /api/v1/projects/[id]` (F-002, ADR 0002), so the secret every repo's CI holds cannot delete; `READ_TOKENS` (L-001, ADR 0002): a bearer on `GET /api/v1/*` only, judged by `checkReadToken()` in `src/server/api.ts` for both `src/proxy.ts` and `requireOwner()`; constant-time compare, never opens pages, `/api/auth` or non-GET methods, sessions still ignore `Authorization`, and the auth rate-limit bucket is checked before comparing and spent by failures only; a present-but-wrong bearer is 401 (no fallback to the session); with no tokens configured a bearer is ignored and the session gate (401/503) answers; fail-closed uploads and deletes (503) in production without
 `UPLOAD_TOKENS` / `ADMIN_TOKENS` unless `ALLOW_OPEN_UPLOADS=true`; `MAX_UPLOAD_BYTES` enforced while streaming (413); in-memory write rate
 limit (`WRITE_RATE_LIMIT`, 429, keyed on `X-Forwarded-For` only with `TRUST_PROXY=true`; per web process); CSP and
 baseline headers from `src/lib/security-headers.ts` (`'unsafe-inline'` for Next bootstrap scripts and MUI styles); Zod on all

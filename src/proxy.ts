@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { checkReadToken } from '@/server/api';
 import { denial, deny, ownerState } from '@/server/auth';
 
 /** Paths that never need a session (the next-auth endpoints rate-limit themselves; see the route handler). */
@@ -34,6 +35,11 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
   const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
   if (isOpenPath(path) || isBearerRoute(req.method, path)) {
     return NextResponse.next();
+  }
+  // A read token (scripts) is judged by the same function the handlers use; it only ever applies to GET /api/v1/*.
+  const viaToken = checkReadToken(req);
+  if (viaToken) {
+    return viaToken === 'ok' ? NextResponse.next() : viaToken;
   }
   const d = denial(await ownerState(req.headers));
   if (!d) {

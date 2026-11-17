@@ -66,6 +66,14 @@ describe('requireOwnerPage', () => {
     expect(await requireOwnerPage()).toBeNull();
   });
 
+  test('a valid read token never opens a page', async () => {
+    configure();
+    vi.stubEnv('READ_TOKENS', 'page-read-token');
+    resetEnv();
+    headerStore.current = new Headers({ authorization: 'Bearer page-read-token' });
+    expect(await requireOwnerPage()).toEqual({ kind: 'sign-in' });
+  });
+
   test('production without auth config is unavailable; ALLOW_OPEN_READS opens it', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     resetEnv();

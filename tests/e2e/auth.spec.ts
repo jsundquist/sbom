@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { expect, test, type BrowserContext } from '@playwright/test';
 import { encode } from 'next-auth/jwt';
-import { AUTH_E2E_OWNER_ID, AUTH_E2E_SECRET, AUTH_E2E_URL } from '../../playwright.config';
+import { AUTH_E2E_OWNER_ID, AUTH_E2E_READ_TOKEN, AUTH_E2E_SECRET, AUTH_E2E_URL } from '../../playwright.config';
 
 // Runs only in the "authed" project: the server has owner sign-in enabled and nothing here contacts GitHub.
 // NEXTAUTH_URL is http, so the session cookie has no __Secure- prefix.
@@ -36,6 +36,21 @@ test('the owner sees the dashboard and gets 200 from the API', async ({ page, co
   await expect(page.getByRole('button', { name: 'Sign in with GitHub' })).toHaveCount(0);
 
   expect((await context.request.get('/api/v1/summary')).status()).toBe(200);
+});
+
+test('a read token reads GET /api/v1/*, a wrong one is 401, and it never opens a page or a write', async ({ request, page }) => {
+  const good = { authorization: `Bearer ${AUTH_E2E_READ_TOKEN}` };
+  expect((await request.get('/api/v1/summary', { headers: good })).status()).toBe(200);
+  expect((await request.get('/api/v1/projects', { headers: good })).status()).toBe(200);
+  expect((await request.get('/api/v1/summary', { headers: { authorization: 'Bearer wrong' } })).status()).toBe(401);
+
+  expect((await request.delete('/api/v1/projects/1', { headers: good })).status()).toBe(401);
+  expect((await request.post('/api/v1/sboms?project=x&version=1', { data: {}, headers: good })).status()).toBe(401);
+
+  await page.setExtraHTTPHeaders(good);
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Sign in with GitHub' })).toBeVisible();
+  await expect(page.getByText('payments-api')).toHaveCount(0);
 });
 
 test('uploads keep bearer-token auth without a session, and healthz is open', async ({ request }) => {
