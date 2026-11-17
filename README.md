@@ -179,14 +179,14 @@ Outside production, with none of these set, reads stay open so local development
 | `GET` | `/api/v1/sboms/:id` | Download the original SBOM document |
 | `GET` | `/api/v1/summary` | Totals, severity counts and recent uploads |
 | `GET` | `/api/v1/summary/trends[?days=90]` | Daily totals across all applications, oldest first (`points`; max 365 days) |
-| `GET` | `/api/v1/projects` | Projects (with `kind` and `tags`) and their latest SBOM stats; `?repository=` filters by git remote in any spelling (400 if it is not a repository) |
+| `GET` | `/api/v1/projects` | Projects (with `kind` and `tags`) and their latest SBOM stats; `?repository=` filters by git remote in any spelling (400 if it is not a repository); also `?kind=&tag=&stale=&q=` |
 | `GET` | `/api/v1/projects/:id[?sbom=:sbomId]` | Project details and enriched packages |
 | `GET` | `/api/v1/projects/:id/dependencies[?sbom=:sbomId]` | Dependency edges of an SBOM (`components`, `edges`, `directIds`); empty when the SBOM has no relationships |
 | `GET` | `/api/v1/projects/:id/trends[?days=90]` | Daily snapshots of one application: vulnerabilities by severity, outdated and package counts (`points`) |
 | `DELETE` | `/api/v1/projects/:id` | Delete a project and its SBOMs (admin token required when configured; an upload token is refused) |
-| `GET` | `/api/v1/packages` | Packages across all applications |
+| `GET` | `/api/v1/packages` | Packages across all applications; `?ecosystem=&deprecated=&abandoned=&q=` filter (plus `limit`/`offset`, see below) |
 | `GET` | `/api/v1/packages/:key` | One package (key such as `npm%3Alodash`) |
-| `GET` | `/api/v1/vulnerabilities[/:id]` | Vulnerabilities affecting the latest SBOMs |
+| `GET` | `/api/v1/vulnerabilities[/:id]` | Vulnerabilities affecting the latest SBOMs; the list takes `?severity=&exploited=&project=<id>&q=` |
 | `GET` | `/api/healthz` | Readiness check (includes a database ping) |
 | `GET` | `/api/livez` | Liveness check (no database access) |
 
