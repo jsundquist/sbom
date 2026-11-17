@@ -57,6 +57,13 @@
       "when": 1794871258119,
       "tag": "0007_lumpy_liz_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794917082065,
+      "tag": "0008_chief_solo",
+      "breakpoints": true
     }
   ]
 }

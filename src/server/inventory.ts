@@ -18,6 +18,7 @@ import { comparePriority } from '@/lib/priority';
 import { scorecardStatus, weakestChecks, type ScorecardCheck, type ScorecardStatus } from '@/lib/scorecard';
 import { env } from '@/lib/env';
 import { maintenanceFlags, type Maintenance } from '@/lib/maintenance';
+import type { ProjectKind } from '@/lib/kinds';
 import { isStale } from '@/lib/stale';
 import { loadExploitSignals, type ExploitSignals } from './exploit-signals';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';
@@ -357,6 +358,7 @@ export interface ProjectSummary {
   id: number;
   name: string;
   repository: string | null;
+  kind: ProjectKind;
   createdAt: string;
   updatedAt: string;
   uploadCount: number;
@@ -391,6 +393,7 @@ async function projectRows(db: Db, filter?: ReturnType<typeof eq>) {
       id: projects.id,
       name: projects.name,
       repository: projects.repository,
+      kind: projects.kind,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
       uploadCount: sql<number>`coalesce(${uploads.n}, 0)`.mapWith(Number),
@@ -418,6 +421,7 @@ function toProject(r: Awaited<ReturnType<typeof projectRows>>[number], stats: St
     id: r.id,
     name: r.name,
     repository: r.repository,
+    kind: r.kind,
     createdAt: iso(r.createdAt)!,
     updatedAt: iso(r.updatedAt)!,
     uploadCount: r.uploadCount,

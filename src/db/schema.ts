@@ -15,20 +15,23 @@ import {
   timestamp,
   unique,
 } from 'drizzle-orm/pg-core';
+import { PROJECT_KINDS } from '@/lib/kinds';
 import type { ScorecardCheck } from '@/lib/scorecard';
 
 export const severityEnum = pgEnum('severity', ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN']);
+export const projectKindEnum = pgEnum('project_kind', PROJECT_KINDS);
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 };
 
-/** An application or library that uploads SBOMs. */
+/** Something that uploads SBOMs and is tracked on its own: an application, library, image or host. */
 export const projects = pgTable('projects', {
   id: serial('id').primaryKey(),
   name: text('name').notNull().unique(),
   repository: text('repository'),
+  kind: projectKindEnum('kind').notNull().default('application'),
   latestSbomId: integer('latest_sbom_id').references((): AnyPgColumn => sboms.id, { onDelete: 'set null' }),
   ...timestamps,
 });

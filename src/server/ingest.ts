@@ -2,6 +2,7 @@ import { and, desc, eq, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { componentEdges, components, packages, packageVersions, projects, sboms } from '@/db/schema';
 import { SBOM_UPLOADED_CHANNEL } from '@/lib/channels';
+import { DEFAULT_PROJECT_KIND, type ProjectKind } from '@/lib/kinds';
 import { parsePurl } from '@/lib/purl';
 import { componentKey, parseSbom } from '@/sbom/parse';
 
@@ -11,6 +12,7 @@ export interface UploadMeta {
   ref?: string;
   commit?: string;
   repository?: string;
+  kind?: ProjectKind;
 }
 
 export class IngestError extends Error {}
@@ -31,14 +33,17 @@ export async function ingestSbom(db: Db, document: unknown, meta: UploadMeta, { 
     throw new IngestError('Project name is required: pass "project" or include the subject component in the SBOM');
   }
 
+  const kind = meta.kind ?? DEFAULT_PROJECT_KIND;
+
   const result = await db.transaction(async (tx) => {
     const now = new Date();
     const [project] = await tx
       .insert(projects)
-      .values({ name: projectName, repository: meta.repository ?? null })
+      .values({ name: projectName, repository: meta.repository ?? null, kind })
       .onConflictDoUpdate({
         target: projects.name,
-        set: { repository: sql`COALESCE(excluded.repository, ${projects.repository})`, updatedAt: now },
+        // Kind is replaced on every upload, so one that omits it resets to the default.
+        set: { repository: sql`COALESCE(excluded.repository, ${projects.repository})`, kind, updatedAt: now },
       })
       .returning({ id: projects.id });
 
