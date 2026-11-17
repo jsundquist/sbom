@@ -169,3 +169,7 @@ export async function readBodyLimited(req: Request, limit: number): Promise<stri
 }
 
 export { parseDays, parseIdOrNull as parseId } from '@/lib/params';
+
+/** A list endpoint's response: a bare array plus the pre-paging match count in `X-Total-Count` (L-002). */
+export const listJson = <T>({ items, total }: { items: T[]; total: number }) =>
+  NextResponse.json(items, { headers: { 'X-Total-Count': String(total) } });

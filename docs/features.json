@@ -1356,7 +1356,7 @@
       "epic": "L",
       "size": "M",
       "priority": 6.25,
-      "status": "todo",
+      "status": "in_progress",
       "depends_on": [
         "G-001",
         "G-002",
@@ -1369,7 +1369,7 @@
         "Parsing in src/lib/params.ts with Zod; invalid values are 400; route handlers stay thin and call src/server",
         "Existing pages and tests unaffected; no ETag (ADR 0005 scale makes responses cheap)"
       ],
-      "evidence": "",
+      "evidence": "lint and unit tests green incl. tests/unit/list-query.test.ts; e2e not run (no Postgres available)",
       "notes": "List routes take no query params today (they call listX(getDb())). J-003 adds the scope filter later.",
       "labels": [
         "ready-for-agent"
