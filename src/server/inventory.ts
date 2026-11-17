@@ -21,8 +21,16 @@ import { env } from '@/lib/env';
 import { maintenanceFlags, type Maintenance } from '@/lib/maintenance';
 import type { ProjectKind } from '@/lib/kinds';
 import { isStale } from '@/lib/stale';
-import type { PackageFilter, PageParams, ProjectFilter, VulnerabilityFilter } from '@/lib/params';
-import { filterPackages, filterProjects, filterVulnerabilities, paginate, type Page } from './list-filters';
+import type { OverviewFilter, PackageFilter, PageParams, ProjectFilter, VulnerabilityFilter } from '@/lib/params';
+import {
+  filterOverviewProjects,
+  filterPackages,
+  filterProjects,
+  filterVulnerabilities,
+  overviewFacets,
+  paginate,
+  type Page,
+} from './list-filters';
 import { loadExploitSignals, type ExploitSignals } from './exploit-signals';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';
 
@@ -965,20 +973,34 @@ export async function getVulnerability(db: Db, id: string): Promise<Vulnerabilit
 
 const FIX_FIRST_COUNT = 5;
 
-export async function getOverview(db: Db) {
-  const all = await loadComponents(db);
+export async function getOverview(db: Db, filter: OverviewFilter = {}) {
+  const everything = await loadComponents(db);
+  const everyProject = await listProjectsFrom(db, everything);
+  const projectList = filterOverviewProjects(everyProject, filter);
+  const filtered = projectList.length !== everyProject.length;
+  const sbomIds = new Set(projectList.flatMap((p) => (p.latest ? [p.latest.id] : [])));
+  const all = filtered ? everything.filter((c) => sbomIds.has(c.sbomId)) : everything;
   const pkgs = aggregatePackages(all);
-  const [projectList, recentUploads] = await Promise.all([
-    listProjectsFrom(db, all),
-    db
-      .select({ ...sbomColumns, projectId: projects.id, projectName: projects.name })
-      .from(sboms)
-      .innerJoin(projects, eq(projects.id, sboms.projectId))
-      .orderBy(desc(sboms.uploadedAt), desc(sboms.id))
-      .limit(8),
-  ]);
+  const recentUploads = projectList.length
+    ? await db
+        .select({ ...sbomColumns, projectId: projects.id, projectName: projects.name })
+        .from(sboms)
+        .innerJoin(projects, eq(projects.id, sboms.projectId))
+        .where(
+          inArray(
+            projects.id,
+            projectList.map((p) => p.id),
+          ),
+        )
+        .orderBy(desc(sboms.uploadedAt), desc(sboms.id))
+        .limit(8)
+    : [];
   return {
+    /** Projects matching the filter; `totalProjectCount` ignores it, so an empty match is not mistaken for an empty dashboard. */
     projectCount: projectList.length,
+    totalProjectCount: everyProject.length,
+    /** Every value a filter could pick, from all Projects, so a narrowed view can be widened. */
+    facets: overviewFacets(everyProject),
     staleProjects: projectList.filter((p) => p.stale).length,
     packageCount: pkgs.length,
     vulnerablePackages: pkgs.filter((p) => p.vulnCount).length,

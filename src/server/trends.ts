@@ -1,5 +1,5 @@
 // Trend reads over project_snapshots. Pages and API routes share these.
-import { asc, eq, gte, and } from 'drizzle-orm';
+import { asc, eq, gte, and, inArray } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { projects, projectSnapshots } from '@/db/schema';
 import type { SnapshotCounts } from '@/lib/snapshot';
@@ -45,12 +45,16 @@ export async function getProjectTrend(db: Db, projectId: number, days: number, n
 /**
  * All projects together. Each day sums every project's latest snapshot at or before that day, so a project that
  * was not snapshotted on a day (worker down) keeps its last known numbers instead of dropping out of the total.
+ * `projectIds` narrows the sum to those projects (the overview's filter); empty means none, unset means all.
  */
-export async function getSummaryTrend(db: Db, days: number, now = new Date()): Promise<TrendPoint[]> {
+export async function getSummaryTrend(db: Db, days: number, now = new Date(), projectIds?: number[]): Promise<TrendPoint[]> {
+  if (projectIds && !projectIds.length) {
+    return [];
+  }
   const rows = await db
     .select()
     .from(projectSnapshots)
-    .where(gte(projectSnapshots.day, since(days, now)))
+    .where(and(gte(projectSnapshots.day, since(days, now)), projectIds ? inArray(projectSnapshots.projectId, projectIds) : undefined))
     .orderBy(asc(projectSnapshots.day));
   const latest = new Map<number, (typeof rows)[number]>();
   const points: TrendPoint[] = [];
