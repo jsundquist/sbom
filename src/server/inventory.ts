@@ -1,6 +1,6 @@
 // Read model: joins SBOM components with vulnerability and latest-version data.
 import { and, count, desc, eq, exists, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
-import { legacyRepositoryForms } from '@/lib/repository';
+import { legacyRepositoryForms, normalizeRepository } from '@/lib/repository';
 import type { Db } from '@/db';
 import {
   componentEdges,
@@ -452,6 +452,17 @@ export async function listProjects(db: Db, { repository }: { repository?: string
   const all = sbomIds.length ? await loadComponents(db, { sbomIds }) : [];
   const bySbom = Map.groupBy(all, (c) => c.sbomId);
   return rows.map((r) => toProject(r, summarize((r.sbom?.id && bySbom.get(r.sbom.id)) || [])));
+}
+
+/** The other Projects built from the same repository (monorepo services), by name. Nothing for a Project with no usable repository. */
+export async function getSiblingProjects(db: Db, projectId: number): Promise<ProjectSummary[]> {
+  const [row] = await db.select({ repository: projects.repository }).from(projects).where(eq(projects.id, projectId));
+  const repository = row?.repository ? normalizeRepository(row.repository) : null;
+  if (!repository) {
+    return [];
+  }
+  // Scoped to this repository's SBOMs, so it stays cheap at 100 Projects (ADR 0005).
+  return (await listProjects(db, { repository })).filter((p) => p.id !== projectId);
 }
 
 export interface ProjectDetail extends ProjectSummary {
