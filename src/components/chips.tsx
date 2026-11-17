@@ -113,6 +113,20 @@ export function KindChip({ kind }: { kind: ProjectKind }) {
   return <Chip size="small" variant="outlined" label={kind} sx={{ textTransform: 'capitalize' }} />;
 }
 
+/** The uploader's own labels for a Project (team, tier, "internet-facing"). Renders nothing for none. */
+export function TagChips({ tags }: { tags: string[] }) {
+  if (!tags.length) {
+    return null;
+  }
+  return (
+    <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+      {tags.map((t) => (
+        <Chip key={t} size="small" variant="outlined" label={t} />
+      ))}
+    </Stack>
+  );
+}
+
 export function PendingChip({ label = 'Scanning…' }: { label?: string }) {
   return <Chip size="small" variant="outlined" icon={<HourglassIcon />} label={label} />;
 }
