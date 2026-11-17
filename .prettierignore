@@ -14,3 +14,4 @@ docs/features.json
 
 # Agent worktrees inside the repo
 .claude
+tests/fixtures/load-components.golden.json
