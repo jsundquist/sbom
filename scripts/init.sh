@@ -8,6 +8,12 @@ cd "$(dirname "$0")/.."
 echo "==> node $(node --version), pnpm $(pnpm --version)"
 pnpm install --frozen-lockfile
 
+# tsconfig includes .next/types, which is generated per branch; a leftover from another
+# branch references routes that do not exist here and turns the baseline red.
+# Excluding .next in tsconfig instead would stop `next build` validating route types.
+echo "==> clear stale generated Next types"
+rm -rf .next/types .next/dev/types
+
 echo "==> type-check"
 pnpm run lint
 
