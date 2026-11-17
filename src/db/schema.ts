@@ -34,6 +34,7 @@ export const projects = pgTable(
     name: text('name').notNull().unique(),
     repository: text('repository'),
     kind: projectKindEnum('kind').notNull().default('application'),
+    tags: jsonb('tags').$type<string[]>().notNull().default([]),
     latestSbomId: integer('latest_sbom_id').references((): AnyPgColumn => sboms.id, { onDelete: 'set null' }),
     ...timestamps,
   },
