@@ -12,12 +12,24 @@ const root = path.resolve(import.meta.dirname, '..', '..');
 
 export const fixture = (name: string) => JSON.parse(fs.readFileSync(path.join(root, 'tests', 'fixtures', name), 'utf8'));
 
-/** Fresh in-memory Postgres with all migrations applied. */
+// Booting PGlite and replaying every migration cost ~600ms per test, so each test file migrates once and later calls
+// truncate instead. Vitest gives every file its own module graph, so files never share this.
+let shared: { client: PGlite; db: Db; tables: string } | undefined;
+
+/** In-memory Postgres with all migrations applied and every table empty (identities restarted). */
 export async function createTestDb(): Promise<{ db: Db; close: () => Promise<void> }> {
-  const client = new PGlite();
-  const db = drizzle(client, { schema });
-  await migrate(db, { migrationsFolder: path.join(root, 'drizzle') });
-  return { db: db as unknown as Db, close: () => client.close() };
+  if (!shared) {
+    const client = new PGlite();
+    const db = drizzle(client, { schema });
+    await migrate(db, { migrationsFolder: path.join(root, 'drizzle') });
+    const { rows } = await client.query<{ name: string }>(
+      `SELECT format('%I.%I', schemaname, tablename) AS name FROM pg_tables WHERE schemaname = 'public'`,
+    );
+    shared = { client, db: db as unknown as Db, tables: rows.map((r) => r.name).join(', ') };
+    return { db: shared.db, close: async () => {} };
+  }
+  await shared.client.exec(`TRUNCATE ${shared.tables} RESTART IDENTITY CASCADE`);
+  return { db: shared.db, close: async () => {} };
 }
 
 export interface FakeApis {
