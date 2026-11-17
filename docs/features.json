@@ -1697,6 +1697,26 @@
       ]
     },
     {
+      "id": "M-007",
+      "title": "Decide local stdio vs remote MCP so the dashboard is queryable from any device",
+      "epic": "M",
+      "size": "S",
+      "priority": 9.9,
+      "status": "todo",
+      "depends_on": [],
+      "acceptance": [
+        "A grilling session settles local stdio only, remote only, or both, starting from the goal: query the dashboard from any device, not only one with a checkout",
+        "An ADR amends or supersedes ADR 0003, covering where the remote endpoint lives (a route in the Next.js app calling src/server/ versus a separate service), how a remote client authenticates and which of the target clients (Claude Code, Claude Desktop, claude.ai, mobile) support that, and how rate limits and the untrusted-text handling carry over",
+        "The ADR says what happens to the mcp/ scaffold (M-001, PR #71) and re-scopes M-002..M-005 (and sets their depends_on) before any of them is built"
+      ],
+      "evidence": "",
+      "notes": "2026-11-17: ADR 0003 chose a local stdio client and rejected a remote HTTP endpoint in the Next.js app (new auth surface); the owner's intent was a remote MCP usable from any device and the grilling that led to ADR 0003 did not surface that. Decide before M-002 so its tools are not built twice. If remote wins, mcp/ likely becomes src/ code and the 'imports nothing from src/' rule goes away. Run the grilling skill.",
+      "labels": [
+        "wayfinder:grilling",
+        "needs-triage"
+      ]
+    },
+    {
       "id": "K-004",
       "title": "Idea: worker concurrency (FOR UPDATE SKIP LOCKED) and OSV modified-since feed",
       "epic": "K",
