@@ -28,6 +28,23 @@ updates:
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
 
+  # mcp/ is its own pnpm root (ADR 0003), so it needs its own entry. The SDK is pinned exactly; this proposes bumps.
+  - package-ecosystem: npm
+    directory: /mcp
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'build(deps)'
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+
   # Keeps the SHA pins in .github/workflows and action.yml current (updates
   # the "# vX.Y.Z" comment together with the SHA).
   - package-ecosystem: github-actions
