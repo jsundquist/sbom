@@ -1,0 +1,6 @@
+# mcp/ is its own pnpm root, not a member of the app workspace: the app image's `pnpm install --frozen-lockfile` and
+# its lockfile stay untouched. Same supply-chain posture as the root file.
+allowBuilds:
+  esbuild: true
+
+minimumReleaseAge: 1440
