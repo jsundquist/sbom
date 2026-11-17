@@ -3,7 +3,7 @@
 A dashboard for software bills of materials (SBOMs) across many applications and libraries.
 
 - **Upload** CycloneDX or SPDX JSON SBOMs from GitHub Actions (or `curl`).
-- **Applications:** every app or library that has uploaded an SBOM, with its vulnerability and update status.
+- **Projects:** every application, library, image or host that has uploaded an SBOM, with its kind, vulnerability and update status.
 - **Packages:** every package used across the latest SBOM of each application, which versions are in use, and by whom.
 - **Vulnerabilities:** known CVEs/advisories for those packages from [OSV.dev](https://osv.dev), with severity, CVSS score and the version that fixes them.
 - **Known exploited:** vulnerabilities in the [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) are flagged so you can fix what attackers actually use first.
@@ -98,12 +98,13 @@ jobs:
 |---|---|---|
 | `dashboard-url` | (required) | Base URL of the dashboard |
 | `api-token` | `''` | Bearer token, one of the server's `UPLOAD_TOKENS` |
-| `project-name` | repository name | Application name shown in the dashboard |
+| `project-name` | repository name | Project name shown in the dashboard |
 | `project-version` | `github.ref_name` | Version label for the upload |
 | `sbom-file` | `''` | Upload an existing CycloneDX/SPDX JSON file instead of generating one |
 | `generator` | `syft` | `syft` scans the checkout with [Syft](https://github.com/anchore/syft); `dependency-graph` exports GitHub's dependency graph |
 | `path` | `.` | Directory scanned by Syft |
 | `image` | `''` | Scan this container image with Syft instead of the checkout (needs `generator: syft`); OS packages are included |
+| `kind` | `application` (`image` when `image` is set) | What the project is: `application`, `library`, `image` or `host`. Replaces the stored kind on every upload |
 
 Outputs: `project-id`, `sbom-id`, `url`. See [`examples/upload-sbom.yml`](examples/upload-sbom.yml).
 
@@ -121,7 +122,7 @@ curl -X POST "http://localhost:3000/api/v1/sboms?project=my-app&version=1.2.3" \
   --data-binary @sbom.cdx.json
 ```
 
-Metadata can be passed as query parameters or `X-Sbom-*` headers: `project`, `version`, `ref`, `commit`, `repository`.
+Metadata can be passed as query parameters or `X-Sbom-*` headers: `project`, `version`, `ref`, `commit`, `repository`, `kind` (`application` by default, also `library`, `image`, `host`; replaced on every upload, so a project that stops sending it goes back to `application`).
 If `project`/`version` are omitted they are taken from the SBOM's subject (CycloneDX `metadata.component`, SPDX described package).
 
 ## Configuration
@@ -174,8 +175,8 @@ Outside production, with none of these set, reads stay open so local development
 | `GET` | `/api/v1/sboms/:id` | Download the original SBOM document |
 | `GET` | `/api/v1/summary` | Totals, severity counts and recent uploads |
 | `GET` | `/api/v1/summary/trends[?days=90]` | Daily totals across all applications, oldest first (`points`; max 365 days) |
-| `GET` | `/api/v1/projects` | Applications with their latest SBOM stats |
-| `GET` | `/api/v1/projects/:id[?sbom=:sbomId]` | Application details and enriched packages |
+| `GET` | `/api/v1/projects` | Projects (with `kind`) and their latest SBOM stats |
+| `GET` | `/api/v1/projects/:id[?sbom=:sbomId]` | Project details and enriched packages |
 | `GET` | `/api/v1/projects/:id/dependencies[?sbom=:sbomId]` | Dependency edges of an SBOM (`components`, `edges`, `directIds`); empty when the SBOM has no relationships |
 | `GET` | `/api/v1/projects/:id/trends[?days=90]` | Daily snapshots of one application: vulnerabilities by severity, outdated and package counts (`points`) |
 | `DELETE` | `/api/v1/projects/:id` | Delete a project and its SBOMs (admin token required when configured; an upload token is refused) |
