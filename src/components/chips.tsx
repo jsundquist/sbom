@@ -12,6 +12,7 @@ import UpgradeIcon from '@mui/icons-material/Upgrade';
 import HourglassIcon from '@mui/icons-material/HourglassEmpty';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import type { ProjectKind } from '@/lib/kinds';
 import type { Severity } from '@/lib/severity';
 import type { Maintenance } from '@/lib/maintenance';
 import type { UpdateType } from '@/lib/version';
@@ -105,6 +106,11 @@ export function StaleChip({ uploadedAt, count }: { uploadedAt?: string | null; c
   );
   const detail = uploadedAt ? `Last SBOM uploaded ${uploadedAt.slice(0, 10)}` : 'Latest SBOM is older than STALE_AFTER_DAYS';
   return <Tooltip title={detail}>{chip}</Tooltip>;
+}
+
+/** What a Project is. Plain outline: the kind is a label, not a status. */
+export function KindChip({ kind }: { kind: ProjectKind }) {
+  return <Chip size="small" variant="outlined" label={kind} sx={{ textTransform: 'capitalize' }} />;
 }
 
 export function PendingChip({ label = 'Scanning…' }: { label?: string }) {

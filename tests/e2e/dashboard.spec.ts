@@ -1,16 +1,17 @@
 import fs from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-test('overview summarizes applications, vulnerabilities and outdated packages', async ({ page }) => {
+test('overview summarizes projects, vulnerabilities and outdated packages', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
-  await expect(page.getByText('Applications', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Projects', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Vulnerabilities by severity' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Most exposed applications' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Most exposed projects' })).toBeVisible();
   // payments-api has the critical Log4j CVE, so it sorts first.
-  const firstRow = page.getByRole('grid', { name: 'Applications' }).getByRole('row').nth(1);
+  const firstRow = page.getByRole('grid', { name: 'Projects' }).getByRole('row').nth(1);
   await expect(firstRow).toContainText('payments-api');
   await expect(firstRow).toContainText('Critical 1');
+  await expect(firstRow).toContainText('application'); // kind chip; rows without an explicit kind read as application
 });
 
 test('overview lists the vulnerabilities to fix first, known exploited first', async ({ page }) => {
@@ -23,7 +24,7 @@ test('overview lists the vulnerabilities to fix first, known exploited first', a
   await expect(items.first()).toContainText('Exploited');
 });
 
-test('application page lists packages and filters to vulnerable ones', async ({ page }) => {
+test('project page lists packages and filters to vulnerable ones', async ({ page }) => {
   await page.goto('/projects');
   await page.getByRole('link', { name: 'web-storefront' }).click();
   await expect(page.getByRole('heading', { name: 'web-storefront' })).toBeVisible();
@@ -39,7 +40,7 @@ test('application page lists packages and filters to vulnerable ones', async ({ 
   await expect(grid).toContainText('major update');
 });
 
-test('package page shows which applications use each version', async ({ page }) => {
+test('package page shows which projects use each version', async ({ page }) => {
   await page.goto('/packages');
   await page.getByRole('button', { name: /^Used by 2\+ apps/ }).click();
   await page.getByRole('link', { name: 'lodash', exact: true }).click();
@@ -54,7 +55,7 @@ test('package page shows which applications use each version', async ({ page }) 
   await expect(page.getByText('No source repository or scorecard found')).toBeVisible();
 });
 
-test('vulnerability detail links affected packages and applications', async ({ page }) => {
+test('vulnerability detail links affected packages and projects', async ({ page }) => {
   await page.goto('/vulnerabilities');
   await page.getByRole('link', { name: 'CVE-2021-44228' }).click();
   await expect(page.getByRole('heading', { name: 'CVE-2021-44228' })).toBeVisible();
@@ -66,7 +67,7 @@ test('vulnerability detail links affected packages and applications', async ({ p
   await expect(page.getByRole('heading', { name: 'payments-api' })).toBeVisible();
 });
 
-test('dependency tree explains why a vulnerable package is in an application', async ({ page }) => {
+test('dependency tree explains why a vulnerable package is in a project', async ({ page }) => {
   await page.goto('/projects');
   await page.getByRole('link', { name: 'web-storefront' }).first().click();
   await page.getByRole('tab', { name: 'Dependencies' }).click();
@@ -86,7 +87,7 @@ test('dependency tree explains why a vulnerable package is in an application', a
   await expect(page.getByText('@babel/core@7.24.0 › lodash@4.17.15')).toBeVisible();
 });
 
-test('applications whose SBOM has no relationships explain the empty dependency tree', async ({ page }) => {
+test('projects whose SBOM has no relationships explain the empty dependency tree', async ({ page }) => {
   await page.goto('/projects');
   await page.getByRole('link', { name: 'inventory-service' }).first().click();
   await page.getByRole('tab', { name: 'Dependencies' }).click();
@@ -114,11 +115,11 @@ test('SBOMs uploaded through the API appear in the dashboard', async ({ page, re
   await expect(page.getByText('No trend data yet')).toBeVisible();
 });
 
-test('overview and application pages chart vulnerabilities over time from the daily snapshots', async ({ page }) => {
+test('overview and project pages chart vulnerabilities over time from the daily snapshots', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Vulnerabilities over time' })).toBeVisible();
   await expect(page.getByRole('img', { name: /^Vulnerabilities over time, latest \d{4}-\d{2}-\d{2}/ })).toBeVisible();
-  await page.getByRole('grid', { name: 'Applications' }).getByRole('link', { name: 'payments-api' }).click();
+  await page.getByRole('grid', { name: 'Projects' }).getByRole('link', { name: 'payments-api' }).click();
   await expect(page.getByRole('img', { name: /^Vulnerabilities over time, latest .*Critical 1/ })).toBeVisible();
 });
 

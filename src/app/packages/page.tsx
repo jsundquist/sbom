@@ -15,7 +15,7 @@ export default async function PackagesPage() {
   const packages = await listPackages(getDb());
   return (
     <>
-      <PageHeader title="Packages" subtitle="Every package used across the latest SBOM of each application" />
+      <PageHeader title="Packages" subtitle="Every package used across the latest SBOM of each project" />
       <PackagesGrid packages={packages} />
     </>
   );

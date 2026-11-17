@@ -43,7 +43,7 @@ export async function getProjectTrend(db: Db, projectId: number, days: number, n
 }
 
 /**
- * All applications together. Each day sums every project's latest snapshot at or before that day, so a project that
+ * All projects together. Each day sums every project's latest snapshot at or before that day, so a project that
  * was not snapshotted on a day (worker down) keeps its last known numbers instead of dropping out of the total.
  */
 export async function getSummaryTrend(db: Db, days: number, now = new Date()): Promise<TrendPoint[]> {

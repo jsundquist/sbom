@@ -4,7 +4,7 @@ import { requireOwner } from '@/server/auth';
 import { parseDays } from '@/server/api';
 import { getSummaryTrend } from '@/server/trends';
 
-/** Daily totals across all applications, oldest first (`?days=` window, default 90, max 365). */
+/** Daily totals across all projects, oldest first (`?days=` window, default 90, max 365). */
 export async function GET(req: Request) {
   const denied = await requireOwner(req);
   if (denied) {

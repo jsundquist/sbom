@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
   return {
     title: 'SBOM Dashboard',
-    description: 'Software bills of materials, vulnerable packages and outdated dependencies across applications.',
+    description: 'Software bills of materials, vulnerable packages and outdated dependencies across projects.',
   };
 }
 

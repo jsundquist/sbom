@@ -95,7 +95,7 @@ const columns: GridColDef<VulnerabilitySummary>[] = [
   },
   {
     field: 'projects',
-    headerName: 'Applications',
+    headerName: 'Projects',
     flex: 1,
     minWidth: 160,
     valueGetter: (_v, row) => row.projects.map((p) => p.name).join(' '),

@@ -47,7 +47,7 @@ export default async function PackagePage({ params }: { params: Promise<{ key: s
           </StatTile>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatTile label="Applications" value={pkg.projectCount} hint={`${pkg.versions.length} distinct versions in use`} />
+          <StatTile label="Projects" value={pkg.projectCount} hint={`${pkg.versions.length} distinct versions in use`} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatTile label="Vulnerabilities" value={pkg.vulnCount}>
