@@ -1228,7 +1228,7 @@
       "epic": "G",
       "size": "M",
       "priority": 4.15,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "G-001"
       ],
@@ -1238,7 +1238,7 @@
         "action.yml input `tags` (comma-separated); replaced on every upload; shown as chips on the grid and project page",
         "No UI or API to edit tags"
       ],
-      "evidence": "",
+      "evidence": "2026-11-17: tests/unit/project-tags.test.ts written first (module missing), then 19 green; pnpm run lint, pnpm test (401) and pnpm run test:e2e (15, after a rebuild; payments-api row shows its team:payments tag) green. Not run: the Action in a real workflow; the Tags column filter in a browser.",
       "notes": "ADR 0004. Tags are the Owner's own organising (single Owner, CONTEXT.md).",
       "labels": [
         "ready-for-agent"
