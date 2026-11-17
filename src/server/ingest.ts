@@ -4,6 +4,7 @@ import { componentEdges, components, packages, packageVersions, projects, sboms 
 import { SBOM_UPLOADED_CHANNEL } from '@/lib/channels';
 import { DEFAULT_PROJECT_KIND, type ProjectKind } from '@/lib/kinds';
 import { parsePurl } from '@/lib/purl';
+import { normalizeRepository } from '@/lib/repository';
 import { componentKey, parseSbom } from '@/sbom/parse';
 
 export interface UploadMeta {
@@ -34,12 +35,14 @@ export async function ingestSbom(db: Db, document: unknown, meta: UploadMeta, { 
   }
 
   const kind = meta.kind ?? DEFAULT_PROJECT_KIND;
+  // Unparseable text is dropped, not stored, so the COALESCE below keeps the old value.
+  const repository = meta.repository ? normalizeRepository(meta.repository) : null;
 
   const result = await db.transaction(async (tx) => {
     const now = new Date();
     const [project] = await tx
       .insert(projects)
-      .values({ name: projectName, repository: meta.repository ?? null, kind })
+      .values({ name: projectName, repository, kind })
       .onConflictDoUpdate({
         target: projects.name,
         // Kind is replaced on every upload, so one that omits it resets to the default.

@@ -1,0 +1,1 @@
+CREATE INDEX "projects_repository_idx" ON "projects" USING btree ("repository");

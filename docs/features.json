@@ -1206,7 +1206,7 @@
       "epic": "G",
       "size": "S",
       "priority": 3.8,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "F-001"
       ],
@@ -1216,7 +1216,7 @@
         "Lookups also match the old unnormalised form until the Project is re-uploaded",
         "Unit tests for each form"
       ],
-      "evidence": "",
+      "evidence": "2026-11-17: tests/unit/repository.test.ts (+ index test in schema-indexes.test.ts) written first and failing, then green; pnpm run lint, pnpm test (382, 30 files) and pnpm run test:e2e (15, after a rebuild, Postgres 16) green. Not run: the real Action against a workflow, or a migration against a populated Postgres (CREATE INDEX only).",
       "notes": "ADR 0004. The MCP project lookup (M-002) matches a git remote against this column.",
       "labels": [
         "ready-for-agent"
@@ -1490,14 +1490,14 @@
       "epic": "J",
       "size": "S",
       "priority": 8.35,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "Measured on this repo and one image: component counts for the full scan and a prod-only scan, and the exact Syft/pnpm invocation that produces each",
         "Recommendation among: a second scan whose difference is dev, a Syft config option, or a lockfile-derived dev list sent as metadata",
         "Findings written to docs/ and linked from J-002"
       ],
-      "evidence": "",
+      "evidence": "Findings in docs/research/prod-only-sbom.md. Ran Syft 1.57.1 and pnpm 11.21.0 on a git-archive copy of main: full checkout 655 components (628 npm); after pnpm install --prod --frozen-lockfile still 655 (Syft reads the lockfile); pnpm sbom --lockfile-only gives 628 all, 266 --prod, 369 --dev; SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES=false changes nothing. Images built from the repo Dockerfile: web 1,460, worker 1,870, build stage 5,121 (293 dev npm packages), none in web/worker. Recommendation: lockfile-derived scope stamped into the CycloneDX document. Not run: the Action in a real workflow, the Syft version bundled by anchore/sbom-action v0.24.3, npm/yarn projects, the stamping step. Syft release notes not read.",
       "notes": "Syft 2026-11 emits no scope and no dev marker; a scan of this repo gives 1,975 components with vitest, typescript and eslint indistinguishable from runtime packages. CycloneDX scope is required/optional/excluded, not dev/runtime.",
       "labels": [
         "wayfinder:research",
@@ -1520,7 +1520,7 @@
         "Uploads without scope data still ingest as unknown"
       ],
       "evidence": "",
-      "notes": "No change to ranking (CONTEXT.md: Scope).",
+      "notes": "No change to ranking (CONTEXT.md: Scope). Findings and recommendation in docs/research/prod-only-sbom.md: Syft cannot do it (no scope, config has no effect on pnpm); derive the prod set with pnpm sbom --lockfile-only --prod and stamp CycloneDX scope (excluded=dev, required=runtime) into the document in the Action, not a header (the list is 8-12 KB).",
       "labels": [
         "ready-for-agent"
       ]
