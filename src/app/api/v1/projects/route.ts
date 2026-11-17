@@ -1,19 +1,22 @@
-import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
-import { normalizeRepository } from '@/lib/repository';
-import { jsonError } from '@/server/api';
+import { parsePage, parseProjectFilter } from '@/lib/params';
+import { jsonError, listJson } from '@/server/api';
 import { requireOwner } from '@/server/auth';
-import { listProjects } from '@/server/inventory';
+import { listProjectsPage } from '@/server/inventory';
 
 export async function GET(req: Request) {
   const denied = await requireOwner(req);
   if (denied) {
     return denied;
   }
-  const raw = new URL(req.url).searchParams.get('repository')?.trim();
-  const repository = raw ? normalizeRepository(raw) : undefined;
-  if (repository === null) {
-    return jsonError(400, 'repository must be a git remote or owner/repo');
+  const sp = new URL(req.url).searchParams;
+  const filter = parseProjectFilter(sp);
+  if (!filter.ok) {
+    return jsonError(400, filter.error);
   }
-  return NextResponse.json(await listProjects(getDb(), { repository }));
+  const page = parsePage(sp);
+  if (!page.ok) {
+    return jsonError(400, page.error);
+  }
+  return listJson(await listProjectsPage(getDb(), filter.value, page.value));
 }
