@@ -11,6 +11,7 @@ const AUTH_PORT = Number(process.env.E2E_AUTH_PORT ?? 3101);
 export const AUTH_E2E_URL = `http://localhost:${AUTH_PORT}`;
 export const AUTH_E2E_SECRET = 'e2e-nextauth-secret-e2e-nextauth-secret';
 export const AUTH_E2E_OWNER_ID = '4242';
+export const AUTH_E2E_READ_TOKEN = 'e2e-read-token';
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -45,6 +46,7 @@ export default defineConfig({
       env: {
         DATABASE_URL: E2E_DATABASE_URL,
         UPLOAD_TOKENS: 'e2e-token',
+        READ_TOKENS: AUTH_E2E_READ_TOKEN,
         OWNER_GITHUB_ID: AUTH_E2E_OWNER_ID,
         NEXTAUTH_SECRET: AUTH_E2E_SECRET,
         NEXTAUTH_URL: AUTH_E2E_URL,
