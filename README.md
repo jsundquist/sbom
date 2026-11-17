@@ -122,7 +122,8 @@ curl -X POST "http://localhost:3000/api/v1/sboms?project=my-app&version=1.2.3" \
   --data-binary @sbom.cdx.json
 ```
 
-Metadata can be passed as query parameters or `X-Sbom-*` headers: `project`, `version`, `ref`, `commit`, `repository`, `kind` (`application` by default, also `library`, `image`, `host`; replaced on every upload, so a project that stops sending it goes back to `application`).
+Metadata can be passed as query parameters or `X-Sbom-*` headers: `project`, `version`, `ref`, `commit`, `repository` (any git remote or `owner/repo`, stored as `github.com/owner/repo`; see below), `kind` (`application` by default, also `library`, `image`, `host`; replaced on every upload, so a project that stops sending it goes back to `application`).
+`repository` is normalised on ingest: `https://github.com/Acme/Web.git`, `git@github.com:acme/web.git`, `ssh://git@github.com/acme/web` and a bare `acme/web` (what the Action sends from `GITHUB_REPOSITORY`) all become `github.com/acme/web`; other hosts are kept as `host/path`. An upload without one keeps the stored value, and text that is not a repository is ignored.
 If `project`/`version` are omitted they are taken from the SBOM's subject (CycloneDX `metadata.component`, SPDX described package).
 
 ## Configuration
@@ -176,7 +177,7 @@ Outside production, with none of these set, reads stay open so local development
 | `GET` | `/api/v1/sboms/:id` | Download the original SBOM document |
 | `GET` | `/api/v1/summary` | Totals, severity counts and recent uploads |
 | `GET` | `/api/v1/summary/trends[?days=90]` | Daily totals across all applications, oldest first (`points`; max 365 days) |
-| `GET` | `/api/v1/projects` | Projects (with `kind`) and their latest SBOM stats |
+| `GET` | `/api/v1/projects` | Projects (with `kind`) and their latest SBOM stats; `?repository=` filters by git remote in any spelling (400 if it is not a repository) |
 | `GET` | `/api/v1/projects/:id[?sbom=:sbomId]` | Project details and enriched packages |
 | `GET` | `/api/v1/projects/:id/dependencies[?sbom=:sbomId]` | Dependency edges of an SBOM (`components`, `edges`, `directIds`); empty when the SBOM has no relationships |
 | `GET` | `/api/v1/projects/:id/trends[?days=90]` | Daily snapshots of one application: vulnerabilities by severity, outdated and package counts (`points`) |

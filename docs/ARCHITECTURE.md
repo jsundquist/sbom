@@ -42,7 +42,7 @@ blocks in `eslint.config.mjs`); `components/` may import only types from `db/` a
 
 | Table | Meaning | Notes |
 |---|---|---|
-| `projects` | An application, library, image or host (`kind`, replaced on every upload) | `name` unique; `latest_sbom_id` points at newest SBOM |
+| `projects` | An application, library, image or host (`kind`, replaced on every upload; `repository` normalised by `src/lib/repository.ts`, indexed) | `name` unique; `latest_sbom_id` points at newest SBOM |
 | `sboms` | One uploaded document | Raw `document` jsonb kept; pruned to `SBOM_HISTORY_LIMIT` per project |
 | `components` | Package entries of one SBOM | Cascade-deleted with the SBOM; `package_key` = `<ecosystem>:<name>` |
 | `component_edges` | "parent depends on child" within one SBOM | Null `parent_id` = the application depends on the child directly; no null rows = direct dependencies unknown. Cascade-deleted with the SBOM. Indexed on `sbom_id`, `parent_id` and `child_id`: the last two are cascading foreign keys to `components`, and without them every deleted component scans all edges, which made pruning history take minutes at 4M edges (F-006, `docs/benchmark.md`) |

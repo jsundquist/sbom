@@ -27,14 +27,18 @@ const timestamps = {
 };
 
 /** Something that uploads SBOMs and is tracked on its own: an application, library, image or host. */
-export const projects = pgTable('projects', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull().unique(),
-  repository: text('repository'),
-  kind: projectKindEnum('kind').notNull().default('application'),
-  latestSbomId: integer('latest_sbom_id').references((): AnyPgColumn => sboms.id, { onDelete: 'set null' }),
-  ...timestamps,
-});
+export const projects = pgTable(
+  'projects',
+  {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull().unique(),
+    repository: text('repository'),
+    kind: projectKindEnum('kind').notNull().default('application'),
+    latestSbomId: integer('latest_sbom_id').references((): AnyPgColumn => sboms.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (t) => [index('projects_repository_idx').on(t.repository)],
+);
 
 /** One uploaded SBOM document. */
 export const sboms = pgTable(
