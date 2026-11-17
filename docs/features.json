@@ -1777,7 +1777,7 @@
       "epic": "F",
       "size": "S",
       "priority": 2.2,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "Generated migration (pnpm run db:generate) adds indexes on component_edges(parent_id) and component_edges(child_id)",
@@ -1785,7 +1785,7 @@
         "pnpm run bench measure --only uploads on the seeded 100 x 2,000 x 20 dataset: identical re-upload and 5-components-changed both under 2,000 ms median (were over 120 s); numbers added to docs/benchmark.md",
         "docs/ARCHITECTURE.md data-model notes mention why the indexes exist"
       ],
-      "evidence": "",
+      "evidence": "2026-11-16: tests/unit/schema-indexes.test.ts written first and failed (component_edges indexed only on id and sbom_id), then green after the schema change and generated migration 0007 (two CREATE INDEX statements). pnpm run lint and pnpm test (299) green. Benchmark re-seeded through the migration and measured with pnpm run bench measure --only uploads on 100 x 2,000 x 20: identical re-upload 383 ms, 5 components changed 377 ms (were over 120 s); database 1.26 -> 1.45 GB (component_edges indexes 123 -> 322 MB). Not run: e2e (no page or route change). Deploy note: drizzle runs the migration in a transaction, so CREATE INDEX (not CONCURRENTLY) blocks writes to component_edges while it builds; a few seconds at the current size, minutes at the benchmark size.",
       "notes": "Found by F-004. Every upload prunes the Project's oldest SBOM; deleting it cascades to components, and the two foreign keys from component_edges to components (ON DELETE CASCADE) have no index, so each deleted component scans all edges (4.3M at the benchmark size; one prune ran over 9 minutes, failing statement DELETE FROM ONLY component_edges WHERE child_id = $1). Cost grows with total edges in the database, so it may already be noticeable below the benchmark size; not measured there. With the two indexes an upload takes ~410 ms, for +160 MB of index at the benchmark size (docs/benchmark.md). Alternative to weigh in the ticket: edges are always deleted with their own SBOM, so the two cascades are redundant work, but the foreign keys also protect integrity; the indexes are the smaller change.",
       "labels": [
         "ready-for-agent"

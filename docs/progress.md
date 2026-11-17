@@ -6,7 +6,13 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: F-006 (index `component_edges`; uploads do not finish without it at scale), then K-001 (rescoped) and G; Pick the lowest-priority `todo` in `docs/features.json` as usual.
+- Next: K-001 (rescoped: the four slow pages under 1 s), then G; F-006 is in review. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-16: F-006 Index component_edges foreign keys
+- Done (branch `perf/f-006-edge-indexes`, stacked on the F-004 branch): `component_edges` is now indexed on `parent_id` and `child_id` (migration `0007`, generated). Both are cascading foreign keys to `components`; without an index, pruning an old SBOM scanned every edge once per deleted component.
+- Verified: new `tests/unit/schema-indexes.test.ts` failed first, then green; `pnpm run lint` and `pnpm test` (299) green. Re-seeded 100 x 2,000 x 20 through the migration and measured uploads: 383 ms identical re-upload, 377 ms with 5 components changed (were over 120 s); database 1.26 -> 1.45 GB. Numbers are in `docs/benchmark.md`.
+- Decisions: indexes, not dropping the redundant cascades (edges are always deleted with their own SBOM, but the foreign keys also guard integrity, and the indexes are the smaller change).
+- Gotchas: the migration runs in a transaction, so `CREATE INDEX` is not concurrent and blocks writes to `component_edges` while it builds: seconds at today's size, minutes at the benchmark size. Run the migrate Job when no upload is in flight.
 
 ## 2026-11-16: E-009 Batch deploys
 - Done (branch `ci/batch-release-deploys`, off main): `release.yml` now runs on `cron: '17 */4 * * *'` and `workflow_dispatch` instead of every push to `main`, so a burst of merges becomes one `chore(sbom): deploy` commit in `jsundquist/k8s-gitops`. A new `changes` job decides: a scheduled run releases only if GHCR has no image tagged `<short-sha>-*` for the head of `main`; a manual run always releases; any run from a branch other than `main` fails before building. `image` and `token-expiry` wait on it; `sign`, `bump` and `prune` follow `image`.
