@@ -102,7 +102,7 @@ Pages use `export const dynamic = 'force-dynamic'`.
 ## API surface (`/api/v1`)
 
 `POST sboms` (auth), `GET sboms/[id]`, `GET projects[/id]`, `DELETE projects/[id]` (admin token), `GET packages[/key]`,
-`GET vulnerabilities[/id]`, `GET summary`, `GET summary/trends`, `GET projects/[id]/trends` (both read `project_snapshots` via `src/server/trends.ts`), `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database). Errors are `{ "error": string }` via `jsonError`.
+`GET vulnerabilities[/id]`, `GET summary`, `GET summary/trends`, `GET projects/[id]/trends` (both read `project_snapshots` via `src/server/trends.ts`), `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database), `GET /metrics` (Prometheus text, `src/server/metrics.ts` over `listProjects` plus the worker heartbeat; session or `READ_TOKENS`, the only non-`/api/v1` path `checkReadToken` accepts; the worker stamps the `feed_syncs` row `worker` after a run with no job errors). Errors are `{ "error": string }` via `jsonError`.
 
 ## Configuration
 

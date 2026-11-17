@@ -198,7 +198,7 @@ export function denial(s: OwnerState): { status: 401 | 403 | 503; message: strin
 
 /**
  * Guard for every GET handler. Returns an error response (401, 403, or 503 when unavailable), or null when the caller may
- * read: a session owner, or a READ_TOKENS bearer on GET /api/v1/* (a bearer that is present but wrong is rejected, not
+ * read: a session owner, or a READ_TOKENS bearer on GET /api/v1/* or GET /metrics (a bearer that is present but wrong is rejected, not
  * retried as a session).
  */
 export async function requireOwner(req: Request): Promise<NextResponse | null> {
