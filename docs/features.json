@@ -211,7 +211,6 @@
         "Backfill is not required"
       ],
       "evidence": "2026-11-08: project_snapshots (unique project+day, FK to project only), worker/snapshots.ts as the last enrich job, pure snapshotCounts in lib/snapshot.ts; tests/unit/snapshots.test.ts (5): one row per day upserted, new day adds a row, survives history pruning, no SBOM no row; pnpm run lint and pnpm test green. e2e not run (no page or route change).",
-      "notes": "Built without A-004, so no libyears column; outdated counts are total and major. History cannot be rebuilt from old SBOMs (they are pruned, and vulnerability data changes).",
       "notes": "History is pruned to SBOM_HISTORY_LIMIT, so trends cannot be rebuilt from old SBOMs."
     },
     {
@@ -295,7 +294,6 @@
         "Tests cover each signal"
       ],
       "evidence": "2026-11-08: packages.latest_released_at/deprecated/deprecated_reason (migration), read from the deps.dev package call the latest-version job already makes (isDeprecated, deprecatedReason, publishedAt verified live); abandoned derived at read time from ABANDONED_AFTER_YEARS (default 2); Maintenance chip on the packages grid and package page; tests/unit/maintenance.test.ts; pnpm run lint, pnpm test (238) and pnpm run test:e2e (13) green.",
-      "notes": "Built without A-004: the release date of the latest version is all this needs, so no libyears and no per-version released_at.",
       "notes": "Verify deps.dev exposes a deprecation field."
     },
     {
@@ -1185,7 +1183,7 @@
       "epic": "G",
       "size": "M",
       "priority": 3.45,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "F-001"
       ],
@@ -1196,7 +1194,7 @@
         "UI headers and API docs say Project for the general concept; Application appears only as a kind value (CONTEXT.md)",
         "No backfill; existing rows read as application until their next upload"
       ],
-      "evidence": "",
+      "evidence": "2026-11-17: tests/unit/project-kind.test.ts written first (7 failing), then green; pnpm run lint, pnpm test (308) and pnpm run test:e2e (14, after a rebuild) green. Not checked in a browser: the Kind column filter (singleSelect column, DataGrid's own filter UI).",
       "notes": "ADR 0004. B-004 dropped the original kind column; host is the home W-006 asked for, so the collector there should send kind=host.",
       "labels": [
         "ready-for-agent"

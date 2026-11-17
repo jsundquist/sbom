@@ -6,7 +6,14 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: G-001 (project kind), G-002 (normalise repository), then L-001 (read tokens); the backlog order is in the 2026-11-16 backlog entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+- Next: G-002 (normalise repository), then L-001 (read tokens); the backlog order is in the 2026-11-16 backlog entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-17: G-001 Project kind
+- Done (branch `feat/g-001-project-kind`, off main): `projects.kind` (`project_kind` enum: application, library, image, host; NOT NULL, default application; migration `0008`, generated). `POST /api/v1/sboms` reads `kind` from the query or `X-Sbom-Kind`, validated by Zod against `PROJECT_KINDS` in `src/lib/kinds.ts` (400 otherwise); `ingestSbom` replaces it on every upload, so an upload that omits it resets to application. `ProjectSummary.kind` is in `GET /api/v1/projects[/id]`. `KindChip`, a Kind column (singleSelect, so the grid's filter works) and a chip on the project page. `action.yml` input `kind` (empty means application, or image when `image` is set); README, example workflow and ARCHITECTURE updated. UI headers, nav and e2e say Project; Application appears only as a kind value.
+- Verified: new `tests/unit/project-kind.test.ts` failed first (7 of 7), then green; `pnpm run lint`, `pnpm test` (308) and `pnpm run test:e2e` (14) green.
+- Decisions: Postgres enum rather than text so the database also rejects bad values (adding a kind is a one-line migration). No backfill: the column default makes old rows read as application.
+- Not done: the Kind filter was not exercised in a browser; the Action's kind logic was not run in a real workflow. `W-006` should send `kind=host`.
+- Gotchas: e2e runs against the existing `.next` build, so rebuild after any UI string change or it fails on stale text. Without a local Postgres, run one with `docker run -p 5433:5432 -e POSTGRES_USER=sbom -e POSTGRES_PASSWORD=sbom -e POSTGRES_DB=sbom_e2e postgres:16` and set `E2E_DATABASE_URL` and `DATABASE_URL`.
 
 ## 2026-11-16: K-001 Cheaper whole-inventory reads
 - Done (branch `perf/k-001-whole-inventory-reads`, off main): `loadComponents` in `src/server/inventory.ts` no longer joins package, version and vulnerability facts onto every component row. It reads the components' own columns, loads the package, version and vulnerability facts from the small tables by package key (blocks of 5,000), and works out everything that depends only on a `package@version` once and shares it (28k versions cover 200k components). No schema change, no worker job, no migration.
