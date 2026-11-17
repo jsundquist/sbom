@@ -21,6 +21,8 @@ import { env } from '@/lib/env';
 import { maintenanceFlags, type Maintenance } from '@/lib/maintenance';
 import type { ProjectKind } from '@/lib/kinds';
 import { isStale } from '@/lib/stale';
+import type { PackageFilter, PageParams, ProjectFilter, VulnerabilityFilter } from '@/lib/params';
+import { filterPackages, filterProjects, filterVulnerabilities, paginate, type Page } from './list-filters';
 import { loadExploitSignals, type ExploitSignals } from './exploit-signals';
 import { maxSeverity, SEVERITIES, SEVERITY_RANK, type Severity } from '@/lib/severity';
 
@@ -872,6 +874,19 @@ export function aggregateUpgrades(list: InventoryComponent[], graphs: GraphEdges
 
 export async function listPackages(db: Db) {
   return aggregatePackages(await loadComponents(db));
+}
+
+/** Filtered and paged lists for `GET /api/v1/*` (L-002); the unfiltered functions above stay for the pages. */
+export async function listProjectsPage(db: Db, filter: ProjectFilter, page: PageParams): Promise<Page<ProjectSummary>> {
+  return paginate(filterProjects(await listProjects(db, { repository: filter.repository }), filter), page);
+}
+
+export async function listPackagesPage(db: Db, filter: PackageFilter, page: PageParams): Promise<Page<PackageSummary>> {
+  return paginate(filterPackages(await listPackages(db), filter), page);
+}
+
+export async function listVulnerabilitiesPage(db: Db, filter: VulnerabilityFilter, page: PageParams): Promise<Page<VulnerabilitySummary>> {
+  return paginate(filterVulnerabilities(await listVulnerabilities(db), filter), page);
 }
 
 export interface PackageScorecard {

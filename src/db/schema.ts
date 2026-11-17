@@ -236,3 +236,26 @@ export const projectSnapshots = pgTable(
   },
   (t) => [unique('project_snapshots_project_day_unique').on(t.projectId, t.day)],
 );
+
+export const EVENT_KINDS = ['upload', 'delete', 'prune'] as const;
+export type EventKind = (typeof EVENT_KINDS)[number];
+export const eventKindEnum = pgEnum('event_kind', EVENT_KINDS);
+
+/**
+ * Audit trail of mutations (ADR 0002): who changed what. Written in the transaction of the change. `project_id` is set
+ * null when the Project is deleted, so `project_name` keeps the event readable. `token_fingerprint` is a short hash of
+ * the bearer token, never the token; null when the request carried none (open mode).
+ */
+export const events = pgTable(
+  'events',
+  {
+    id: serial('id').primaryKey(),
+    at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+    kind: eventKindEnum('kind').notNull(),
+    projectId: integer('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    projectName: text('project_name').notNull(),
+    tokenFingerprint: text('token_fingerprint'),
+    detail: jsonb('detail').$type<Record<string, unknown>>().notNull().default({}),
+  },
+  (t) => [index('events_at_idx').on(t.at, t.id), index('events_project_id_idx').on(t.projectId)],
+);

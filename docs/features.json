@@ -1356,7 +1356,7 @@
       "epic": "L",
       "size": "M",
       "priority": 6.25,
-      "status": "todo",
+      "status": "in_progress",
       "depends_on": [
         "G-001",
         "G-002",
@@ -1369,7 +1369,7 @@
         "Parsing in src/lib/params.ts with Zod; invalid values are 400; route handlers stay thin and call src/server",
         "Existing pages and tests unaffected; no ETag (ADR 0005 scale makes responses cheap)"
       ],
-      "evidence": "",
+      "evidence": "lint and unit tests green incl. tests/unit/list-query.test.ts; e2e not run (no Postgres available)",
       "notes": "List routes take no query params today (they call listX(getDb())). J-003 adds the scope filter later.",
       "labels": [
         "ready-for-agent"
@@ -1381,7 +1381,7 @@
       "epic": "N",
       "size": "M",
       "priority": 6.6,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "F-002"
       ],
@@ -1391,7 +1391,7 @@
         "GET /api/v1/events with the pagination params of L-002 conventions; owner-gated",
         "Test: deleting a Project leaves an event naming it"
       ],
-      "evidence": "",
+      "evidence": "tests/unit/audit-events.test.ts (11 incl. delete leaves an event naming the Project); lint and pnpm test green; migration 0011",
       "notes": "Mutations only (decision, ADR 0002). Also the source D-002 notifications can read.",
       "labels": [
         "ready-for-agent"
