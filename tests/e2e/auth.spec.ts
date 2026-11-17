@@ -44,7 +44,8 @@ test('a read token reads GET /api/v1/*, a wrong one is 401, and it never opens a
   expect((await request.get('/api/v1/projects', { headers: good })).status()).toBe(200);
   expect((await request.get('/api/v1/summary', { headers: { authorization: 'Bearer wrong' } })).status()).toBe(401);
 
-  expect((await request.delete('/api/v1/projects/1', { headers: good })).status()).toBe(401);
+  // The delete route keeps its own ADMIN_TOKENS gate (none here, so fail-closed 503): a read token is no admin token.
+  expect((await request.delete('/api/v1/projects/1', { headers: good })).status()).toBe(503);
   expect((await request.post('/api/v1/sboms?project=x&version=1', { data: {}, headers: good })).status()).toBe(401);
 
   await page.setExtraHTTPHeaders(good);
