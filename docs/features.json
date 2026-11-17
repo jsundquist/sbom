@@ -870,7 +870,7 @@
       "epic": "Q",
       "size": "S",
       "priority": 24.5,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "labels": [
         "ready-for-agent"
@@ -880,7 +880,7 @@
         "Includes: a value that gates access fails closed when missing or weak, with minimum strength validated in Zod; one place maps a domain state to a response; no duplicated denial or message literals across proxy and server",
         "AGENTS.md or docs/WORKFLOW.md has a one-line pointer saying reviews read it; docs/agents/domain.md or the review skill config unaffected"
       ],
-      "evidence": "",
+      "evidence": "CODING_STANDARDS.md at the repo root (5 judgement calls, incl. fail-closed with Zod minimum strength, one state-to-response mapping, no duplicated denial literals); docs/WORKFLOW.md says reviews read it. See docs/progress.md 2026-11-17.",
       "notes": "Source: retro of the owner-auth session (2026-10-31). Why: the repo had no standards file, so review fell back on AGENTS.md (written for implementers). Review still found a fail-open (any non-empty NEXTAUTH_SECRET counted as configured) and the same denial mapping copied three times."
     },
     {
@@ -910,7 +910,7 @@
       "epic": "Q",
       "size": "S",
       "priority": 24.5,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "labels": [
         "ready-for-agent"
@@ -920,7 +920,7 @@
         "Entries older than the current epic move to docs/progress-archive.md; progress.md keeps Current state and recent entries",
         "pnpm run lint && pnpm test green"
       ],
-      "evidence": "",
+      "evidence": "tests/unit/progress-order.test.ts (red on the old progress.md, green now) runs in pnpm test and scripts/init.sh; 29 entries before 2026-11-16 moved to docs/progress-archive.md. See docs/progress.md 2026-11-17.",
       "notes": "Source: retro of the owner-auth session (2026-10-31). Why: agents appended the E-007 entries at the bottom despite the 'Newest first' header, and the file has grown to 160+ lines."
     },
     {

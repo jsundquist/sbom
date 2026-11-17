@@ -75,6 +75,8 @@ and: acceptance criteria in `features.json` are met; new behavior has a test tha
 
 If e2e could not be run, say so in `progress.md` and keep the feature `in_progress`, not `done`.
 
+Reviews read `CODING_STANDARDS.md` (judgement calls a linter cannot catch) as well as this file.
+
 ## progress.md entry format
 
 ```
@@ -86,4 +88,4 @@ If e2e could not be run, say so in `progress.md` and keep the feature `in_progre
 - Gotchas: ...
 ```
 
-Newest entry first. Keep entries short; promote anything lasting into `ARCHITECTURE.md`.
+Newest entry first (`tests/unit/progress-order.test.ts` fails otherwise). Once an entry predates the current epic, move it to `docs/progress-archive.md`. Keep entries short; promote anything lasting into `ARCHITECTURE.md`.
