@@ -13,7 +13,7 @@ import {
 } from '@/db/schema';
 import { cveOf } from '@/lib/cve';
 import { versionStatus, vulnStatus, type VersionStatus, type VulnStatus } from '@/lib/coverage';
-import { compareVersions, UPDATE_RANK, updateType, type UpdateType } from '@/lib/version';
+import { compareVersions, isPrerelease, parseVersion, UPDATE_RANK, updateType, type UpdateType } from '@/lib/version';
 import { comparePriority } from '@/lib/priority';
 import { scorecardStatus, weakestChecks, type ScorecardCheck, type ScorecardStatus } from '@/lib/scorecard';
 import { env } from '@/lib/env';
@@ -648,6 +648,193 @@ export function aggregateVulnerabilities(list: InventoryComponent[]): Vulnerabil
     .map((v) => ({ ...v, affected: [...v.affected.values()], projects: [...v.projects.values()] }))
     .sort((a, b) => comparePriority(a, b) || a.id.localeCompare(b.id))
     .map((v, i) => ({ ...v, rank: i + 1 }));
+}
+
+export interface UpgradeTarget {
+  version: string;
+  /** Vulnerability ids this version clears. */
+  clears: string[];
+}
+
+/** Risk retired by an upgrade, summed over the CVEs it clears; compared in this order (KEV, EPSS, severity, CVSS). */
+export interface UpgradeRisk {
+  kev: number;
+  epss: number;
+  severity: number;
+  score: number;
+}
+
+export interface PackageRef {
+  name: string;
+  version: string | null;
+}
+
+export interface PackageUpgrade {
+  /** 1-based position in the ranking by risk retired. */
+  rank: number;
+  packageKey: string;
+  name: string;
+  ecosystem: string | null;
+  version: string | null;
+  projects: { id: number; name: string }[];
+  /** Every vulnerability id on this package version. */
+  vulnerabilities: string[];
+  /** Lowest fixed version in the current major that clears the most CVEs; null when no fix stays in the major. */
+  sameMajor: UpgradeTarget | null;
+  /** Lowest version that clears every CVE (may be a major bump); null when some CVE has no fixed version. */
+  clearsAll: UpgradeTarget | null;
+  /** Vulnerability ids the ranked target (`sameMajor`, else `clearsAll`) leaves behind. */
+  remaining: string[];
+  risk: UpgradeRisk;
+  /** True when listed as a direct dependency, false when only reached through parents, null when the graph is silent. */
+  direct: boolean | null;
+  /** Packages that depend on this one. Upgrading this package is not claimed to drop a parent's need for it. */
+  parents: PackageRef[];
+  /** Shortest chain from a direct dependency down to this package; null when direct or unknown. */
+  path: PackageRef[] | null;
+}
+
+export interface UnfixedPackage {
+  packageKey: string;
+  name: string;
+  ecosystem: string | null;
+  version: string | null;
+  projects: { id: number; name: string }[];
+  vulnerabilities: string[];
+}
+
+export interface UpgradePlan {
+  upgrades: PackageUpgrade[];
+  /** Package versions with vulnerabilities and no fixed version above them. */
+  unfixed: UnfixedPackage[];
+}
+
+type GraphEdges = Pick<DependencyGraph, 'edges' | 'directIds'>;
+
+const major = (v: string) => parseVersion(v).release[0] ?? 0;
+
+/**
+ * Ranked package upgrades by the risk they retire (the priority order of `comparePriority`, summed over cleared CVEs).
+ * A version clears a CVE when it is at or above one of the CVE's fixed versions. `graphs` (from `getDependencyGraph`)
+ * is optional and only adds parent and path context for transitives.
+ */
+export function aggregateUpgrades(list: InventoryComponent[], graphs: GraphEdges[] = []): UpgradePlan {
+  const byId = new Map(list.map((c) => [c.id, c]));
+  const parentsOf = new Map<number, number[]>();
+  const direct = new Set<number>();
+  for (const g of graphs) {
+    for (const e of g.edges) {
+      parentsOf.set(e.childId, [...(parentsOf.get(e.childId) ?? []), e.parentId]);
+    }
+    for (const id of g.directIds ?? []) {
+      direct.add(id);
+    }
+  }
+  const ref = (id: number): PackageRef => ({ name: byId.get(id)!.name, version: byId.get(id)!.version });
+
+  // Breadth-first up the parents, so the first direct dependency reached gives the shortest chain.
+  const pathTo = (start: number): PackageRef[] | null => {
+    const seen = new Set([start]);
+    let frontier: number[][] = [[start]];
+    while (frontier.length) {
+      const next: number[][] = [];
+      for (const chain of frontier) {
+        for (const p of parentsOf.get(chain[0]) ?? []) {
+          if (seen.has(p) || !byId.has(p)) {
+            continue;
+          }
+          seen.add(p);
+          if (direct.has(p)) {
+            return [p, ...chain].map(ref);
+          }
+          next.push([p, ...chain]);
+        }
+      }
+      frontier = next;
+    }
+    return null;
+  };
+
+  const groups = new Map<string, InventoryComponent[]>();
+  for (const c of list) {
+    if (!c.vulns.length) {
+      continue;
+    }
+    const key = `${groupKey(c)}@${c.version}`;
+    groups.set(key, [...(groups.get(key) ?? []), c]);
+  }
+
+  const upgrades: Omit<PackageUpgrade, 'rank'>[] = [];
+  const unfixed: UnfixedPackage[] = [];
+  for (const members of groups.values()) {
+    const first = members[0];
+    const vulns = new Map<string, ComponentVuln>();
+    for (const c of members) {
+      for (const v of c.vulns) {
+        vulns.set(v.id, v);
+      }
+    }
+    const projects = new Map(members.map((c) => [c.projectId, { id: c.projectId, name: c.projectName }]));
+    const base = {
+      packageKey: groupKey(first),
+      name: first.name,
+      ecosystem: first.ecosystem,
+      version: first.version,
+      projects: [...projects.values()],
+      vulnerabilities: [...vulns.keys()],
+    };
+    // Prereleases are never offered as a fix; a fix at or below the current version is not an upgrade.
+    const fixes = (v: ComponentVuln) => v.fixedVersions.filter((f) => compareVersions(f, first.version) > 0 && !isPrerelease(f));
+    const candidates = [...new Set([...vulns.values()].flatMap(fixes))].sort(compareVersions);
+    if (!candidates.length) {
+      unfixed.push(base);
+      continue;
+    }
+    const clearedBy = (version: string): UpgradeTarget => ({
+      version,
+      clears: [...vulns.values()].filter((v) => fixes(v).some((f) => compareVersions(f, version) <= 0)).map((v) => v.id),
+    });
+    const inMajor = candidates.filter((f) => major(f) === major(first.version ?? '')).map(clearedBy);
+    // Candidates ascend, so the first with the largest clear count is the lowest such version.
+    const sameMajor = inMajor.reduce<UpgradeTarget | null>((best, t) => (!best || t.clears.length > best.clears.length ? t : best), null);
+    const all = candidates.map(clearedBy).find((t) => t.clears.length === vulns.size) ?? null;
+    const ranked = sameMajor ?? all ?? candidates.map(clearedBy).at(-1)!;
+    const cleared = new Set(ranked.clears);
+    const risk: UpgradeRisk = { kev: 0, epss: 0, severity: 0, score: 0 };
+    for (const v of vulns.values()) {
+      if (cleared.has(v.id)) {
+        risk.kev += v.kev ? 1 : 0;
+        risk.epss += v.epss?.score ?? 0;
+        risk.severity += SEVERITY_RANK[v.severity];
+        risk.score += v.score ?? 0;
+      }
+    }
+    const ids = members.map((c) => c.id);
+    const isDirect = ids.some((id) => direct.has(id));
+    const parentIds = [...new Set(ids.flatMap((id) => parentsOf.get(id) ?? []))].filter((p) => byId.has(p));
+    const parents = new Map(parentIds.map((p) => [`${ref(p).name}@${ref(p).version}`, ref(p)]));
+    upgrades.push({
+      ...base,
+      sameMajor,
+      clearsAll: all,
+      remaining: base.vulnerabilities.filter((id) => !cleared.has(id)),
+      risk,
+      direct: isDirect ? true : parents.size ? false : null,
+      parents: [...parents.values()],
+      path: isDirect ? null : (ids.map(pathTo).find((p) => p) ?? null),
+    });
+  }
+  upgrades.sort(
+    (a, b) =>
+      b.risk.kev - a.risk.kev ||
+      b.risk.epss - a.risk.epss ||
+      b.risk.severity - a.risk.severity ||
+      b.risk.score - a.risk.score ||
+      a.name.localeCompare(b.name) ||
+      compareVersions(a.version, b.version),
+  );
+  unfixed.sort((a, b) => a.name.localeCompare(b.name) || compareVersions(a.version, b.version));
+  return { upgrades: upgrades.map((u, i) => ({ ...u, rank: i + 1 })), unfixed };
 }
 
 export async function listPackages(db: Db) {
