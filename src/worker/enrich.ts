@@ -8,6 +8,8 @@ import { isDistroScoped } from '@/lib/ecosystems';
 import { parsePurl } from '@/lib/purl';
 import { latestRelease, projectScorecard, sourceRepo } from './depsdev';
 import { mapLimit, type FetchFn } from './http';
+import { WORKER_FEED } from '@/lib/worker-heartbeat';
+import { recordFeedSuccess } from './feeds';
 import { syncEpss } from './epss';
 import { syncKev } from './kev';
 import { writeSnapshots } from './snapshots';
@@ -84,6 +86,10 @@ export async function enrich(db: Db, opts: EnrichOptions): Promise<EnrichStats> 
       const cause = (err as Error & { cause?: Error }).cause;
       opts.logger?.error(`[worker] ${name} failed: ${(err as Error).message}${cause ? ` (${cause.message})` : ''}`);
     }
+  }
+  if (!stats.errors) {
+    // Heartbeat for /metrics: a run with any job error does not count as a success.
+    await recordFeedSuccess(db, WORKER_FEED).catch((err) => opts.logger?.error(`[worker] heartbeat failed: ${(err as Error).message}`));
   }
   return stats;
 }

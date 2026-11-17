@@ -135,7 +135,7 @@ If `project`/`version` are omitted they are taken from the SBOM's subject (Cyclo
 | `DATABASE_URL` | `postgres://sbom:sbom@localhost:5432/sbom` | Postgres connection string |
 | `UPLOAD_TOKENS` | empty | Comma-separated bearer tokens required for uploads (the Action's `api-token`). Empty = open uploads outside production; in production uploads are rejected (503) |
 | `ADMIN_TOKENS` | empty | Comma-separated bearer tokens required to delete a project. An upload token cannot delete. Empty = open deletes outside production; in production deletes are rejected (503). **Upgrading:** anything that deleted with an upload token now needs one of these |
-| `READ_TOKENS` | empty | Comma-separated bearer tokens that may call `GET /api/v1/*` from scripts (`curl -H "Authorization: Bearer $TOKEN" .../api/v1/summary`). Never opens pages, `/api/auth` or any write; sessions ignore `Authorization`. A wrong token gets 401 and counts in the `AUTH_RATE_LIMIT` bucket. Empty = bearer reads off. Use a long random value (`openssl rand -hex 32`) and keep it out of CI repos that only upload |
+| `READ_TOKENS` | empty | Comma-separated bearer tokens that may call `GET /api/v1/*` from scripts (`curl -H "Authorization: Bearer $TOKEN" .../api/v1/summary`). Also `GET /metrics` (Prometheus). Never opens pages, `/api/auth` or any write; sessions ignore `Authorization`. A wrong token gets 401 and counts in the `AUTH_RATE_LIMIT` bucket. Empty = bearer reads off. Use a long random value (`openssl rand -hex 32`) and keep it out of CI repos that only upload |
 | `ALLOW_OPEN_UPLOADS` | `false` | Set `true` to allow open uploads and deletes in production (e.g. `docker compose` on localhost) |
 | `MAX_UPLOAD_BYTES` | 52428800 | Maximum SBOM size; larger bodies are cut off while streaming and get 413 |
 | `WRITE_RATE_LIMIT` | 60 | Uploads and deletes allowed per client per window (429 with `Retry-After` beyond it); `0` disables. In-memory, per web process |
@@ -189,6 +189,27 @@ Outside production, with none of these set, reads stay open so local development
 | `GET` | `/api/v1/vulnerabilities[/:id]` | Vulnerabilities affecting the latest SBOMs |
 | `GET` | `/api/healthz` | Readiness check (includes a database ping) |
 | `GET` | `/api/livez` | Liveness check (no database access) |
+
+## Metrics (Prometheus)
+
+`GET /metrics` serves the Prometheus text format, gated like the API: a session or a `READ_TOKENS` bearer (401 otherwise). Gauges are labelled
+by `project` (and `severity`) only, never by package or CVE: `sbom_vulnerabilities{project,severity}`, `sbom_exploited_vulnerabilities{project}`,
+`sbom_age_seconds{project}`, `sbom_stale{project}` and `sbom_worker_last_success_timestamp_seconds` (last enrichment run with no job errors).
+Each scrape reads the per-project stats (about 0.7 s at 100 Projects), so scrape every 30 s or slower.
+
+```yaml
+scrape_configs:
+  - job_name: sbom
+    scrape_interval: 60s
+    metrics_path: /metrics
+    scheme: https
+    authorization:
+      credentials: <a value from READ_TOKENS>   # or credentials_file
+    static_configs:
+      - targets: ['sbom.example.com']
+```
+
+Example alert: `time() - sbom_worker_last_success_timestamp_seconds > 3600` (worker stuck) or `sbom_stale == 1`.
 
 ## MCP server (preview)
 

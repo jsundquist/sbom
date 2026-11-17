@@ -1424,7 +1424,7 @@
       "epic": "L",
       "size": "M",
       "priority": 7.3,
-      "status": "todo",
+      "status": "in_progress",
       "depends_on": [
         "L-001",
         "F-003"
@@ -1435,7 +1435,7 @@
         "No package or CVE labels (bounded cardinality); reads the per-project stats from listProjects (about 0.7 s at 100 Projects), not components directly, so a scrape interval of 30 s or more",
         "Documented with an example scrape config in the README"
       ],
-      "evidence": "",
+      "evidence": "tests/unit/metrics.test.ts (10); tsc, eslint, prettier clean; vitest 422 green; e2e not run (no Postgres), see progress.md",
       "notes": "If F-004 shows K-001 is unnecessary, drop that dependency and read the existing project stats. K-001 was resolved without rollups, so there are no rollup tables to read; K-001 itself is done.",
       "labels": [
         "ready-for-agent"

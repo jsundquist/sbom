@@ -74,7 +74,7 @@ describe('CISA KEV sync', () => {
     const stats = await run({ kev: null, calls });
     expect(stats.errors).toBe(1);
     expect(await db.select().from(schema.kevEntries)).toHaveLength(1);
-    const [sync] = await db.select().from(schema.feedSyncs);
+    const [sync] = await db.select().from(schema.feedSyncs).where(eq(schema.feedSyncs.name, 'kev'));
     expect(sync.error).toContain('503');
 
     // Right after a failure the feed is not hammered again.
@@ -87,7 +87,7 @@ describe('CISA KEV sync', () => {
     const calls: string[] = [];
     await enrich(db, { ...enrichOptions({ calls }) });
     expect(calls.filter((c) => c.includes('kev'))).toHaveLength(0);
-    expect(await db.select().from(schema.feedSyncs)).toHaveLength(0);
+    expect(await db.select().from(schema.feedSyncs).where(eq(schema.feedSyncs.name, 'kev'))).toHaveLength(0);
   });
 });
 

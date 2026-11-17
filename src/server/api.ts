@@ -42,7 +42,7 @@ export const checkAdminToken = (req: Request) =>
   checkBearer(req, env().ADMIN_TOKENS, { env: 'ADMIN_TOKENS', what: 'Deletes', token: 'admin' });
 
 /**
- * Read tokens (READ_TOKENS, ADR 0002) for scripts: GET /api/v1/* only. Returns null when the request is not a read-token
+ * Read tokens (READ_TOKENS, ADR 0002) for scripts: GET /api/v1/* and GET /metrics only. Returns null when the request is not a read-token
  * attempt (no tokens configured, wrong method or path, no bearer), so the session gate decides; 'ok' for a valid token;
  * else the rejection. Authorization is only ever looked at here, never as a session. The auth bucket is checked before
  * comparing (so guessing is throttled) and spent only by failures, so a busy script is not throttled by itself.
@@ -50,7 +50,7 @@ export const checkAdminToken = (req: Request) =>
 export function checkReadToken(req: Request): 'ok' | NextResponse | null {
   const tokens = env().READ_TOKENS;
   const { pathname } = new URL(req.url);
-  if (!tokens.length || req.method !== 'GET' || !pathname.startsWith('/api/v1/')) {
+  if (!tokens.length || req.method !== 'GET' || !(pathname.startsWith('/api/v1/') || pathname === '/metrics')) {
     return null;
   }
   const header = req.headers.get('authorization');

@@ -25,7 +25,9 @@ function isBearerRoute(method: string, path: string): boolean {
 
 /** Machine-facing paths get JSON status codes; everything else is treated as a page navigation. */
 function wantsJson(path: string): boolean {
-  return path === '/api' || path.startsWith('/api/') || path.startsWith('/_next/') || path.split('/').pop()!.includes('.');
+  return (
+    path === '/metrics' || path === '/api' || path.startsWith('/api/') || path.startsWith('/_next/') || path.split('/').pop()!.includes('.')
+  );
 }
 
 export async function proxy(req: NextRequest): Promise<NextResponse> {
