@@ -6,7 +6,20 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 
 - Main has the full dashboard (upload, projects, packages, vulnerabilities, worker, CI hardening) and uses pnpm (#7).
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
-- Next: G-002 (normalise repository), then L-001 (read tokens); the backlog order is in the 2026-11-16 backlog entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+- Next: G-002 (normalise repository); L-001 (read tokens) is in review as PR #67; the backlog order is in the 2026-11-16 backlog entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
+
+## 2026-11-17: I-001 aggregateUpgrades()
+- Done (PR #66, off main): `aggregateUpgrades(list, graphs?)` in `src/server/inventory.ts` returns `{ upgrades, unfixed }`. Per package version, `sameMajor` is the lowest fixed version in the current major that clears the most CVEs and `clearsAll` the lowest that clears every CVE (null when any CVE has no fix); each carries the CVEs cleared and the affected Projects. Transitives report their immediate `parents` and the shortest `path` from a direct dependency, with no claim that upgrading the parent drops the package. Packages with no fixed version go in `unfixed`. No schema change, route or UI (I-002).
+- Verified: new `tests/unit/upgrades.test.ts` failed first (13 of 13), then 14 green, one on PGlite with the SPDX graph fixture; `pnpm run lint` and `pnpm test` (322) green. Not run: e2e (nothing visible changed).
+- Decisions: prereleases and fixes at or below the current version are never targets. Risk is summed over the CVEs the ranked target clears (`sameMajor`, else `clearsAll`) and compared by KEV count, then EPSS, then summed severity rank, then CVSS, in its own comparison because `comparePriority` takes single CVEs, not sums.
+- Open: because severity rank is summed, three mediums outrank one critical, and a test pins that. It follows the ticket's "summed over cleared CVEs" but may not be the ranking wanted; decide before I-002 shows it (worst-CVE-first is the alternative).
+- Gotchas: the graphs argument is optional so the function stays pure; the caller loads `getDependencyGraph` per Project (ADR 0005 keeps scoped in-memory loads).
+
+## 2026-11-17: Q-006 Clear stale Next types
+- Done (PR #65, off main): `scripts/init.sh` runs `rm -rf .next/types .next/dev/types` before the type-check, so a `.next/` left by another branch no longer turns the session-start baseline red.
+- Verified: reproduced with a fabricated stale `.next/types/validator.ts` (`pnpm run typecheck` failed TS2307), then `scripts/init.sh` green (tsc, eslint, prettier, 308 tests). Not run: `next build` and `next dev` (no Next config changed; Next regenerates the types).
+- Decisions: clear in `init.sh` rather than excluding `.next` in `tsconfig`, because an exclude would also stop `next build` validating route types.
+- Gotchas: a bare `pnpm run lint` with a stale file still fails; only `init.sh` clears it, which is what the session-start protocol runs.
 
 ## 2026-11-17: G-001 Project kind
 - Done (branch `feat/g-001-project-kind`, off main): `projects.kind` (`project_kind` enum: application, library, image, host; NOT NULL, default application; migration `0008`, generated). `POST /api/v1/sboms` reads `kind` from the query or `X-Sbom-Kind`, validated by Zod against `PROJECT_KINDS` in `src/lib/kinds.ts` (400 otherwise); `ingestSbom` replaces it on every upload, so an upload that omits it resets to application. `ProjectSummary.kind` is in `GET /api/v1/projects[/id]`. `KindChip`, a Kind column (singleSelect, so the grid's filter works) and a chip on the project page. `action.yml` input `kind` (empty means application, or image when `image` is set); README, example workflow and ARCHITECTURE updated. UI headers, nav and e2e say Project; Application appears only as a kind value.

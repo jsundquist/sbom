@@ -852,7 +852,7 @@
       "epic": "Q",
       "size": "S",
       "priority": 24.5,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "labels": [
         "ready-for-agent"
@@ -861,7 +861,7 @@
         "Session-start baseline no longer fails on a leftover .next/ from another branch (tsconfig excludes .next, or init.sh clears it before tsc)",
         "pnpm run build and next dev still work; pnpm run lint && pnpm test green"
       ],
-      "evidence": "",
+      "evidence": "2026-11-17 (PR #65): reproduced with a fabricated stale .next/types/validator.ts (pnpm run typecheck failed TS2307), then scripts/init.sh green (tsc, eslint, prettier, 308 tests). Not run: next build and next dev (no Next config changed; Next regenerates the types). A bare pnpm run lint with a stale file still fails; only init.sh clears it.",
       "notes": "Source: retro of the owner-auth session (2026-10-31). Why: tsc read .next/types/validator.ts for routes from feat/trend-charts, so the baseline was red on untouched code."
     },
     {
@@ -1447,7 +1447,7 @@
       "epic": "I",
       "size": "M",
       "priority": 7.65,
-      "status": "todo",
+      "status": "done",
       "depends_on": [],
       "acceptance": [
         "Pure function next to aggregateVulnerabilities over InventoryComponent[]; unit tests on PGlite fixtures",
@@ -1455,7 +1455,7 @@
         "Transitives report the vulnerable package and its direct parent path from the dependency graph, with no claim the parent drops it",
         "Ranked with the A-003 priority rank (KEV > EPSS > CVSS), summed over cleared CVEs; packages with no fixed version are listed separately"
       ],
-      "evidence": "",
+      "evidence": "2026-11-17 (PR #66): tests/unit/upgrades.test.ts written first (13 failing), then 14 green, one on PGlite with the SPDX graph fixture; pnpm run lint and pnpm test (322) green. Not run: e2e (no UI or route change).",
       "notes": "Idea 3 of the review. Reuses src/lib/version.ts and src/lib/priority.ts; no new query path (ADR 0005 keeps scoped in-memory loads).",
       "labels": [
         "ready-for-agent"
