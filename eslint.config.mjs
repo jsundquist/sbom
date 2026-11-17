@@ -19,6 +19,32 @@ const layering = [
   layer(['src/db/**'], ['server', 'worker', 'app', 'components'], 'db/ must not import app-level code.'),
   layer(['src/server/**'], ['worker', 'app', 'components'], 'server/ must not import worker/, app/ or components/.'),
   layer(['src/worker/**'], ['server', 'app', 'components'], 'worker/ talks to the app only through Postgres.'),
+  // ADR 0003: mcp/ talks to the app only over /api/v1, so it must not reach into src/ by alias or by relative path.
+  {
+    files: ['mcp/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@/**',
+                '**/src/db/**',
+                '**/src/lib/**',
+                '**/src/sbom/**',
+                '**/src/server/**',
+                '**/src/worker/**',
+                '**/src/app/**',
+                '**/src/components/**',
+              ],
+              message: 'mcp/ must not import from the app src/; call /api/v1 instead (ADR 0003).',
+            },
+          ],
+        },
+      ],
+    },
+  },
   layer(['src/components/**'], ['db', 'server', 'worker'], 'components/ may only import types from db/ and server/.', true),
 ];
 
@@ -34,6 +60,8 @@ export default defineConfig([
     'playwright-report/**',
     'test-results/**',
     '.claude/**',
+    'mcp/dist/**',
+    'mcp/node_modules/**',
     'next-env.d.ts',
   ]),
   {

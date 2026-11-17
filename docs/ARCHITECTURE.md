@@ -38,6 +38,12 @@ Shared constants live in `src/lib/` (`ecosystems.ts` for the OSV/deps.dev ecosys
 channel), so `server/` and `worker/` never import each other. ESLint enforces the import directions (`no-restricted-imports`
 blocks in `eslint.config.mjs`); `components/` may import only types from `db/` and `server/`.
 
+`mcp/` (ADR 0003) sits outside `src/`: a stdio MCP server that reads `/api/v1` over HTTP with a read token and imports nothing
+from `src/` (a `no-restricted-imports` block, proven by `tests/unit/mcp-isolation.test.ts`). It is its own pnpm root with its
+own `package.json` and lockfile, not a workspace member, and `.dockerignore` and the root `tsconfig.json` exclude it, so the
+app image build is unchanged. Config comes from `DASHBOARD_URL` and `DASHBOARD_READ_TOKEN` in `mcp/src/config.ts` only; CI
+builds and tests it in its own `mcp` job.
+
 ## Data model (`src/db/schema.ts`)
 
 | Table | Meaning | Notes |

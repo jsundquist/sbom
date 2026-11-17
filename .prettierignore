@@ -1,6 +1,7 @@
 .next
 out
 node_modules
+mcp/dist
 pnpm-lock.yaml
 drizzle
 playwright-report

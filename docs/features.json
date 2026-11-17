@@ -1574,7 +1574,7 @@
       "epic": "M",
       "size": "M",
       "priority": 9.75,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "L-001"
       ],
@@ -1584,8 +1584,8 @@
         "CI builds and tests mcp/; one smoke test over stdio against a fake fetch",
         "README section: install and a sample client config"
       ],
-      "evidence": "",
-      "notes": "ADR 0003. Whether mcp/ joins the pnpm workspace is decided here by whether it disturbs the Dockerfile.",
+      "evidence": "mcp/tests (12) and tests/unit/mcp-isolation.test.ts (4) failed first, then passed. Ran: pnpm run lint, pnpm test (344), and in mcp/: pnpm run typecheck, pnpm run build, pnpm test (12), pnpm audit --prod (clean); docker build --target web succeeded with Dockerfile and root lockfile untouched. Not run: e2e (src/ untouched), the built binary inside a real MCP client, the new CI job on GitHub, the worker image build.",
+      "notes": "ADR 0003. Decided: mcp/ is NOT a pnpm workspace member (own lockfile and pnpm-workspace.yaml), because a member would change the root lockfile the Dockerfile installs with --frozen-lockfile. Whether mcp/ joins the pnpm workspace is decided here by whether it disturbs the Dockerfile.",
       "labels": [
         "ready-for-agent"
       ]

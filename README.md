@@ -188,6 +188,41 @@ Outside production, with none of these set, reads stay open so local development
 | `GET` | `/api/healthz` | Readiness check (includes a database ping) |
 | `GET` | `/api/livez` | Liveness check (no database access) |
 
+## MCP server (preview)
+
+`mcp/` is a separate, read-only [MCP](https://modelcontextprotocol.io) server that speaks stdio and calls `/api/v1` with a read token (`READ_TOKENS`, see Configuration). It imports nothing from `src/` and is not part of the app image. Today it exposes one `ping` tool that checks the connection; the project and vulnerability tools follow.
+
+```sh
+cd mcp
+pnpm install --frozen-lockfile
+pnpm run build          # writes mcp/dist/
+```
+
+| Variable | Description |
+|---|---|
+| `DASHBOARD_URL` | Base URL of the dashboard, e.g. `https://sbom.example.com` |
+| `DASHBOARD_READ_TOKEN` | One of the dashboard's `READ_TOKENS` |
+| `DASHBOARD_TIMEOUT_MS` | Per-request timeout, default `10000` |
+
+Claude Code (`.mcp.json`, or `claude mcp add`) and Claude Desktop (`claude_desktop_config.json`) take the same shape:
+
+```json
+{
+  "mcpServers": {
+    "sbom-dashboard": {
+      "command": "node",
+      "args": ["/absolute/path/to/sbom/mcp/dist/index.js"],
+      "env": {
+        "DASHBOARD_URL": "https://sbom.example.com",
+        "DASHBOARD_READ_TOKEN": "<a value from READ_TOKENS>"
+      }
+    }
+  }
+}
+```
+
+Requires Node 26+. Keep the token out of files you commit; Claude Code expands `${DASHBOARD_READ_TOKEN}` in `.mcp.json`, so the secret can stay in your shell. Tests: `cd mcp && pnpm test`.
+
 ## How the data is derived
 
 - **Package identity:** from each component's [purl](https://github.com/package-url/purl-spec). Components without a purl are
