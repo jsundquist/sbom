@@ -26,7 +26,16 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   prettier,
-  globalIgnores(['.next/**', 'out/**', 'node_modules/**', 'drizzle/**', 'playwright-report/**', 'test-results/**', 'next-env.d.ts']),
+  globalIgnores([
+    '.next/**',
+    'out/**',
+    'node_modules/**',
+    'drizzle/**',
+    'playwright-report/**',
+    'test-results/**',
+    '.claude/**',
+    'next-env.d.ts',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {

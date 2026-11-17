@@ -1314,7 +1314,7 @@
       "epic": "L",
       "size": "M",
       "priority": 5.55,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "F-002"
       ],
@@ -1325,7 +1325,7 @@
         "tests/unit/page-auth.test.ts guard coverage and the authed Playwright project cover read token accepted, wrong token 401, token on a page ignored",
         "docs/ARCHITECTURE.md#security updated"
       ],
-      "evidence": "",
+      "evidence": "2026-11-17 (PR #67): tests/unit/read-token.test.ts written first (5 of 17 failing), then green; pnpm run lint, pnpm test (326) and pnpm run test:e2e (15, including a new authed test: read token 200, wrong token 401, DELETE and POST not opened, page still shows sign-in) green. Not covered: /metrics (L-004).",
       "notes": "ADR 0002. A read token has no write capability by construction.",
       "labels": [
         "ready-for-agent"
