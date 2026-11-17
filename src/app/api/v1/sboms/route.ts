@@ -5,7 +5,7 @@ import { env } from '@/lib/env';
 import { PROJECT_KINDS } from '@/lib/kinds';
 import { parseTags } from '@/lib/tags';
 import { SbomParseError } from '@/sbom/parse';
-import { checkUploadToken, jsonError, readBodyLimited } from '@/server/api';
+import { checkUploadToken, jsonError, readBodyLimited, requestActor } from '@/server/api';
 import { IngestError, ingestSbom } from '@/server/ingest';
 
 const field = z
@@ -54,7 +54,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await ingestSbom(getDb(), document, { ...meta.data, tags: tags.tags }, { historyLimit: env().SBOM_HISTORY_LIMIT });
+    const result = await ingestSbom(
+      getDb(),
+      document,
+      { ...meta.data, tags: tags.tags },
+      { historyLimit: env().SBOM_HISTORY_LIMIT, actor: requestActor(req) },
+    );
     return NextResponse.json({ ...result, url: new URL(`/projects/${result.projectId}`, url.origin).toString() }, { status: 201 });
   } catch (err) {
     if (err instanceof SbomParseError || err instanceof IngestError) {

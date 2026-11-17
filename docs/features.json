@@ -1381,7 +1381,7 @@
       "epic": "N",
       "size": "M",
       "priority": 6.6,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "F-002"
       ],
@@ -1391,7 +1391,7 @@
         "GET /api/v1/events with the pagination params of L-002 conventions; owner-gated",
         "Test: deleting a Project leaves an event naming it"
       ],
-      "evidence": "",
+      "evidence": "tests/unit/audit-events.test.ts (11 incl. delete leaves an event naming the Project); lint and pnpm test green; migration 0011",
       "notes": "Mutations only (decision, ADR 0002). Also the source D-002 notifications can read.",
       "labels": [
         "ready-for-agent"
