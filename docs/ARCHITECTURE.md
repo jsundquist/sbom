@@ -89,7 +89,7 @@ inventory. It reads the components' own columns, then the per-package, per-versi
 by package key, and works out everything that depends only on a `package@version` once (not once per component): do not join those
 facts back onto the component query, which made the pages about twice as slow and 45% bigger in memory at 200k components (K-001, `docs/benchmark.md`). KEV and EPSS come from `src/server/exploit-signals.ts` (`loadExploitSignals`); the CVE-alias rule is
 `src/lib/cve.ts`, and what counts as scannable or version-checkable (and the `pending`/`unsupported` statuses) is
-`src/lib/coverage.ts`, used by both the worker's due queries and the read model. `ProjectSummary.stale` (F-003) is derived at read time from the latest SBOM's `uploaded_at` and `STALE_AFTER_DAYS` by `isStale()` in `src/lib/stale.ts`; nothing is stored. Aggregation (`aggregatePackages`, `aggregateVulnerabilities`, `summarize`) is pure and done in TypeScript.
+`src/lib/coverage.ts`, used by both the worker's due queries and the read model. `ProjectSummary.stale` (F-003) is derived at read time from the latest SBOM's `uploaded_at` and `STALE_AFTER_DAYS` by `isStale()` in `src/lib/stale.ts`; nothing is stored. Aggregation (`aggregatePackages`, `aggregateVulnerabilities`, `aggregateUpgrades`, `summarize`) is pure and done in TypeScript. `aggregateUpgrades` (I-001) ranks per-package-version upgrades by the risk they retire and takes optional `getDependencyGraph` results for parent paths.
 Pages use `export const dynamic = 'force-dynamic'`.
 
 ## API surface (`/api/v1`)
