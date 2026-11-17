@@ -15,7 +15,7 @@ import Inventory2Icon from '@mui/icons-material/Inventory2Outlined';
 
 const LINKS = [
   { href: '/', label: 'Overview' },
-  { href: '/projects', label: 'Applications' },
+  { href: '/projects', label: 'Projects' },
   { href: '/packages', label: 'Packages' },
   { href: '/vulnerabilities', label: 'Vulnerabilities' },
 ];

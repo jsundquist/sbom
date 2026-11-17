@@ -74,7 +74,7 @@ function roundedTop(x: number, y: number, w: number, h: number, r = 4) {
   return `M${x},${y + h}V${y + rr}Q${x},${y} ${x + rr},${y}H${x + w - rr}Q${x + w},${y} ${x + w},${y + rr}V${y + h}Z`;
 }
 
-/** Stacked horizontal bars: vulnerabilities per application, split by severity. */
+/** Stacked horizontal bars: vulnerabilities per project, split by severity. */
 export function ProjectRiskChart({ projects, limit = 8 }: { projects: ProjectSummary[]; limit?: number }) {
   const c = useChartColors();
   const data = projects
@@ -85,7 +85,7 @@ export function ProjectRiskChart({ projects, limit = 8 }: { projects: ProjectSum
   if (!data.length) {
     return (
       <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-        No vulnerable applications.
+        No vulnerable projects.
       </Typography>
     );
   }

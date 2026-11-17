@@ -86,7 +86,7 @@ export default async function VulnerabilityPage({ params }: { params: Promise<{ 
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6" component="h2" gutterBottom>
-              Applications
+              Projects
             </Typography>
             <Stack spacing={0.5}>
               {vuln.projects.length ? (
@@ -96,7 +96,7 @@ export default async function VulnerabilityPage({ params }: { params: Promise<{ 
                   </AppLink>
                 ))
               ) : (
-                <Typography color="text.secondary">Not used by any application&apos;s latest SBOM.</Typography>
+                <Typography color="text.secondary">Not used by any project&apos;s latest SBOM.</Typography>
               )}
             </Stack>
           </Paper>

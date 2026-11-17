@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDb } from '@/db';
 import { env } from '@/lib/env';
+import { PROJECT_KINDS } from '@/lib/kinds';
 import { SbomParseError } from '@/sbom/parse';
 import { checkUploadToken, jsonError, readBodyLimited } from '@/server/api';
 import { IngestError, ingestSbom } from '@/server/ingest';
@@ -12,11 +13,13 @@ const field = z
   .max(500)
   .optional()
   .transform((v) => v || undefined);
-const metaSchema = z.object({ project: field, version: field, ref: field, commit: field, repository: field });
+const kind = z.enum(PROJECT_KINDS, { error: `kind must be one of: ${PROJECT_KINDS.join(', ')}` }).optional();
+const metaSchema = z.object({ project: field, version: field, ref: field, commit: field, repository: field, kind });
+const META_FIELDS = ['project', 'version', 'ref', 'commit', 'repository', 'kind'];
 
 /**
  * Upload an SBOM (CycloneDX or SPDX JSON) as the request body.
- * Metadata comes from query parameters or X-Sbom-* headers: project, version, ref, commit, repository.
+ * Metadata comes from query parameters or X-Sbom-* headers: project, version, ref, commit, repository, kind.
  */
 export async function POST(req: Request) {
   const denied = checkUploadToken(req);
@@ -39,7 +42,7 @@ export async function POST(req: Request) {
 
   const url = new URL(req.url);
   const pick = (name: string) => url.searchParams.get(name) ?? req.headers.get(`x-sbom-${name}`) ?? undefined;
-  const meta = metaSchema.safeParse(Object.fromEntries(['project', 'version', 'ref', 'commit', 'repository'].map((k) => [k, pick(k)])));
+  const meta = metaSchema.safeParse(Object.fromEntries(META_FIELDS.map((k) => [k, pick(k)])));
   if (!meta.success) {
     return jsonError(400, meta.error.issues[0].message);
   }

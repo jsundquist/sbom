@@ -13,7 +13,7 @@ inputs:
     required: false
     default: ''
   project-name:
-    description: Application or library name shown in the dashboard.
+    description: Project name shown in the dashboard.
     required: false
     default: ${{ github.event.repository.name }}
   project-version:
@@ -34,6 +34,10 @@ inputs:
     default: .
   image:
     description: Container image (registry reference or tag) scanned by Syft instead of the checkout. Needs the syft generator. Set project-name to the image path so each image is its own project.
+    required: false
+    default: ''
+  kind:
+    description: What this project is - application, library, image or host. Sent on every upload and replaces the stored value. Defaults to application, or image when the image input is set.
     required: false
     default: ''
   github-token:
@@ -88,6 +92,8 @@ runs:
         PROJECT_VERSION: ${{ inputs.project-version }}
         SBOM_FILE: ${{ inputs.sbom-file }}
         GENERATOR: ${{ inputs.generator }}
+        KIND: ${{ inputs.kind }}
+        IMAGE: ${{ inputs.image }}
       run: |
         set -euo pipefail
         file="$SBOM_FILE"
@@ -96,12 +102,18 @@ runs:
         fi
         [ -f "$file" ] || { echo "::error::SBOM file not found: $file"; exit 1; }
 
+        kind="${KIND:-}"
+        if [ -z "$kind" ]; then
+          if [ -n "$IMAGE" ]; then kind=image; else kind=application; fi
+        fi
+
         headers=(-H "Content-Type: application/json"
           -H "X-Sbom-Project: $PROJECT_NAME"
           -H "X-Sbom-Version: $PROJECT_VERSION"
           -H "X-Sbom-Ref: $GITHUB_REF"
           -H "X-Sbom-Commit: $GITHUB_SHA"
-          -H "X-Sbom-Repository: $GITHUB_REPOSITORY")
+          -H "X-Sbom-Repository: $GITHUB_REPOSITORY"
+          -H "X-Sbom-Kind: $kind")
         [ -n "$API_TOKEN" ] && headers+=(-H "Authorization: Bearer $API_TOKEN")
 
         status=$(curl -sS -o "$RUNNER_TEMP/sbom-dashboard-response.json" -w '%{http_code}' --retry 3 --retry-all-errors \

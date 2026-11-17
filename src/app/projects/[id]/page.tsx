@@ -15,7 +15,7 @@ import { getDependencyGraph, getProject } from '@/server/inventory';
 import { getProjectTrend } from '@/server/trends';
 import { VulnerabilityTrendChart } from '@/components/charts';
 import { ComponentsGrid } from '@/components/ComponentsGrid';
-import { PendingChip, SeverityCounts, StaleChip } from '@/components/chips';
+import { KindChip, PendingChip, SeverityCounts, StaleChip } from '@/components/chips';
 import { DateTime } from '@/components/DateTime';
 import { DependencyTree } from '@/components/DependencyTree';
 import { ProjectTabs } from '@/components/ProjectTabs';
@@ -53,9 +53,10 @@ export default async function ProjectPage({
     <>
       <PageHeader
         title={project.name}
-        crumbs={[{ href: '/projects', label: 'Applications' }]}
+        crumbs={[{ href: '/projects', label: 'Projects' }]}
         subtitle={
           <Box component="span">
+            <KindChip kind={project.kind} />{' '}
             {[
               project.repository,
               sbom?.version && `version ${sbom.version}`,
@@ -132,7 +133,7 @@ export default async function ProjectPage({
         graph ? (
           <DependencyTree graph={graph} />
         ) : (
-          <Alert severity="info">No SBOM has been uploaded for this application yet.</Alert>
+          <Alert severity="info">No SBOM has been uploaded for this project yet.</Alert>
         )
       ) : (
         <ComponentsGrid components={project.components} />

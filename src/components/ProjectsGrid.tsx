@@ -4,7 +4,8 @@ import Typography from '@mui/material/Typography';
 import type { GridColDef } from '@mui/x-data-grid';
 import type { ProjectSummary } from '@/server/inventory';
 import { SEVERITY_RANK, SEVERITIES } from '@/lib/severity';
-import { PendingChip, SeverityCounts, StaleChip } from './chips';
+import { PROJECT_KINDS } from '@/lib/kinds';
+import { KindChip, PendingChip, SeverityCounts, StaleChip } from './chips';
 import { DateTime } from './DateTime';
 import { Grid } from './grid';
 import { AppLink } from './Links';
@@ -16,7 +17,7 @@ const riskScore = (p: ProjectSummary) => SEVERITIES.reduce((sum, s) => sum + p.s
 const columns: GridColDef<ProjectSummary>[] = [
   {
     field: 'name',
-    headerName: 'Application',
+    headerName: 'Project',
     flex: 1.5,
     minWidth: 180,
     renderCell: ({ row }) => (
@@ -29,6 +30,14 @@ const columns: GridColDef<ProjectSummary>[] = [
         )}
       </Box>
     ),
+  },
+  {
+    field: 'kind',
+    headerName: 'Kind',
+    type: 'singleSelect',
+    valueOptions: [...PROJECT_KINDS],
+    width: 120,
+    renderCell: ({ row }) => <KindChip kind={row.kind} />,
   },
   { field: 'version', headerName: 'Version', flex: 0.8, minWidth: 100, valueGetter: (_v, row) => row.latest?.version ?? '' },
   { field: 'components', headerName: 'Packages', type: 'number', width: 100, valueGetter: (_v, row) => row.stats.components },
@@ -61,11 +70,6 @@ const columns: GridColDef<ProjectSummary>[] = [
 
 export function ProjectsGrid({ projects }: { projects: ProjectSummary[] }) {
   return (
-    <Grid
-      label="Applications"
-      rows={projects}
-      columns={columns}
-      initialState={{ sorting: { sortModel: [{ field: 'risk', sort: 'desc' }] } }}
-    />
+    <Grid label="Projects" rows={projects} columns={columns} initialState={{ sorting: { sortModel: [{ field: 'risk', sort: 'desc' }] } }} />
   );
 }

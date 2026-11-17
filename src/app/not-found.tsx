@@ -9,7 +9,7 @@ export default function NotFound() {
         Not found
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 2 }}>
-        That application, package or vulnerability isn&apos;t in any stored SBOM.
+        That project, package or vulnerability isn&apos;t in any stored SBOM.
       </Typography>
       <Button href="/" variant="contained">
         Back to overview

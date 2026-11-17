@@ -40,10 +40,10 @@ export default async function OverviewPage() {
   const trend = await getSummaryTrend(getDb(), 90);
   return (
     <>
-      <PageHeader title="Overview" subtitle={`Latest SBOM of each of ${data.projectCount} applications`} />
+      <PageHeader title="Overview" subtitle={`Latest SBOM of each of ${data.projectCount} projects`} />
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatTile label="Applications" value={data.projectCount} hint={`${stats.components.toLocaleString()} package references`}>
+          <StatTile label="Projects" value={data.projectCount} hint={`${stats.components.toLocaleString()} package references`}>
             {data.staleProjects > 0 && (
               <Box sx={{ mt: 1 }}>
                 <StaleChip count={data.staleProjects} />
@@ -99,7 +99,7 @@ export default async function OverviewPage() {
         <Grid size={{ xs: 12, md: 7 }}>
           <Paper sx={{ p: 2, height: '100%' }}>
             <Typography variant="h6" component="h2" gutterBottom>
-              Most exposed applications
+              Most exposed projects
             </Typography>
             <ProjectRiskChart projects={data.projects} />
           </Paper>
@@ -116,7 +116,7 @@ export default async function OverviewPage() {
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
-            Applications
+            Projects
           </Typography>
           <ProjectsGrid projects={data.projects} />
         </Grid>

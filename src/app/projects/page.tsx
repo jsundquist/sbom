@@ -15,7 +15,7 @@ export default async function ProjectsPage() {
   const projects = await listProjects(getDb());
   return (
     <>
-      <PageHeader title="Applications" subtitle="Every application or library that has uploaded an SBOM" />
+      <PageHeader title="Projects" subtitle="Every application, library, image or host that has uploaded an SBOM" />
       <ProjectsGrid projects={projects} />
     </>
   );

@@ -32,7 +32,7 @@ const columns: GridColDef<PackageSummary>[] = [
     valueGetter: (_v, row) => row.versions.map((v) => v.version ?? '?').join(', '),
   },
   { field: 'latestVersion', headerName: 'Latest', width: 110, valueGetter: (v) => v ?? '' },
-  { field: 'projectCount', headerName: 'Applications', type: 'number', width: 110 },
+  { field: 'projectCount', headerName: 'Projects', type: 'number', width: 110 },
   {
     field: 'vulnCount',
     headerName: 'Vulnerabilities',

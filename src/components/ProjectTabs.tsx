@@ -7,7 +7,7 @@ import Tabs from '@mui/material/Tabs';
 
 export type ProjectTab = 'packages' | 'dependencies';
 
-/** Switches the application page between its package list and dependency tree, keeping the selected SBOM upload. */
+/** Switches the project page between its package list and dependency tree, keeping the selected SBOM upload. */
 export function ProjectTabs({ value }: { value: ProjectTab }) {
   const pathname = usePathname();
   const params = useSearchParams();
@@ -23,7 +23,7 @@ export function ProjectTabs({ value }: { value: ProjectTab }) {
   };
   return (
     <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-      <Tabs value={value} aria-label="Application views">
+      <Tabs value={value} aria-label="Project views">
         <Tab component={NextLink} href={href('packages')} value="packages" label="Packages" />
         <Tab component={NextLink} href={href('dependencies')} value="dependencies" label="Dependencies" />
       </Tabs>

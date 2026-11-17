@@ -1,4 +1,4 @@
-# Copy to .github/workflows/sbom.yml in each application or library repository.
+# Copy to .github/workflows/sbom.yml in each repository that publishes an application, library or image.
 name: SBOM
 on:
   push:
@@ -23,3 +23,4 @@ jobs:
           # image: ghcr.io/my-org/my-app:1.2.3   # scan a built image (OS packages included) instead of the checkout
           # project-name: my-org/my-app          # one project per image
           # project-version: 1.2.3
+          # kind: library                        # application (default), library, image or host; image is implied by `image`

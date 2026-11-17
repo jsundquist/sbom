@@ -165,9 +165,7 @@ function SelectionPanel({
   if (!component) {
     return (
       <Paper sx={{ p: 2 }}>
-        <Typography color="text.secondary">
-          Select a package to see why it is in this application and which versions of it are used.
-        </Typography>
+        <Typography color="text.secondary">Select a package to see why it is in this project and which versions of it are used.</Typography>
       </Paper>
     );
   }
@@ -219,7 +217,7 @@ function SelectionPanel({
       {versions.length > 1 && (
         <>
           <Typography variant="subtitle2" sx={{ mt: 2 }}>
-            Versions of {component.name} in this application
+            Versions of {component.name} in this project
           </Typography>
           <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2 }}>
             {versions.map((v) => {
