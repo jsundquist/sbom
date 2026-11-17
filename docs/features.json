@@ -1121,7 +1121,7 @@
       "epic": "K",
       "size": "L",
       "priority": 2.4,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "F-004"
       ],
@@ -1131,8 +1131,8 @@
         "Detail pages keep the scoped loadComponents and stay under 500 ms",
         "docs/ARCHITECTURE.md and docs/benchmark.md updated in the same commit"
       ],
-      "evidence": "",
-      "notes": "ADR 0005. Benchmark (docs/benchmark.md, 2026-11-16): listProjects 1,672 ms, getOverview 1,898, listVulnerabilities 1,629, listPackages 1,817, peak RSS 1,208 MB. loadComponents over ~200k rows is 1.7 s on its own; aggregation is 8-255 ms. Per-project rollups alone help only the overview and projects grid; the two other grids aggregate across Projects, so rescoped. Consider splitting once the approach is chosen.",
+      "evidence": "2026-11-16: tests/unit/load-components-golden.test.ts (golden snapshot of loadComponents and its four scopes, generated from the old code on a seeded dataset with multi-vulnerability components, KEV, EPSS, abandoned and deprecated packages, every status and update type) committed first and green; the refactor reproduces it exactly. pnpm run lint and pnpm test (301) green. Re-measured with pnpm run bench measure --only reads on 100 x 2,000 x 20 (Postgres 16, reseeded through migration 0007): listProjects 1,672 -> 729 ms, getOverview 1,898 -> 911, listVulnerabilities 1,629 -> 725, listPackages 1,817 -> 906 (target 1,000); peak RSS 1,208 -> 838 MB (target 1,024); getProject 24 -> 44 ms, getDependencyGraph 23 -> 45 ms (target 500). Not run: e2e (no page or route change; output is byte-identical per the golden test).",
+      "notes": "ADR 0005. Benchmark (docs/benchmark.md, 2026-11-16): listProjects 1,672 ms, getOverview 1,898, listVulnerabilities 1,629, listPackages 1,817, peak RSS 1,208 MB. loadComponents over ~200k rows is 1.7 s on its own; aggregation is 8-255 ms. Per-project rollups alone help only the overview and projects grid; the two other grids aggregate across Projects, so rescoped. Consider splitting once the approach is chosen. Resolved without rollups: profiling (docs/benchmark.md) showed the cost was repeated work in loadComponents, so the load was made cheaper and no schema, worker job or migration was added. Margin on getOverview and listPackages is about 9%; rollups stay the next step if a page goes over again (ADR 0005 update).",
       "labels": [
         "needs-triage"
       ]
@@ -1305,7 +1305,7 @@
         "e2e covers a tag filter changing the counts"
       ],
       "evidence": "",
-      "notes": "Saved views are query strings (ADR 0004); no saved-views table. Uses K-001 rollups when they exist, otherwise the existing load.",
+      "notes": "Saved views are query strings (ADR 0004); no saved-views table. Uses the existing load (K-001 made it cheap; no rollups exist).",
       "labels": [
         "ready-for-agent"
       ]
@@ -1429,17 +1429,16 @@
       "status": "todo",
       "depends_on": [
         "L-001",
-        "F-003",
-        "K-001"
+        "F-003"
       ],
       "acceptance": [
         "GET /metrics in text exposition format behind READ_TOKENS (401 otherwise; added to the proxy allow-list by exact path)",
         "Gauges labelled only by project and severity: vulnerabilities, exploited, SBOM age in seconds, stale; plus worker last successful run timestamp",
-        "No package or CVE labels (bounded cardinality); reads rollups, not components",
+        "No package or CVE labels (bounded cardinality); reads the per-project stats from listProjects (about 0.7 s at 100 Projects), not components directly, so a scrape interval of 30 s or more",
         "Documented with an example scrape config in the README"
       ],
       "evidence": "",
-      "notes": "If F-004 shows K-001 is unnecessary, drop that dependency and read the existing project stats.",
+      "notes": "If F-004 shows K-001 is unnecessary, drop that dependency and read the existing project stats. K-001 was resolved without rollups, so there are no rollup tables to read; K-001 itself is done.",
       "labels": [
         "ready-for-agent"
       ]

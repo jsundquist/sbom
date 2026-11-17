@@ -119,12 +119,13 @@ export async function loadComponents(db: Db, scope: ComponentScope = {}): Promis
         ),
   );
 
+  // What belongs to a package or to a package version rather than to one component (latest release, maintenance, scan state,
+  // vulnerabilities) is loaded once from the small tables and joined here. Joining it to every component row repeated the same
+  // values, and parsed the same timestamps, hundreds of thousands of times (F-004 benchmark, K-001).
   const rows = await db
     .select({
       id: components.id,
       sbomId: components.sbomId,
-      projectId: projects.id,
-      projectName: projects.name,
       name: components.name,
       version: components.version,
       purl: components.purl,
@@ -132,44 +133,69 @@ export async function loadComponents(db: Db, scope: ComponentScope = {}): Promis
       packageKey: components.packageKey,
       type: components.type,
       licenses: components.licenses,
-      latestVersion: packages.latestVersion,
-      latestCheckedAt: packages.latestCheckedAt,
-      latestReleasedAt: packages.latestReleasedAt,
-      deprecated: packages.deprecated,
-      deprecatedReason: packages.deprecatedReason,
-      vulnsCheckedAt: packageVersions.vulnsCheckedAt,
     })
     .from(components)
-    .innerJoin(sboms, eq(sboms.id, components.sbomId))
-    .innerJoin(projects, eq(projects.id, sboms.projectId))
-    .leftJoin(packages, eq(packages.key, components.packageKey))
-    .leftJoin(packageVersions, and(eq(packageVersions.packageKey, components.packageKey), eq(packageVersions.version, components.version)))
     .where(inScope);
+  if (!rows.length) {
+    return [];
+  }
 
-  const vulnRows = await db
-    .selectDistinct({
-      packageKey: versionVulnerabilities.packageKey,
-      version: versionVulnerabilities.version,
-      fixedVersions: versionVulnerabilities.fixedVersions,
-      id: vulnerabilities.id,
-      aliases: vulnerabilities.aliases,
-      summary: vulnerabilities.summary,
-      severity: vulnerabilities.severity,
-      score: vulnerabilities.score,
-      published: vulnerabilities.published,
-    })
-    .from(versionVulnerabilities)
-    .innerJoin(vulnerabilities, eq(vulnerabilities.id, versionVulnerabilities.vulnerabilityId))
-    .innerJoin(
-      components,
-      and(eq(components.packageKey, versionVulnerabilities.packageKey), eq(components.version, versionVulnerabilities.version)),
-    )
-    .where(inScope);
+  const keys = [...new Set(rows.flatMap((r) => (r.packageKey ? [r.packageKey] : [])))];
+  const [owners, packageRows, versionRows, vulnRows] = await Promise.all([
+    db
+      .select({ sbomId: sboms.id, projectId: projects.id, projectName: projects.name })
+      .from(sboms)
+      .innerJoin(projects, eq(projects.id, sboms.projectId))
+      .where(inArray(sboms.id, ids)),
+    inChunks(keys, (chunk) =>
+      db
+        .select({
+          key: packages.key,
+          latestVersion: packages.latestVersion,
+          latestCheckedAt: packages.latestCheckedAt,
+          latestReleasedAt: packages.latestReleasedAt,
+          deprecated: packages.deprecated,
+          deprecatedReason: packages.deprecatedReason,
+        })
+        .from(packages)
+        .where(inArray(packages.key, chunk)),
+    ),
+    inChunks(keys, (chunk) =>
+      db
+        .select({
+          packageKey: packageVersions.packageKey,
+          version: packageVersions.version,
+          vulnsCheckedAt: packageVersions.vulnsCheckedAt,
+        })
+        .from(packageVersions)
+        .where(inArray(packageVersions.packageKey, chunk)),
+    ),
+    inChunks(keys, (chunk) =>
+      db
+        .select({
+          packageKey: versionVulnerabilities.packageKey,
+          version: versionVulnerabilities.version,
+          fixedVersions: versionVulnerabilities.fixedVersions,
+          id: vulnerabilities.id,
+          aliases: vulnerabilities.aliases,
+          summary: vulnerabilities.summary,
+          severity: vulnerabilities.severity,
+          score: vulnerabilities.score,
+          published: vulnerabilities.published,
+        })
+        .from(versionVulnerabilities)
+        .innerJoin(vulnerabilities, eq(vulnerabilities.id, versionVulnerabilities.vulnerabilityId))
+        .where(inArray(versionVulnerabilities.packageKey, chunk)),
+    ),
+  ]);
 
-  const signals = await loadExploitSignals(db, vulnRows);
+  // Only the versions that are actually in scope: the package-key lookup above also returns versions used by other SBOMs.
+  const inUse = new Set(rows.map((r) => versionKey(r.packageKey, r.version)));
+  const scopedVulnRows = vulnRows.filter((r) => inUse.has(versionKey(r.packageKey, r.version)));
+  const signals = await loadExploitSignals(db, scopedVulnRows);
   const vulnsByVersion = new Map<string, ComponentVuln[]>();
-  for (const r of vulnRows) {
-    const key = `${r.packageKey}@${r.version}`;
+  for (const r of scopedVulnRows) {
+    const key = versionKey(r.packageKey, r.version);
     const list = vulnsByVersion.get(key) ?? [];
     list.push({
       id: r.id,
@@ -186,36 +212,76 @@ export async function loadComponents(db: Db, scope: ComponentScope = {}): Promis
   }
 
   const now = new Date();
+  const abandonedAfterYears = env().ABANDONED_AFTER_YEARS;
+  const ownerOf = new Map(owners.map((o) => [o.sbomId, o]));
+  const checkedAt = new Map(versionRows.map((v) => [versionKey(v.packageKey, v.version), v.vulnsCheckedAt]));
+  const noPackage = {
+    latestVersion: null,
+    latestCheckedAt: null,
+    maintenance: maintenanceFlags({ deprecated: false, reason: null, latestReleasedAt: null }, now, abandonedAfterYears),
+  };
+  const packageFacts = new Map(
+    packageRows.map((p) => [
+      p.key,
+      {
+        latestVersion: p.latestVersion,
+        latestCheckedAt: p.latestCheckedAt,
+        maintenance: maintenanceFlags(
+          { deprecated: p.deprecated, reason: p.deprecatedReason, latestReleasedAt: p.latestReleasedAt },
+          now,
+          abandonedAfterYears,
+        ),
+      },
+    ]),
+  );
+
+  // Everything below depends only on the package and its version, and a few thousand versions cover hundreds of thousands of
+  // components, so it is worked out once per version and shared.
+  const byVersion = new Map<string, VersionFacts>();
+  const factsOf = (r: (typeof rows)[number]): VersionFacts => {
+    const key = versionKey(r.packageKey, r.version);
+    let facts = byVersion.get(key);
+    if (!facts) {
+      const pkg = (r.packageKey && packageFacts.get(r.packageKey)) || noPackage;
+      const vulns = (vulnsByVersion.get(key) ?? []).sort(
+        (a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || (b.score ?? 0) - (a.score ?? 0),
+      );
+      facts = {
+        latestVersion: pkg.latestVersion,
+        outdated: updateType(r.version, pkg.latestVersion),
+        maintenance: pkg.maintenance,
+        vulns,
+        maxSeverity: maxSeverity(vulns.map((v) => v.severity)),
+        fixVersion: recommendedFix(r.version, vulns),
+        vulnStatus: vulnStatus(r.ecosystem, r.version, checkedAt.get(key) ?? null),
+        versionStatus: versionStatus(r.ecosystem, pkg.latestCheckedAt),
+      };
+      byVersion.set(key, facts);
+    }
+    return facts;
+  };
+
   return rows.map((r) => {
-    const vulns = (vulnsByVersion.get(`${r.packageKey}@${r.version}`) ?? []).sort(
-      (a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || (b.score ?? 0) - (a.score ?? 0),
-    );
-    return {
-      id: r.id,
-      sbomId: r.sbomId,
-      projectId: r.projectId,
-      projectName: r.projectName,
-      name: r.name,
-      version: r.version,
-      purl: r.purl,
-      ecosystem: r.ecosystem,
-      packageKey: r.packageKey,
-      type: r.type,
-      licenses: r.licenses,
-      latestVersion: r.latestVersion,
-      outdated: updateType(r.version, r.latestVersion),
-      maintenance: maintenanceFlags(
-        { deprecated: r.deprecated ?? false, reason: r.deprecatedReason, latestReleasedAt: r.latestReleasedAt },
-        now,
-        env().ABANDONED_AFTER_YEARS,
-      ),
-      vulns,
-      maxSeverity: maxSeverity(vulns.map((v) => v.severity)),
-      fixVersion: recommendedFix(r.version, vulns),
-      vulnStatus: vulnStatus(r.ecosystem, r.version, r.vulnsCheckedAt),
-      versionStatus: versionStatus(r.ecosystem, r.latestCheckedAt),
-    };
+    const owner = ownerOf.get(r.sbomId)!;
+    return { ...r, projectId: owner.projectId, projectName: owner.projectName, ...factsOf(r) };
   });
+}
+
+type VersionFacts = Pick<
+  InventoryComponent,
+  'latestVersion' | 'outdated' | 'maintenance' | 'vulns' | 'maxSeverity' | 'fixVersion' | 'vulnStatus' | 'versionStatus'
+>;
+
+/** Identifies one version of one package; components without a purl share the key with a null package. */
+const versionKey = (packageKey: string | null, version: string | null) => `${packageKey}\u0000${version}`;
+
+/** Runs `query` over `items` in blocks, so an IN list never nears the driver's 65,535 parameter limit. */
+async function inChunks<T, R>(items: T[], query: (chunk: T[]) => Promise<R[]>, size = 5000): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...(await query(items.slice(i, i + size))));
+  }
+  return out;
 }
 
 /** Smallest version that fixes every known vulnerability, when one can be determined. */
