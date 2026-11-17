@@ -8,9 +8,14 @@ Newest first. Format and rules: `docs/WORKFLOW.md#progress-md-entry-format`.
 - Baseline: owner-only auth (E-004..E-007) lives on `feat/owner-auth`; review fixes on `fix/owner-auth-review`. See the newest entries.
 - Next: L-002 (pagination and filters; its dependencies G-001, G-002, G-003 and F-003 are done), which unblocks I-002 and the MCP tools, and G-004/G-005. Decide M-007 (local vs remote MCP) before M-002. The backlog order is in the 2026-11-16 backlog entry. Pick the lowest-priority `todo` in `docs/features.json` as usual.
 
+## 2026-11-17: Q-007 CODING_STANDARDS.md
+- Done (branch `feat/q-007-q-009-docs-chores`, off main): `CODING_STANDARDS.md` at the repo root, five one-line judgement calls (fail closed with Zod minimum strength, one mapping from domain state to response, no duplicated denial or message literals, reject rather than repair external input, say what was not verified). `docs/WORKFLOW.md#definition-of-done` has the pointer saying reviews read it. `docs/agents/domain.md` and the review skill config untouched.
+- Verified: `pnpm run lint` (tsc, ESLint, Prettier check) green; full unit suite 414 tests green (`vitest run --maxWorkers=2` with 60 s timeouts, 34 files, includes `progress-order.test.ts`). Docs only, so no e2e.
+- Gotchas: the last two bullets go slightly beyond the ticket's list; trim if unwanted. Run on a machine loaded by parallel agents (load average over 100), PGlite `beforeEach` hooks hit the 10 s timeout, so a full `pnpm test` can fail on timing alone; rerun with `--maxWorkers=2` or when idle.
+
 ## 2026-11-17: Q-009 progress.md order check and archive
 - Done (branch `feat/q-007-q-009-docs-chores`, off main): `tests/unit/progress-order.test.ts` (runs in `pnpm test`, so `scripts/init.sh` and CI) fails when the dated `##` headings of `docs/progress.md` or `docs/progress-archive.md` are not newest first, or when an archived entry is newer than a current one. Entries before 2026-11-16 (the backlog epic) moved to `docs/progress-archive.md` (29 entries); `progress.md` keeps Current state and 17 recent ones. WORKFLOW notes the rule.
-- Verified: the test failed first against the old file (the 2026-11-02 entry sat at the bottom, out of order; now filed in date order in the archive); see the Q-007 entry for the final lint and test run.
+- Verified: the test failed first against the old file (2 of 3 red: the 2026-11-02 entry sat at the bottom, out of order; it is now in date order in the archive), then green; lint and full suite results are in the Q-007 entry.
 - Gotchas: the archive cutoff is a judgement ("current epic" = 2026-11-16 onward); move the cutoff forward when a new epic starts.
 
 ## 2026-11-17: G-003 Project tags

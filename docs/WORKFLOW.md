@@ -75,6 +75,8 @@ and: acceptance criteria in `features.json` are met; new behavior has a test tha
 
 If e2e could not be run, say so in `progress.md` and keep the feature `in_progress`, not `done`.
 
+Reviews read `CODING_STANDARDS.md` (judgement calls a linter cannot catch) as well as this file.
+
 ## progress.md entry format
 
 ```
