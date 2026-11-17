@@ -1,6 +1,6 @@
 import { and, desc, eq, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { componentEdges, components, packages, packageVersions, projects, sboms } from '@/db/schema';
+import { componentEdges, components, events, packages, packageVersions, projects, sboms } from '@/db/schema';
 import { SBOM_UPLOADED_CHANNEL } from '@/lib/channels';
 import { DEFAULT_PROJECT_KIND, type ProjectKind } from '@/lib/kinds';
 import { parsePurl } from '@/lib/purl';
@@ -17,6 +17,11 @@ export interface UploadMeta {
   tags?: string[];
 }
 
+/** Who made a change, for the audit trail: `actor` is a token fingerprint (see `tokenFingerprint`), null if none. */
+export interface AuditOptions {
+  actor?: string | null;
+}
+
 export class IngestError extends Error {}
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -28,7 +33,12 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 /** Stores an SBOM for a project, creating the project on first upload. */
-export async function ingestSbom(db: Db, document: unknown, meta: UploadMeta, { historyLimit = 20 } = {}) {
+export async function ingestSbom(
+  db: Db,
+  document: unknown,
+  meta: UploadMeta,
+  { historyLimit = 20, actor = null }: { historyLimit?: number } & AuditOptions = {},
+) {
   const parsed = parseSbom(document);
   const projectName = (meta.project || parsed.subject?.name || '').trim();
   if (!projectName) {
@@ -110,7 +120,20 @@ export async function ingestSbom(db: Db, document: unknown, meta: UploadMeta, { 
       .where(eq(sboms.projectId, project.id))
       .orderBy(desc(sboms.uploadedAt), desc(sboms.id))
       .limit(historyLimit);
-    await tx.delete(sboms).where(and(eq(sboms.projectId, project.id), notInArray(sboms.id, keep)));
+    const pruned = await tx
+      .delete(sboms)
+      .where(and(eq(sboms.projectId, project.id), notInArray(sboms.id, keep)))
+      .returning({ id: sboms.id });
+
+    const audit = { projectId: project.id, projectName, tokenFingerprint: actor };
+    await tx.insert(events).values({
+      ...audit,
+      kind: 'upload',
+      detail: { sbomId: sbom.id, componentCount: parsed.components.length, version: meta.version ?? parsed.subject?.version ?? null },
+    });
+    if (pruned.length) {
+      await tx.insert(events).values({ ...audit, kind: 'prune', detail: { removed: pruned.length, historyLimit } });
+    }
 
     // Wakes the worker; delivered on commit.
     await tx.execute(sql.raw(`NOTIFY ${SBOM_UPLOADED_CHANNEL}`));
@@ -132,10 +155,19 @@ export async function garbageCollect(db: Db) {
       SELECT 1 FROM version_vulnerabilities vv WHERE vv.vulnerability_id = v.id)`);
 }
 
-export async function deleteProject(db: Db, id: number) {
-  const deleted = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
-  if (deleted.length) {
+export async function deleteProject(db: Db, id: number, { actor = null }: AuditOptions = {}) {
+  const deleted = await db.transaction(async (tx) => {
+    const [project] = await tx.select({ name: projects.name }).from(projects).where(eq(projects.id, id));
+    if (!project) {
+      return false;
+    }
+    // The event keeps the name; its project_id is nulled by the foreign key when the row goes.
+    await tx.insert(events).values({ kind: 'delete', projectId: id, projectName: project.name, tokenFingerprint: actor });
+    await tx.delete(projects).where(eq(projects.id, id));
+    return true;
+  });
+  if (deleted) {
     await garbageCollect(db);
   }
-  return deleted.length > 0;
+  return deleted;
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { requireOwner } from '@/server/auth';
-import { checkAdminToken, jsonError, parseId } from '@/server/api';
+import { checkAdminToken, jsonError, parseId, requestActor } from '@/server/api';
 import { deleteProject } from '@/server/ingest';
 import { getProject } from '@/server/inventory';
 
@@ -29,7 +29,7 @@ export async function DELETE(req: Request, { params }: Ctx) {
     return denied;
   }
   const id = parseId((await params).id);
-  if (!id || !(await deleteProject(getDb(), id))) {
+  if (!id || !(await deleteProject(getDb(), id, { actor: requestActor(req) }))) {
     return jsonError(404, 'Project not found');
   }
   return new Response(null, { status: 204 });
