@@ -1271,7 +1271,7 @@
       "epic": "G",
       "size": "S",
       "priority": 4.85,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "G-002"
       ],
@@ -1280,7 +1280,7 @@
         "Project page lists other Projects with the same normalised repository, with their kind and severity counts",
         "No DataGrid Pro row grouping (ARCHITECTURE.md decision: MIT edition only)"
       ],
-      "evidence": "",
+      "evidence": "2026-11-17: tests/unit/sibling-projects.test.ts written first (getSiblingProjects missing, 6 failing), then green; pnpm run lint, pnpm test (392) and pnpm run test:e2e (16, after a rebuild; new test uploads two Projects with different spellings of one remote and checks the sibling list, the link between them and the Repository column) green. Not run: the Repository column filter in a browser.",
       "notes": "Monorepo services are separate Projects; this is how they find each other.",
       "labels": [
         "ready-for-agent"

@@ -1,6 +1,4 @@
 'use client';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import type { GridColDef } from '@mui/x-data-grid';
 import type { ProjectSummary } from '@/server/inventory';
 import { SEVERITY_RANK, SEVERITIES } from '@/lib/severity';
@@ -20,16 +18,15 @@ const columns: GridColDef<ProjectSummary>[] = [
     headerName: 'Project',
     flex: 1.5,
     minWidth: 180,
-    renderCell: ({ row }) => (
-      <Box>
-        <AppLink href={projectHref(row.id)}>{row.name}</AppLink>
-        {row.repository && (
-          <Typography variant="caption" color="text.secondary" component="div">
-            {row.repository}
-          </Typography>
-        )}
-      </Box>
-    ),
+    renderCell: ({ row }) => <AppLink href={projectHref(row.id)}>{row.name}</AppLink>,
+  },
+  // Its own column so the grid can filter and sort by it; Projects of one monorepo share a value.
+  {
+    field: 'repository',
+    headerName: 'Repository',
+    flex: 1.2,
+    minWidth: 180,
+    valueGetter: (_v, row) => row.repository ?? '',
   },
   {
     field: 'kind',

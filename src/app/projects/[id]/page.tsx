@@ -11,7 +11,7 @@ import { getDb } from '@/db';
 import { requireOwnerPage } from '@/server/auth';
 import { AccessGate } from '@/components/AccessGate';
 import { parseIdOrNull } from '@/lib/params';
-import { getDependencyGraph, getProject } from '@/server/inventory';
+import { getDependencyGraph, getProject, getSiblingProjects } from '@/server/inventory';
 import { getProjectTrend } from '@/server/trends';
 import { VulnerabilityTrendChart } from '@/components/charts';
 import { ComponentsGrid } from '@/components/ComponentsGrid';
@@ -21,6 +21,7 @@ import { DependencyTree } from '@/components/DependencyTree';
 import { ProjectTabs } from '@/components/ProjectTabs';
 import { PageHeader } from '@/components/PageHeader';
 import { SbomHistorySelect } from '@/components/SbomHistorySelect';
+import { SiblingProjects } from '@/components/SiblingProjects';
 import { StatTile } from '@/components/StatTile';
 
 export const dynamic = 'force-dynamic';
@@ -49,6 +50,7 @@ export default async function ProjectPage({
   const sbom = project.history.find((h) => h.id === project.sbomId);
   const { stats } = project;
   const trend = (await getProjectTrend(getDb(), project.id, 90)) ?? [];
+  const siblings = await getSiblingProjects(getDb(), project.id);
   return (
     <>
       <PageHeader
@@ -127,6 +129,7 @@ export default async function ProjectPage({
           </StatTile>
         </Grid>
       </Grid>
+      <SiblingProjects repository={project.repository} siblings={siblings} />
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="h6" component="h2" gutterBottom>
           Vulnerabilities over time

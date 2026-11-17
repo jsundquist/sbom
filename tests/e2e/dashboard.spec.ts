@@ -116,6 +116,32 @@ test('SBOMs uploaded through the API appear in the dashboard', async ({ page, re
   await expect(page.getByText('No trend data yet')).toBeVisible();
 });
 
+test('projects built from one repository list each other as siblings', async ({ page, request }) => {
+  const document = JSON.parse(fs.readFileSync('tests/fixtures/spdx.json', 'utf8'));
+  const upload = (project: string, kind: string, repository: string) =>
+    request.post(`/api/v1/sboms?project=${project}&kind=${kind}`, {
+      data: document,
+      headers: { authorization: 'Bearer e2e-token', 'x-sbom-repository': repository },
+    });
+  // Two spellings of one remote, so this also proves the siblings match on the normalised value.
+  const first = await upload('e2e-mono-web', 'application', 'https://github.com/Acme/Mono.git');
+  expect(first.status()).toBe(201);
+  expect((await upload('e2e-mono-lib', 'library', 'acme/mono')).status()).toBe(201);
+  expect((await upload('e2e-elsewhere', 'application', 'acme/elsewhere')).status()).toBe(201);
+
+  await page.goto((await first.json()).url);
+  await expect(page.getByRole('heading', { name: 'Other projects in github.com/acme/mono' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'e2e-mono-lib' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'e2e-elsewhere' })).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'e2e-mono-lib' }).click();
+  await expect(page.getByRole('heading', { name: 'e2e-mono-lib' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'e2e-mono-web' })).toBeVisible();
+
+  await page.goto('/projects');
+  await expect(page.getByRole('grid', { name: 'Projects' })).toContainText('github.com/acme/mono');
+});
+
 test('overview and project pages chart vulnerabilities over time from the daily snapshots', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Vulnerabilities over time' })).toBeVisible();
