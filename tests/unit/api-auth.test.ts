@@ -12,6 +12,7 @@ import { GET as listPackages } from '@/app/api/v1/packages/route';
 import { GET as getPackage } from '@/app/api/v1/packages/[key]/route';
 import { GET as listVulns } from '@/app/api/v1/vulnerabilities/route';
 import { GET as getVuln } from '@/app/api/v1/vulnerabilities/[id]/route';
+import { GET as listEvents } from '@/app/api/v1/events/route';
 import { GET as getSummary } from '@/app/api/v1/summary/route';
 import { GET as getSbom } from '@/app/api/v1/sboms/[id]/route';
 import { GET as healthz } from '@/app/api/healthz/route';
@@ -60,6 +61,7 @@ const ROUTES: [string, (req: Request) => Promise<Response>][] = [
   ['vulnerabilities', (r) => listVulns(r)],
   ['vulnerabilities/:id', (r) => getVuln(r, p({ id: 'GHSA-x' }))],
   ['summary', (r) => getSummary(r)],
+  ['events', (r) => listEvents(r)],
   ['sboms/:id', (r) => getSbom(r, p({ id: '1' }))],
 ];
 

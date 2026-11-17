@@ -59,6 +59,7 @@ builds and tests it in its own `mcp` job.
 | `kev_entries` | CISA Known Exploited Vulnerabilities catalog, keyed by CVE id | Replaced wholesale on each sync; matched to vulns by id or CVE alias |
 | `epss_scores` | FIRST EPSS score and percentile per CVE | Only CVEs we track; null score = looked up, none yet; fresh per CVE via `fetched_at` |
 | `project_snapshots` | One row per project per UTC day: component, vulnerability (by severity) and outdated counts | Upserted by the worker; keyed by project, not SBOM, so it survives history pruning. Not backfilled |
+| `events` | Audit trail of mutations (N-001): `kind` upload/delete/prune, `project_name`, `token_fingerprint` (12 hex of a SHA-256 of the bearer token, never the token), `detail` jsonb | Written in the transaction of the change (`ingestSbom`, `deleteProject`); `project_id` is set null when the Project is deleted so the name survives. `GET /api/v1/events` (owner-gated; `?limit` 1-1000, `?offset`, `X-Total-Count`) |
 | `feed_syncs` | One row per feed: `synced_at`, `attempted_at`, `error` | TTL and retry backoff via `src/worker/feeds.ts` (KEV uses both; EPSS only the backoff) |
 
 Invariants:
@@ -101,7 +102,7 @@ Pages use `export const dynamic = 'force-dynamic'`.
 ## API surface (`/api/v1`)
 
 `POST sboms` (auth), `GET sboms/[id]`, `GET projects[/id]`, `DELETE projects/[id]` (admin token), `GET packages[/key]`,
-`GET vulnerabilities[/id]`, `GET summary`, `GET summary/trends`, `GET projects/[id]/trends` (both read `project_snapshots` via `src/server/trends.ts`), `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database). Errors are `{ "error": string }` via `jsonError`.
+`GET vulnerabilities[/id]`, `GET summary`, `GET summary/trends`, `GET projects/[id]/trends` (both read `project_snapshots` via `src/server/trends.ts`), `GET /api/healthz` (readiness, pings the database), `GET /api/livez` (liveness, no database), `GET /metrics` (Prometheus text, `src/server/metrics.ts` over `listProjects` plus the worker heartbeat; session or `READ_TOKENS`, the only non-`/api/v1` path `checkReadToken` accepts; the worker stamps the `feed_syncs` row `worker` after a run with no job errors). Errors are `{ "error": string }` via `jsonError`.
 
 ## Configuration
 

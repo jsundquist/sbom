@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
+import { tokenFingerprint } from '@/lib/fingerprint';
 
 export const jsonError = (status: number, error: string) => NextResponse.json({ error }, { status });
 
@@ -41,8 +42,11 @@ export const checkUploadToken = (req: Request) =>
 export const checkAdminToken = (req: Request) =>
   checkBearer(req, env().ADMIN_TOKENS, { env: 'ADMIN_TOKENS', what: 'Deletes', token: 'admin' });
 
+/** Fingerprint of the bearer token on a request that passed a token check, for the audit trail; null when it sent none. */
+export const requestActor = (req: Request) => tokenFingerprint((req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, ''));
+
 /**
- * Read tokens (READ_TOKENS, ADR 0002) for scripts: GET /api/v1/* only. Returns null when the request is not a read-token
+ * Read tokens (READ_TOKENS, ADR 0002) for scripts: GET /api/v1/* and GET /metrics only. Returns null when the request is not a read-token
  * attempt (no tokens configured, wrong method or path, no bearer), so the session gate decides; 'ok' for a valid token;
  * else the rejection. Authorization is only ever looked at here, never as a session. The auth bucket is checked before
  * comparing (so guessing is throttled) and spent only by failures, so a busy script is not throttled by itself.
@@ -50,7 +54,7 @@ export const checkAdminToken = (req: Request) =>
 export function checkReadToken(req: Request): 'ok' | NextResponse | null {
   const tokens = env().READ_TOKENS;
   const { pathname } = new URL(req.url);
-  if (!tokens.length || req.method !== 'GET' || !pathname.startsWith('/api/v1/')) {
+  if (!tokens.length || req.method !== 'GET' || !(pathname.startsWith('/api/v1/') || pathname === '/metrics')) {
     return null;
   }
   const header = req.headers.get('authorization');
@@ -169,3 +173,7 @@ export async function readBodyLimited(req: Request, limit: number): Promise<stri
 }
 
 export { parseDays, parseIdOrNull as parseId } from '@/lib/params';
+
+/** A list endpoint's response: a bare array plus the pre-paging match count in `X-Total-Count` (L-002). */
+export const listJson = <T>({ items, total }: { items: T[]; total: number }) =>
+  NextResponse.json(items, { headers: { 'X-Total-Count': String(total) } });
