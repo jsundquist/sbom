@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDb } from '@/db';
 import { env } from '@/lib/env';
+import { environmentField } from '@/lib/environment';
 import { PROJECT_KINDS } from '@/lib/kinds';
 import { parseTags } from '@/lib/tags';
 import { SbomParseError } from '@/sbom/parse';
@@ -15,12 +16,20 @@ const field = z
   .optional()
   .transform((v) => v || undefined);
 const kind = z.enum(PROJECT_KINDS, { error: `kind must be one of: ${PROJECT_KINDS.join(', ')}` }).optional();
-const metaSchema = z.object({ project: field, version: field, ref: field, commit: field, repository: field, kind });
-const META_FIELDS = ['project', 'version', 'ref', 'commit', 'repository', 'kind'];
+const metaSchema = z.object({
+  project: field,
+  version: field,
+  ref: field,
+  commit: field,
+  repository: field,
+  kind,
+  environment: environmentField,
+});
+const META_FIELDS = ['project', 'version', 'ref', 'commit', 'repository', 'kind', 'environment'];
 
 /**
  * Upload an SBOM (CycloneDX or SPDX JSON) as the request body.
- * Metadata comes from query parameters or X-Sbom-* headers: project, version, ref, commit, repository, kind, tags.
+ * Metadata comes from query parameters or X-Sbom-* headers: project, version, ref, commit, repository, kind, tags, environment.
  */
 export async function POST(req: Request) {
   const denied = checkUploadToken(req);

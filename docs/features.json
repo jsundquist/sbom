@@ -1250,7 +1250,7 @@
       "epic": "G",
       "size": "S",
       "priority": 4.5,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "G-001"
       ],
@@ -1259,7 +1259,7 @@
         "Action input `environment` and header X-Sbom-Environment; returned by GET /api/v1/sboms/[id]",
         "No UI, filter or rollup built on it"
       ],
-      "evidence": "",
+      "evidence": "tests/unit/sbom-environment.test.ts (10, red first); pnpm run lint and pnpm test (472) green; migration 0012; e2e not run (no Postgres, no route or page change that e2e covers)",
       "notes": "Deliberately minimal: what is actually deployed is the W-006 collector question. Do not add deployments or per-environment rollups here.",
       "labels": [
         "ready-for-agent"

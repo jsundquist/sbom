@@ -14,6 +14,7 @@ export interface UploadMeta {
   commit?: string;
   repository?: string;
   kind?: ProjectKind;
+  environment?: string;
   tags?: string[];
 }
 
@@ -69,6 +70,7 @@ export async function ingestSbom(
         version: meta.version || parsed.subject?.version || null,
         ref: meta.ref ?? null,
         commitSha: meta.commit ?? null,
+        environment: meta.environment ?? null,
         format: parsed.format,
         specVersion: parsed.specVersion,
         componentCount: parsed.components.length,

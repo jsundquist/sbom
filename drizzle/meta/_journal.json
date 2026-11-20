@@ -85,6 +85,13 @@
       "when": 1794928463020,
       "tag": "0011_premium_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794942167997,
+      "tag": "0012_closed_night_nurse",
+      "breakpoints": true
     }
   ]
 }

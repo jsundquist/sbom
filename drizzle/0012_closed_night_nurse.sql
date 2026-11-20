@@ -1,0 +1,1 @@
+ALTER TABLE "sboms" ADD COLUMN "environment" text;
