@@ -110,6 +110,18 @@ export function parseProjectFilter(sp: URLSearchParams): Parsed<ProjectFilter> {
   return { ok: true, value: { ...r.value, repository } };
 }
 
+/** The overview's filter: only the Project attributes ADR 0004 makes bookmarkable; other project params are ignored. */
+export type OverviewFilter = Pick<ProjectFilter, 'kind' | 'tag' | 'repository'>;
+
+export function parseOverviewFilter(sp: URLSearchParams): Parsed<OverviewFilter> {
+  const r = parseProjectFilter(sp);
+  if (!r.ok) {
+    return r;
+  }
+  const { kind, tag, repository } = r.value;
+  return { ok: true, value: { ...(kind && { kind }), ...(tag && { tag }), ...(repository && { repository }) } };
+}
+
 export const parsePackageFilter = (sp: URLSearchParams): Parsed<PackageFilter> =>
   parse(packageSchema, sp, ['ecosystem', 'deprecated', 'abandoned', 'q']);
 

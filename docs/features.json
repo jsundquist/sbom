@@ -1292,7 +1292,7 @@
       "epic": "G",
       "size": "M",
       "priority": 5.2,
-      "status": "todo",
+      "status": "done",
       "depends_on": [
         "G-003"
       ],
@@ -1302,7 +1302,7 @@
         "Page guard coverage test still passes",
         "e2e covers a tag filter changing the counts"
       ],
-      "evidence": "",
+      "evidence": "tests/unit/overview-filter.test.ts (10, red first); tests/e2e/dashboard.spec.ts tag filter and bad-value tests; pnpm run lint, pnpm test (472) and pnpm run test:e2e (18) green; page guard coverage in page-auth.test.ts passes",
       "notes": "Saved views are query strings (ADR 0004); no saved-views table. Uses the existing load (K-001 made it cheap; no rollups exist).",
       "labels": [
         "ready-for-agent"

@@ -163,3 +163,33 @@ test('responses carry security headers and the page still renders under the CSP'
   await expect(page.getByRole('heading').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('overview filters by tag through the URL, so a view is a bookmark', async ({ page }) => {
+  await page.goto('/');
+  const grid = page.getByRole('grid', { name: 'Projects' });
+  await expect(grid).toContainText('web-storefront');
+  await expect(grid).toContainText('payments-api');
+
+  await page.getByRole('combobox', { name: 'Tag' }).click();
+  await page.getByRole('option', { name: 'team:payments' }).click();
+  await expect(page).toHaveURL(/\?tag=team%3Apayments$/);
+  await expect(grid).toContainText('payments-api');
+  await expect(grid).not.toContainText('web-storefront');
+  await expect(page.getByText(/Latest SBOM of each of 1 of \d+ projects/)).toBeVisible();
+
+  // The URL alone reproduces the view.
+  await page.goto('/?tag=team:web');
+  await expect(grid).toContainText('web-storefront');
+  await expect(grid).not.toContainText('payments-api');
+
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(grid).toContainText('payments-api');
+});
+
+test('overview rejects a bad filter value and says when nothing matches', async ({ page }) => {
+  await page.goto('/?kind=server');
+  await expect(page.getByRole('alert').filter({ hasText: 'Invalid kind' })).toBeVisible();
+  await page.goto('/?tag=no-such-tag');
+  await expect(page.getByText(/No projects match the filter/)).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Tag' })).toBeVisible();
+});

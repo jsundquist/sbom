@@ -86,7 +86,7 @@ describe('requireOwnerPage', () => {
 
 const p = <T>(v: T) => Promise.resolve(v);
 const PAGES: [string, () => Promise<unknown>][] = [
-  ['/', () => Overview()],
+  ['/', () => Overview({ searchParams: Promise.resolve({}) })],
   ['/projects', () => Projects()],
   ['/projects/[id]', () => Project({ params: p({ id: '1' }), searchParams: p({}) })],
   ['/packages', () => Packages()],
