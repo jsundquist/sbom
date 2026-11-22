@@ -1,3 +1,4 @@
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
@@ -5,6 +6,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { getDb } from '@/db';
 import { requireOwnerPage } from '@/server/auth';
+import { parseOverviewFilter } from '@/lib/params';
+import { OverviewFilters } from '@/components/OverviewFilters';
 import { AccessGate } from '@/components/AccessGate';
 import { getOverview } from '@/server/inventory';
 import { getSummaryTrend } from '@/server/trends';
@@ -22,13 +25,27 @@ import { StatTile } from '@/components/StatTile';
 
 export const dynamic = 'force-dynamic';
 
-export default async function OverviewPage() {
+export default async function OverviewPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const gate = await requireOwnerPage();
   if (gate) {
     return <AccessGate gate={gate} />;
   }
-  const data = await getOverview(getDb());
-  if (!data.projectCount) {
+  const sp = new URLSearchParams(
+    Object.entries(await searchParams).flatMap(([k, v]) => (typeof v === 'string' ? [[k, v]] : v ? [[k, v[0]]] : [])),
+  );
+  const filter = parseOverviewFilter(sp);
+  if (!filter.ok) {
+    return (
+      <>
+        <PageHeader title="Overview" />
+        <Alert severity="error" action={<AppLink href="/">Clear filters</AppLink>}>
+          {filter.error}
+        </Alert>
+      </>
+    );
+  }
+  const data = await getOverview(getDb(), filter.value);
+  if (!data.totalProjectCount) {
     return (
       <>
         <PageHeader title="Overview" />
@@ -37,10 +54,24 @@ export default async function OverviewPage() {
     );
   }
   const { stats } = data;
-  const trend = await getSummaryTrend(getDb(), 90);
+  const isFiltered = Object.keys(filter.value).length > 0;
+  const filters = <OverviewFilters facets={data.facets} active={filter.value} />;
+  if (!data.projectCount) {
+    return (
+      <>
+        <PageHeader title="Overview" subtitle={`No projects match the filter (${data.totalProjectCount} in total)`} />
+        {filters}
+      </>
+    );
+  }
+  const trend = await getSummaryTrend(getDb(), 90, new Date(), isFiltered ? data.projects.map((p) => p.id) : undefined);
   return (
     <>
-      <PageHeader title="Overview" subtitle={`Latest SBOM of each of ${data.projectCount} projects`} />
+      <PageHeader
+        title="Overview"
+        subtitle={`Latest SBOM of each of ${isFiltered ? `${data.projectCount} of ${data.totalProjectCount}` : data.projectCount} projects`}
+      />
+      {filters}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatTile label="Projects" value={data.projectCount} hint={`${stats.components.toLocaleString()} package references`}>
