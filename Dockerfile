@@ -18,7 +18,7 @@ RUN pnpm prune --prod && rm -rf node_modules/next node_modules/.pnpm/next@*
 
 # Runtime base is distroless: no shell, apt, dpkg, util-linux, gzip, tar or bundled npm/corepack, so the CVEs those
 # carry (and the stock node image's npm node_modules) never ship. Pinned by digest.
-FROM gcr.io/distroless/nodejs26-debian13:nonroot@sha256:1d736cf8b5716c07a245301f92717143215d248fd55771ee1936ef4b3302e531 AS distroless
+FROM gcr.io/distroless/nodejs26-debian13:nonroot@sha256:a84242e747fbb5aaaa0180c273b6f7130ca34b3300082192ef58eea96089eb3c AS distroless
 
 # Distroless keeps node at /nodejs/bin/node, off PATH. Manifests run `node` by name, so add a symlink for it.
 FROM deps AS node-link
